@@ -115,29 +115,29 @@ textarea.paste-area::placeholder { color: #98d0ca; }
 <div class="wrap">
 
   <!-- Step indicator -->
-  <div class="steps">
+  <div class="steps" id="stepsBar">
     <div class="stp" id="stp1"><div class="stp-n">1</div><div class="stp-l">貼入</div></div>
-    <div class="stp-line"></div>
-    <div class="stp" id="stp2"><div class="stp-n">2</div><div class="stp-l">處理</div></div>
-    <div class="stp-line"></div>
-    <div class="stp" id="stp3"><div class="stp-n">3</div><div class="stp-l">簡字檢查</div></div>
-    <div class="stp-line"></div>
-    <div class="stp" id="stp4"><div class="stp-n">4</div><div class="stp-l">詞庫修正</div></div>
-    <div class="stp-line"></div>
-    <div class="stp" id="stp5"><div class="stp-n">5</div><div class="stp-l">二次掃描</div></div>
+    <div class="stp-line" id="stpLine2" style="display:none;"></div>
+    <div class="stp" id="stp2" style="display:none;"><div class="stp-n">2</div><div class="stp-l" id="stp2label">字詞確認</div></div>
+    <div class="stp-line" id="stpLine3" style="display:none;"></div>
+    <div class="stp" id="stp3" style="display:none;"><div class="stp-n">3</div><div class="stp-l" id="stp3label">自動掃描</div></div>
   </div>
 
   <!-- STEP 1: 提醒轉繁體 -->
   <div class="card show" id="c1">
     <div class="card-title">步驟一</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;">
-      <div id="modeFull" onclick="selectMode('full')" style="background:rgba(110,196,188,0.12);border:2px solid #6ec4bc;border-radius:12px;padding:14px 16px;cursor:pointer;transition:all 0.2s;">
-        <div style="font-size:0.88rem;font-weight:800;color:#2a5550;margin-bottom:5px;">🔍 完整模式</div>
-        <div style="font-size:0.7rem;color:#7dc8c0;line-height:1.6;">簡體字檢查・他/它修正・可疑處人工確認</div>
-      </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:16px;">
       <div id="modeQuick" onclick="selectMode('quick')" style="background:rgba(255,255,255,0.88);border:2px solid rgba(110,196,188,0.2);border-radius:12px;padding:14px 16px;cursor:pointer;transition:all 0.2s;">
         <div style="font-size:0.88rem;font-weight:800;color:#2a5550;margin-bottom:5px;">⚡ 快速模式</div>
         <div style="font-size:0.7rem;color:#7dc8c0;line-height:1.6;">詞庫修正・時間碼接合・直接下載</div>
+      </div>
+      <div id="modeFull" onclick="selectMode('full')" style="background:rgba(110,196,188,0.12);border:2px solid #6ec4bc;border-radius:12px;padding:14px 16px;cursor:pointer;transition:all 0.2s;">
+        <div style="font-size:0.88rem;font-weight:800;color:#2a5550;margin-bottom:5px;">🔍 完整模式</div>
+        <div style="font-size:0.7rem;color:#7dc8c0;line-height:1.6;">簡字檢查・人名品牌確認・可疑處人工校對</div>
+      </div>
+      <div id="modeAI" onclick="selectMode('ai')" style="background:rgba(255,255,255,0.88);border:2px solid rgba(110,196,188,0.2);border-radius:12px;padding:14px 16px;cursor:pointer;transition:all 0.2s;">
+        <div style="font-size:0.88rem;font-weight:800;color:#2a5550;margin-bottom:5px;">✨ AI 模式</div>
+        <div style="font-size:0.7rem;color:#7dc8c0;line-height:1.6;">AI 生成 Prompt，Claude 輔助修正字幕</div>
       </div>
     </div>
     <div class="divider"></div>
@@ -176,25 +176,31 @@ textarea.paste-area::placeholder { color: #98d0ca; }
   </div>
 
   <!-- STEP 3: 簡字檢查 -->
-  <div class="card" id="c3">
-    <div class="card-title">步驟三 — 簡體字檢查</div>
-    <div class="log-box" id="log3"></div>
-    <div class="issue-list" id="simpList"></div>
-    <div class="row" id="step3btns" style="display:none;">
-      <button class="btn" onclick="goStep(4); runStep4()">修正完成，繼續 →</button>
+  <div class="card" id="c4ai">
+    <div class="card-title">步驟二 — AI Prompt</div>
+    <div class="info-box" style="margin-bottom:14px;font-size:0.72rem;line-height:2;">
+      點「<strong>產生 AI Prompt</strong>」，複製後開新的 Claude 對話貼上，把 Claude 的回覆複製回來貼到下方，即可套用結果。
+    </div>
+    <div style="margin-bottom:14px;">
+      <textarea id="aiPromptText" readonly style="background:rgba(74,139,196,0.06);border:1.5px solid rgba(74,139,196,0.2);border-radius:12px;color:#2a4060;font-size:0.68rem;line-height:1.7;min-height:140px;outline:none;padding:12px 14px;resize:vertical;width:100%;font-family:inherit;font-weight:600;display:none;margin-bottom:10px;"></textarea>
+      <div style="display:flex;gap:10px;align-items:center;">
+        <button id="genPromptBtn" onclick="generateAIPromptStep()" style="background:linear-gradient(135deg,#5b9bd5,#4a8bc4);border:none;border-radius:100px;color:white;cursor:pointer;font-family:inherit;font-size:0.78rem;font-weight:800;padding:11px 22px;box-shadow:0 3px 12px rgba(74,139,196,0.35);transition:all 0.2s;">✨ 產生 AI Prompt</button>
+        <button id="copyPromptBtn" onclick="copyPrompt(this)" style="display:none;background:linear-gradient(135deg,#5b9bd5,#4a8bc4);border:none;border-radius:100px;color:white;cursor:pointer;font-family:inherit;font-size:0.78rem;font-weight:800;padding:11px 22px;box-shadow:0 3px 12px rgba(74,139,196,0.35);transition:all 0.2s;">✨ 複製 Prompt</button>
+      </div>
+    </div>
+    <div id="aiReplySection" style="display:none;">
+      <div style="font-size:0.72rem;font-weight:800;color:#4a8bc4;margin-bottom:8px;letter-spacing:0.06em;">把 Claude 的回覆貼在這裡</div>
+      <textarea id="aiReplyText" class="paste-area" placeholder='貼上 Claude 回覆的 JSON' style="min-height:100px;font-size:0.68rem;"></textarea>
+      <div class="row" style="margin-top:8px;">
+        <button class="btn" onclick="applyAIReplyAndContinue()">套用並查看結果 →</button>
+        <button class="btn-ghost" onclick="skipAIAndContinue()">略過，直接看掃描結果</button>
+      </div>
     </div>
   </div>
 
-
-
-  <!-- STEP 4: 詞庫修正 + 重複詞偵測 -->
+  <!-- STEP 4: 人名品牌確認（完整模式） -->
   <div class="card" id="c4">
-    <div class="card-title">步驟四 — 重複詞偵測・詞庫修正</div>
-    <div class="log-box" id="log4"></div>
-    <div id="repeatList" style="display:flex;flex-direction:column;gap:6px;margin-top:10px;"></div>
-
-    <div class="divider"></div>
-    <div style="font-size:0.72rem;color:#3a7872;font-weight:700;margin-bottom:6px;">字詞確認與修正</div>
+    <div class="card-title">步驟二 — 字詞確認與修正</div>
     <div class="info-box" style="margin-bottom:10px;font-size:0.72rem;line-height:1.8;">
       點「<strong>自動辨識</strong>」讓工具找出字幕裡重複出現的詞，或自己輸入想確認的人名品牌。<br>
       確認後點「<strong>修正</strong>」，結果會列出來，右邊填替換後的詞即可。<br>
@@ -206,23 +212,44 @@ textarea.paste-area::placeholder { color: #98d0ca; }
       <button class="btn" onclick="detectNames55()">修正 →</button>
     </div>
     <div id="nameResult55" style="display:flex;flex-direction:column;gap:6px;margin-top:8px;"></div>
-
     <div class="row" style="margin-top:14px;">
       <button class="btn" onclick="applyStep4AndContinue()">套用並繼續 →</button>
     </div>
   </div>
 
-
-
-  <!-- STEP 6: 二次掃描 -->
+  <!-- STEP 4: 詞庫修正 + 重複詞偵測 -->
   <div class="card" id="c6">
-    <div class="card-title">步驟六 — 二次掃描・可疑處修正</div>
-    <div style="font-size:0.72rem;color:#7db8b2;margin-bottom:10px;line-height:1.8;">
-      以下列出可疑的地方，修改後點「套用修改」。<span style="color:#a0c8c4;">未修改的直接保留，不需要做任何動作。</span>
+    <div class="card-title" id="c6Title">步驟二 — 自動掃描・可疑處修正</div>
+    <div class="info-box" id="step6Info" style="margin-bottom:14px;font-size:0.72rem;line-height:2;"></div>
+    <div id="step6Legend" style="display:none;align-items:center;gap:12px;margin-bottom:14px;font-size:0.68rem;font-weight:700;">
+      <span style="display:flex;align-items:center;gap:5px;color:#4aada5;">
+        <span style="display:inline-block;width:14px;height:14px;background:rgba(232,248,245,0.9);border-radius:4px;border:1px solid rgba(110,196,188,0.3);flex-shrink:0;"></span>
+        自動辨識結果
+      </span>
+      <span style="display:flex;align-items:center;gap:5px;color:#a08020;">
+        <span style="display:inline-block;width:14px;height:14px;background:rgba(255,248,210,0.95);border-radius:4px;border:1px solid rgba(210,180,60,0.3);flex-shrink:0;"></span>
+        AI 辨識結果
+      </span>
     </div>
-    <div class="row" style="margin-bottom:14px;">
-      <button class="btn" onclick="runStep6()">開始掃描 →</button>
+    
+
+    <!-- AI Prompt 產生區 -->
+    <div id="aiPromptBox" style="display:none;margin-bottom:14px;">
+      <div style="font-size:0.72rem;font-weight:800;color:#4a8bc4;margin-bottom:8px;letter-spacing:0.06em;">① 複製 Prompt → 開新對話貼給 Claude</div>
+      <div style="position:relative;">
+        <textarea id="aiPromptText" readonly style="background:rgba(74,139,196,0.06);border:1.5px solid rgba(74,139,196,0.2);border-radius:12px;color:#2a4060;font-size:0.68rem;line-height:1.7;min-height:140px;outline:none;padding:12px 14px;resize:vertical;width:100%;font-family:inherit;font-weight:600;"></textarea>
+        <button onclick="copyPrompt(this)" style="position:absolute;top:8px;right:8px;background:#4a8bc4;border:none;border-radius:100px;color:white;cursor:pointer;font-family:inherit;font-size:0.65rem;font-weight:800;padding:5px 14px;transition:all 0.2s;">複製</button>
+      </div>
+      <div class="divider"></div>
+      <div style="font-size:0.72rem;font-weight:800;color:#4a8bc4;margin-bottom:8px;letter-spacing:0.06em;">② 把 Claude 的回覆貼在這裡</div>
+      <textarea id="aiReplyText" class="paste-area" placeholder='把 Claude 回覆的 JSON 貼在這裡，例如：&#10;{"issues":[{"num":3,"time":"00:00:12,500","original":"你你好","type":"重複字","suggestion":"你好","desc":"重複了「你」"}]}' style="min-height:120px;font-size:0.68rem;"></textarea>
+      <div class="row" style="margin-top:8px;">
+        <button class="btn" onclick="applyAIReply()">套用 AI 結果 →</button>
+        <button class="btn-ghost" onclick="document.getElementById('aiPromptBox').style.display='none'">收起</button>
+      </div>
     </div>
+
+    <div id="aiStatus" style="display:none;font-size:0.73rem;font-weight:600;padding:10px 14px;border-radius:10px;margin-bottom:10px;"></div>
     <div class="log-box" id="log6"></div>
     <div class="issue-list" id="issueList"></div>
 
@@ -329,7 +356,7 @@ function sleep(ms) { return new Promise(r=>setTimeout(r,ms)); }
 function log(id,msg,cls='') { const d=document.getElementById(id); const s=document.createElement('div'); s.className=cls; s.textContent=msg; d.appendChild(s); }
 
 function goStep(n) {
-  [1,2,3,4,5,6,7].forEach(i => {
+  [1,2,3].forEach(i => {
     const stp = document.getElementById('stp'+i);
     if (!stp) return;
     stp.classList.remove('active','done','warn');
@@ -337,12 +364,16 @@ function goStep(n) {
     if (i < stepN) stp.classList.add('done');
     else if (i === Math.ceil(stepN)) stp.classList.add('active');
   });
-  ['c1','c2','c3','c4','c6','c7'].forEach((id) => {
+  ['c1','c4','c4ai','c6','c7'].forEach((id) => {
     const el = document.getElementById(id);
     if (!el) return;
-    const cardN = parseInt(id.replace('c',''));
-    const showN = cardN === 6 && n === 5 ? true : cardN === n;
-    el.classList.toggle('show', showN);
+    let show = false;
+    if (id === 'c6') show = (n === 3);
+    else if (id === 'c4') show = (currentMode === 'full' && n === 2);
+    else if (id === 'c4ai') show = (currentMode === 'ai' && n === 2);
+    else if (id === 'c1') show = (n === 1);
+    else if (id === 'c7') show = (n === 99);
+    el.classList.toggle('show', show);
   });
   if (n > 2) {
     document.getElementById('statsBox').style.display = 'block';
@@ -392,6 +423,58 @@ function removeZhConvertTag(text) {
 
 let currentMode = 'full';
 
+function runSilentScanThenFull() {
+  // 靜默跑簡字檢查 + 詞庫修正 + 時間碼，直接進字詞確認（步驟二）
+  runStep3Silent();
+  runTermsSilent();
+  goStep(2);
+}
+
+function runSilentScanThenAI() {
+  // 靜默跑簡字檢查 + 詞庫修正 + 時間碼，進 AI Prompt（步驟二）
+  runStep3Silent();
+  runTermsSilent();
+  goStep(2);
+  generateAIPromptStep();
+}
+
+function runStep3Silent() {
+  const simpChars = Object.keys(S2T).filter(c => !SKIP.has(c) && S2T[c] !== c);
+  // 自動她→他、妳→你
+  blocks.forEach(block => {
+    block.text = block.text.split('\n').map(line => {
+      return line.replace(/她/g,'他').replace(/妳/g,'你');
+    }).join('\n');
+  });
+  // 記錄簡體字可疑處供自動掃描使用（靜默，不顯示卡片）
+  window._silentSimpIssues = [];
+  blocks.forEach(block => {
+    block.text.split('\n').forEach(line => {
+      const hits = simpChars.filter(c => line.includes(c));
+      if (hits.length > 0) {
+        window._silentSimpIssues.push({ ts: block.start, text: line, tag: 'simp', hint: `簡體：${hits.map(c=>`「${c}」→「${S2T[c]}」`).join(' ')}`, blockRef: block });
+      }
+    });
+  });
+  document.getElementById('st-seg').textContent = blocks.length;
+}
+
+function runTermsSilent() {
+  let fixes = 0;
+  blocks.forEach(b => {
+    for (const [old, neu] of Object.entries(TERMS)) {
+      if (b.text.includes(old)) { b.text = b.text.split(old).join(neu); fixes++; }
+    }
+  });
+  for (let i = 0; i < blocks.length-1; i++) {
+    try {
+      const gap = tsToMs(blocks[i+1].start) - tsToMs(blocks[i].end);
+      if (gap > 0 && gap <= 300) blocks[i].end = blocks[i+1].start;
+    } catch(e) {}
+  }
+  document.getElementById('st-fix').textContent = fixes;
+}
+
 function handlePaste() {
   const text = document.getElementById('rawInput').value.trim();
   if (!text) { alert('請先貼入 SRT 內容或上傳檔案'); return; }
@@ -412,25 +495,53 @@ function handlePaste() {
   // 直接依照已選模式執行
   if (currentMode === 'quick') {
     runStep4Quick();
+  } else if (currentMode === 'ai') {
+    runSilentScanThenAI();
   } else {
-    goStep(3); runStep3();
+    runSilentScanThenFull();
   }
 }
 
 function selectMode(mode) {
   currentMode = mode;
-  const quick = document.getElementById('modeQuick');
-  const full = document.getElementById('modeFull');
+  ['modeFull','modeQuick','modeAI'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.style.borderColor = 'rgba(110,196,188,0.2)';
+    el.style.background = 'rgba(255,255,255,0.88)';
+  });
+  const active = mode === 'quick' ? 'modeQuick' : mode === 'ai' ? 'modeAI' : 'modeFull';
+  const el = document.getElementById(active);
+  if (el) { el.style.borderColor = '#6ec4bc'; el.style.background = 'rgba(110,196,188,0.12)'; }
+  // 步驟條依模式顯示
+  const line2 = document.getElementById('stpLine2');
+  const stp2 = document.getElementById('stp2');
+  const line3 = document.getElementById('stpLine3');
+  const stp3 = document.getElementById('stp3');
+  const stp2label = document.getElementById('stp2label');
+  const stp3label = document.getElementById('stp3label');
   if (mode === 'quick') {
-    quick.style.borderColor = '#6ec4bc';
-    quick.style.background = 'rgba(110,196,188,0.12)';
-    full.style.borderColor = 'rgba(110,196,188,0.2)';
-    full.style.background = 'rgba(255,255,255,0.88)';
-  } else {
-    full.style.borderColor = '#6ec4bc';
-    full.style.background = 'rgba(110,196,188,0.12)';
-    quick.style.borderColor = 'rgba(110,196,188,0.2)';
-    quick.style.background = 'rgba(255,255,255,0.88)';
+    // 快速模式：只有步驟一
+    if (line2) line2.style.display = 'none';
+    if (stp2) stp2.style.display = 'none';
+    if (line3) line3.style.display = 'none';
+    if (stp3) stp3.style.display = 'none';
+  } else if (mode === 'full') {
+    // 完整模式：1貼入 → 2字詞確認 → 3自動掃描
+    if (line2) line2.style.display = '';
+    if (stp2) stp2.style.display = '';
+    if (stp2label) stp2label.textContent = '字詞確認';
+    if (line3) line3.style.display = '';
+    if (stp3) stp3.style.display = '';
+    if (stp3label) stp3label.textContent = '自動掃描';
+  } else if (mode === 'ai') {
+    // AI 模式：1貼入 → 2AI Prompt → 3掃描結果
+    if (line2) line2.style.display = '';
+    if (stp2) stp2.style.display = '';
+    if (stp2label) stp2label.textContent = 'AI Prompt';
+    if (line3) line3.style.display = '';
+    if (stp3) stp3.style.display = '';
+    if (stp3label) stp3label.textContent = '掃描結果';
   }
 }
 
@@ -442,7 +553,6 @@ function runStep4Quick() {
       if (b.text.includes(old)) { b.text = b.text.split(old).join(neu); fixes++; }
     }
   });
-  // 時間碼接合
   let merged = 0;
   for (let i = 0; i < blocks.length-1; i++) {
     try {
@@ -454,7 +564,10 @@ function runStep4Quick() {
   document.getElementById('st-iss').textContent = '—';
   buildFinal();
   document.getElementById('doneMsg').textContent = `快速模式完成！共 ${blocks.length} 段，詞庫修正 ${fixes} 處，時間碼接合 ${merged} 處`;
-  goStep(7);
+  ['c1','c2','c3','c6'].forEach(id => { const el=document.getElementById(id); if(el) el.classList.remove('show'); });
+  document.getElementById('c7').classList.add('show');
+  document.getElementById('statsBox').style.display = 'block';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 // drag & drop on paste area
 const pasteWrap = document.getElementById('rawInput');
@@ -471,6 +584,33 @@ if (pasteWrap) {
 // ============================================================
 // STEP 3: 簡體字檢查
 // ============================================================
+function runStep3AI() {
+  // AI 模式：步驟三跑完後，按鈕進步驟四（AI Prompt 卡片）
+  runStep3();
+  const btn = document.getElementById('step3btns');
+  if (btn) {
+    btn.innerHTML = '<button class="btn" onclick="goToAIPromptStep()">修正完成，繼續 →</button>';
+  }
+}
+
+function goToAIPromptStep() {
+  // 靜默詞庫修正，進 AI 步驟四
+  blocks.forEach(b => {
+    for (const [old, neu] of Object.entries(TERMS)) {
+      if (b.text.includes(old)) b.text = b.text.split(old).join(neu);
+    }
+  });
+  for (let i = 0; i < blocks.length-1; i++) {
+    try {
+      const gap = tsToMs(blocks[i+1].start) - tsToMs(blocks[i].end);
+      if (gap > 0 && gap <= 300) blocks[i].end = blocks[i+1].start;
+    } catch(e) {}
+  }
+  goStep(4);
+  // 產生 prompt 自動填入
+  generateAIPromptStep();
+}
+
 function runStep3() {
   const simpChars = Object.keys(S2T).filter(c => !SKIP.has(c) && S2T[c] !== c);
   const found = [];
@@ -664,56 +804,40 @@ function scanStep4() {
 
 function applyStep4AndContinue() {
   let applied = 0;
-
-  // 重複詞替換
-  document.querySelectorAll('.repeat-to').forEach(input => {
-    const from = input.dataset.from;
-    const to = input.value.trim();
-    if (from && to) { blocks.forEach(b => { b.text = b.text.split(from).join(to); }); applied++; }
-  });
-
-  // 人名品牌替換
   document.querySelectorAll('.name-to-55').forEach(input => {
     const from = input.dataset.from;
     const to = input.value.trim();
     if (from && to) { blocks.forEach(b => { b.text = b.text.split(from).join(to); }); applied++; }
   });
-
-  if (applied > 0) log('log4', `✅ 替換 ${applied} 個詞`, 'ok');
-
-  // 時間碼接合（靜默背景執行）
-  let merged = 0;
+  // 時間碼接合（靜默）
   for (let i = 0; i < blocks.length-1; i++) {
     try {
       const gap = tsToMs(blocks[i+1].start) - tsToMs(blocks[i].end);
-      if (gap > 0 && gap <= 300) { blocks[i].end = blocks[i+1].start; merged++; }
+      if (gap > 0 && gap <= 300) { blocks[i].end = blocks[i+1].start; }
     } catch(e) {}
   }
-
-  goStep(5); runStep6();
+  goStep(3); runStep6();
 }
 
-// ============================================================
-// STEP 5: 時間碼接合
-// ============================================================
-function runStep5() {
-  let merged = 0;
+function runTermsAndContinue() {
+  // 詞庫修正（靜默）
+  let fixes = 0;
+  blocks.forEach(b => {
+    for (const [old, neu] of Object.entries(TERMS)) {
+      if (b.text.includes(old)) { b.text = b.text.split(old).join(neu); fixes++; }
+    }
+  });
+  // 時間碼接合（靜默）
   for (let i = 0; i < blocks.length-1; i++) {
     try {
       const gap = tsToMs(blocks[i+1].start) - tsToMs(blocks[i].end);
-      if (gap > 0 && gap <= 300) { blocks[i].end = blocks[i+1].start; merged++; }
+      if (gap > 0 && gap <= 300) { blocks[i].end = blocks[i+1].start; }
     } catch(e) {}
   }
-  log('log5', `✅ 接合 ${merged} 處間距`, merged > 0 ? 'ok' : 'dim');
-  document.getElementById('stp5').classList.remove('active');
-  document.getElementById('stp5').classList.add('done');
+  document.getElementById('st-fix').textContent = fixes;
+  goStep(4); runStep6();
 }
 
-// ============================================================
-// STEP 5.5: 人名品牌批次替換
-function runStep55() {
-  document.getElementById('nameResult55').innerHTML = '';
-}
 
 function detectNames55() {
   const input = document.getElementById('nameInput55').value.trim();
@@ -757,9 +881,28 @@ function detectNames55() {
 
 
 
-// STEP 6: 二次掃描
+// STEP 6: 自動掃描
 // ============================================================
 function runStep6() {
+  // 標題依模式調整
+  const title = document.getElementById('c6Title');
+  if (title) {
+    if (currentMode === 'ai') title.textContent = '步驟三 — 掃描結果';
+    else if (currentMode === 'full') title.textContent = '步驟三 — 自動掃描・可疑處修正';
+    else title.textContent = '自動掃描・可疑處修正';
+  }
+
+  const info = document.getElementById('step6Info');
+  const legend = document.getElementById('step6Legend');
+  if (info) {
+    if (currentMode === 'ai') {
+      info.innerHTML = '已自動掃描完成，結果列在下方，修改後點「套用修改」，不需要改的直接略過。<br>點「<strong>產生 AI Prompt</strong>」複製後貼到 Claude 新對話，把回覆貼回來即可套用。';
+      if (legend) legend.style.display = 'flex';
+    } else {
+      info.innerHTML = '已自動掃描完成，結果列在下方，修改後點「套用修改」，不需要改的直接略過。';
+      if (legend) legend.style.display = 'none';
+    }
+  }
   suspects = [];
   const simpChars = Object.keys(S2T).filter(c => !SKIP.has(c) && S2T[c] !== c);
 
@@ -830,7 +973,7 @@ function runStep6() {
   document.getElementById('st-iss').textContent = suspects.length;
 
   if (suspects.length === 0) {
-    log('log6', '✅ 二次掃描清零！', 'ok');
+    log('log6', '✅ 自動掃描清零！', 'ok');
     document.getElementById('noIssueSection').style.display = 'block';
     document.getElementById('stp6').classList.remove('active');
     document.getElementById('stp6').classList.add('done');
@@ -936,6 +1079,264 @@ function applyIssue(idx, btn) {
 
 
 
+// ============================================================
+// AI Prompt 產生 + 貼回套用
+// ============================================================
+function generateAIPromptStep() {
+  if (!blocks || blocks.length === 0) return;
+  const lines = blocks.map((b, i) => `[${i+1}] ${b.start}\t${b.text.replace(/\n/g,' ')}`).join('\n');
+  const prompt = buildPrompt(lines);
+  const ta = document.getElementById('aiPromptText');
+  const genBtn = document.getElementById('genPromptBtn');
+  const copyBtn = document.getElementById('copyPromptBtn');
+  const replySection = document.getElementById('aiReplySection');
+  if (ta) { ta.value = prompt; ta.style.display = 'block'; }
+  if (genBtn) genBtn.style.display = 'none';
+  if (copyBtn) copyBtn.style.display = 'inline-block';
+  if (replySection) replySection.style.display = 'block';
+}
+
+function buildPrompt(lines) {
+  return `你是繁體中文字幕審查員。找出以下字幕的真正錯誤。
+
+只回報這幾類，不要雞蛋挑骨頭：
+1. 重複字詞（你你、的的、去去、我我、他他、了了 等）
+2. 明顯錯字（語音辨識錯誤或錯別字，非口語）
+3. 漏字（語意不完整）
+4. 人名／地名／品牌疑似打錯，或同一個人名品牌在不同段有不同寫法（例如「Kiki」和「kikei」）
+5. 只有??或???需回聽
+
+口語詞哈哈嗯欸啊不算錯誤，英中混用正常。沒有問題就回傳 {"issues":[]}
+
+只回傳JSON不要其他任何文字或說明：
+{"issues":[{"num":序號,"time":"時間戳","original":"原文","type":"重複字|錯字|漏字|人名錯誤|需回聽","suggestion":"建議修正","desc":"說明"}]}
+
+字幕：
+${lines}`;
+}
+
+function applyAIReplyAndContinue() {
+  const raw = document.getElementById('aiReplyText').value.trim();
+  if (!raw) { alert('請先貼入 Claude 的回覆'); return; }
+  let aiIssues = [];
+  try {
+    const cleaned = raw.replace(/\`\`\`json|\`\`\`/g, '').trim();
+    const parsed = JSON.parse(cleaned);
+    aiIssues = parsed.issues || [];
+  } catch(e) {
+    alert('解析失敗，請確認貼入的是完整 JSON');
+    return;
+  }
+  // 儲存 AI 結果，進步驟五
+  window._pendingAIIssues = aiIssues.filter(i => i.type !== '需回聽');
+  goStep(3);
+  runStep6WithAI();
+}
+
+function skipAIAndContinue() {
+  window._pendingAIIssues = [];
+  goStep(3);
+  runStep6WithAI();
+}
+
+function runStep6WithAI() {
+  runStep6();
+  // 套入暫存的 AI 結果
+  const aiIssues = window._pendingAIIssues || [];
+  if (aiIssues.length > 0) {
+    const aiItems = aiIssues.map(iss => ({ source: 'ai', data: iss }));
+    const ruleItems = suspects.map(s => ({ source: 'rule', data: s }));
+    const aiTsPrefixes = new Set(aiIssues.map(iss => (iss.time || '').slice(0, 8)));
+    const filteredRule = ruleItems.filter(r => !aiTsPrefixes.has((r.data.ts || '').slice(0, 8)));
+    const combined = [...filteredRule, ...aiItems].sort((a, b) => {
+      const tsA = a.source === 'ai' ? (a.data.time || '') : (a.data.ts || '');
+      const tsB = b.source === 'ai' ? (b.data.time || '') : (b.data.ts || '');
+      return tsA.localeCompare(tsB);
+    });
+    document.getElementById('issueList').innerHTML = '';
+    renderCombinedList(combined);
+    const statusEl = document.getElementById('aiStatus');
+    statusEl.style.display = 'block';
+    statusEl.style.cssText = 'display:block;font-size:0.73rem;font-weight:600;padding:10px 14px;border-radius:10px;margin-bottom:10px;background:rgba(200,160,48,0.1);border:1.5px solid rgba(200,160,48,0.2);color:#8a6820;';
+    statusEl.textContent = `✨ AI 發現 ${aiIssues.length} 個問題 + 自動掃描 ${suspects.length} 處，請逐一確認`;
+    document.getElementById('st-iss').textContent = aiIssues.length + suspects.length;
+  }
+  window._pendingAIIssues = [];
+}
+
+function generateAIPrompt() {
+  if (!blocks || blocks.length === 0) { alert('請先完成前面步驟再執行 AI 掃描'); return; }
+
+  const lines = blocks.map((b, i) => `[${i+1}] ${b.start}　${b.text.replace(/\n/g,' ')}`).join('\n');
+
+  const prompt = `你是繁體中文字幕審查員。找出以下字幕的真正錯誤。
+
+只回報這幾類，不要雞蛋挑骨頭：
+1. 重複字詞（你你、的的、去去、我我、他他、了了 等）
+2. 明顯錯字（語音辨識錯誤或錯別字，非口語）
+3. 漏字（語意不完整）
+4. 人名／地名／品牌疑似打錯，或同一個人名品牌在不同段有不同寫法（例如「Kiki」和「kikei」）
+5. 只有??或???需回聽
+
+口語詞哈哈嗯欸啊不算錯誤，英中混用正常。沒有問題就回傳 {"issues":[]}
+
+只回傳JSON不要其他任何文字或說明：
+{"issues":[{"num":序號,"time":"時間戳","original":"原文","type":"重複字|錯字|漏字|人名錯誤|需回聽","suggestion":"建議修正","desc":"說明"}]}
+
+字幕：
+${lines}`;
+
+  document.getElementById('aiPromptText').value = prompt;
+  document.getElementById('aiPromptBox').style.display = 'block';
+  document.getElementById('aiPromptBox').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function copyPrompt(btn) {
+  const text = document.getElementById('aiPromptText').value;
+  navigator.clipboard.writeText(text).then(() => {
+    const orig = btn.textContent;
+    btn.textContent = '✓ 已複製';
+    btn.style.background = '#4aada5';
+    setTimeout(() => { btn.textContent = orig; btn.style.background = '#4a8bc4'; }, 2000);
+  }).catch(() => {
+    document.getElementById('aiPromptText').select();
+    document.execCommand('copy');
+    btn.textContent = '✓ 已複製';
+    setTimeout(() => { btn.textContent = '複製'; }, 2000);
+  });
+}
+
+function applyAIReply() {
+  const raw = document.getElementById('aiReplyText').value.trim();
+  if (!raw) { alert('請先貼入 Claude 的回覆'); return; }
+
+  let allIssues = [];
+  try {
+    const cleaned = raw.replace(/```json|```/g, '').trim();
+    const parsed = JSON.parse(cleaned);
+    allIssues = parsed.issues || [];
+  } catch(e) {
+    const statusEl = document.getElementById('aiStatus');
+    statusEl.style.display = 'block';
+    statusEl.style.cssText = 'display:block;font-size:0.73rem;font-weight:600;padding:10px 14px;border-radius:10px;margin-bottom:10px;background:rgba(212,96,96,0.1);border:1.5px solid rgba(212,96,96,0.25);color:#c05050;';
+    statusEl.textContent = '❌ 解析失敗，請確認貼入的是完整 JSON（從 { 開頭到 } 結尾）';
+    return;
+  }
+
+  const statusEl = document.getElementById('aiStatus');
+  statusEl.style.display = 'block';
+  const list = document.getElementById('issueList');
+
+  if (allIssues.length === 0) {
+    statusEl.style.cssText = 'display:block;font-size:0.73rem;font-weight:600;padding:10px 14px;border-radius:10px;margin-bottom:10px;background:rgba(74,173,165,0.1);border:1.5px solid rgba(74,173,165,0.2);color:#3a7872;';
+    statusEl.textContent = '✅ AI 掃描完成，未發現問題！';
+    document.getElementById('noIssueSection').style.display = 'block';
+    document.getElementById('aiPromptBox').style.display = 'none';
+    return;
+  }
+
+  statusEl.style.cssText = 'display:block;font-size:0.73rem;font-weight:600;padding:10px 14px;border-radius:10px;margin-bottom:10px;background:rgba(200,160,48,0.1);border:1.5px solid rgba(200,160,48,0.2);color:#8a6820;';
+  statusEl.textContent = `✨ AI 發現 ${allIssues.length} 個問題，請逐一確認修正`;
+  document.getElementById('st-iss').textContent = allIssues.length;
+  document.getElementById('aiPromptBox').style.display = 'none';
+
+  // 跟規則掃描結果合併，按時間碼排序，AI優先去重
+  // 過濾掉需回聽
+  const filteredAI = allIssues.filter(iss => iss.type !== '需回聽');
+  // 把 AI 時間碼轉成前7碼（00:00:07）做比對
+  const aiTsPrefixes = new Set(filteredAI.map(iss => (iss.time || '').slice(0, 8)));
+  // 規則掃描結果，排除跟AI時間碼相同或相近的（前8碼比對）
+  const filteredRule = suspects.filter(s => !aiTsPrefixes.has((s.ts || '').slice(0, 8)));
+  const aiItems = filteredAI.map(iss => ({ source: 'ai', data: iss }));
+  const ruleItems = filteredRule.map(s => ({ source: 'rule', data: s }));
+  const combined = [...ruleItems, ...aiItems].sort((a, b) => {
+    const tsA = a.source === 'ai' ? (a.data.time || '') : (a.data.ts || '');
+    const tsB = b.source === 'ai' ? (b.data.time || '') : (b.data.ts || '');
+    return tsA.localeCompare(tsB);
+  });
+  list.innerHTML = '';
+  renderCombinedList(combined);
+
+  document.getElementById('hasIssueDownload').style.display = 'block';
+  statusEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function renderCombinedList(combined) {
+  const list = document.getElementById('issueList');
+  const typeColor = { '重複字': '#c05050', '錯字': '#c07830', '漏字': '#7850b8', '人名錯誤': '#3a9088' };
+  const typeClass = { '重複字': 'tag-simp', '錯字': 'tag-he', '漏字': 'tag-pronoun', '人名錯誤': 'tag-name' };
+
+  combined.forEach((item, idx) => {
+    const div = document.createElement('div');
+    div.className = 'issue-row';
+
+    if (item.source === 'ai') {
+      const iss = item.data;
+      const aid = 'ai_' + idx;
+      const tc = typeClass[iss.type] || 'tag-mixed';
+      div.id = 'airow_' + idx;
+      div.style.background = 'rgba(255,248,210,0.85)';
+      div.innerHTML = `
+        <div class="issue-ts">
+          <span style="font-size:0.6rem;color:#7dc8c0;">${iss.time || ''}</span>
+        </div>
+        <div>
+          <div class="issue-text">${(iss.original || '').replace(/</g,'&lt;')}</div>
+          <div style="font-size:0.62rem;color:#7db8b2;margin-top:3px;">${(iss.desc || '').replace(/</g,'&lt;')}</div>
+          <input class="issue-edit show" id="${aid}" value="${(iss.suggestion||iss.original||'').replace(/"/g,'&quot;').replace(/</g,'&lt;')}" placeholder="修正後的文字">
+          <div class="issue-actions">
+            <button class="btn-sm" onclick="applyAI(${idx},'${(iss.time||'').replace(/'/g,"\\'")}','${(iss.original||'').replace(/'/g,"\\'").replace(/\n/g,' ')}',this)">套用修改</button>
+          </div>
+        </div>
+        <span class="issue-tag ${tc}">${iss.type}</span>`;
+    } else {
+      const s = item.data;
+      const rIdx = suspects.indexOf(s);
+      const tagClass = s.tag === 'simp' ? 'tag-simp' : s.tag === 'he' ? 'tag-he' : s.tag === 'it' ? 'tag-it' : 'tag-mixed';
+      const isHe = s.tag === 'he';
+      const isIt = s.tag === 'it';
+      const quickBtns = isHe
+        ? `<button class="btn-sm" data-idx="${rIdx}" data-from="他" data-to="它" onclick="quickReplaceBtn(this)" style="background:rgba(255,235,200,0.9);border-color:rgba(200,150,60,0.4);color:#c07830;">它</button>
+           <button class="btn-sm" onclick="toggleEdit('edit6_${rIdx}', this)" style="color:#7db8b2;">手動改</button>`
+        : isIt
+        ? `<button class="btn-sm" data-idx="${rIdx}" data-from="它" data-to="他" onclick="quickReplaceBtn(this)" style="background:rgba(200,230,255,0.9);border-color:rgba(80,150,220,0.3);color:#3878b8;">他</button>
+           <button class="btn-sm" onclick="toggleEdit('edit6_${rIdx}', this)" style="color:#7db8b2;">手動改</button>`
+        : `<button class="btn-sm" onclick="applyIssue(${rIdx}, this)">套用修改</button>`;
+      div.innerHTML = `
+        <div class="issue-ts">${s.ts}</div>
+        <div>
+          <div class="issue-text">${s.text.replace(/</g,'&lt;')}</div>
+          <div style="font-size:0.62rem;color:#7db8b2;margin-top:3px;">${s.hint}</div>
+          <input class="issue-edit ${!isHe && !isIt ? 'show' : ''}" id="edit6_${rIdx}" value="${s.text.replace(/"/g,'&quot;').replace(/</g,'&lt;')}" placeholder="修正後的文字">
+          <div class="issue-actions">
+            ${quickBtns}
+            ${isHe || isIt ? `<button class="btn-sm" onclick="applyIssue(${rIdx}, this)" style="display:none;" id="applyBtn${rIdx}">套用</button>` : ''}
+          </div>
+        </div>
+        <span class="issue-tag ${tagClass}">${s.tag === 'simp' ? '簡體字' : s.tag === 'he' ? '他→它？' : s.tag === 'it' ? '它→他？' : '中英混合'}</span>`;
+    }
+    list.appendChild(div);
+  });
+}
+
+function applyAI(idx, time, original, btn) {
+  const input = document.getElementById('ai_' + idx);
+  if (!input) return;
+  const newText = input.value.trim();
+  blocks.forEach(b => {
+    if (b.start === time) b.text = b.text.split(original).join(newText);
+  });
+  btn.textContent = '✓ 套用';
+  btn.classList.add('applied');
+  document.getElementById('airow_' + idx).style.opacity = '0.4';
+}
+
+function ignoreAI(idx, btn) {
+  btn.textContent = '已忽略';
+  btn.classList.add('applied');
+  document.getElementById('airow_' + idx).style.opacity = '0.35';
+}
+
 function buildFinal() {
   finalContent = blocks.map((b, i) => `${i+1}\n${b.start} --> ${b.end}\n${b.text}`).join('\n\n') + '\n';
 }
@@ -943,7 +1344,10 @@ function buildFinal() {
 function showDownload() {
   buildFinal();
   document.getElementById('doneMsg').textContent = `共 ${blocks.length} 段，處理完成！`;
-  goStep(7);
+  // 直接顯示完成卡片
+  ['c1','c4','c4ai','c6'].forEach(id => { const el=document.getElementById(id); if(el) el.classList.remove('show'); });
+  document.getElementById('c7').classList.add('show');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 function download() {
@@ -956,6 +1360,8 @@ function download() {
   a.download = stamp + '_字幕修正.srt'; a.click();
   URL.revokeObjectURL(url);
 }
+  // 頁面載入初始化
+  selectMode('full');
 </script>
 </body>
 </html>
