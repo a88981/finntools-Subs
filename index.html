@@ -300,49 +300,7 @@ const TERMS = {
 };
 
 // 簡體字對照
-const S2T = {
-  '后':'後','么':'麼','里':'裡','师':'師','讲':'講','级':'級','击':'擊',
-  '发':'發','来':'來','说':'說','会':'會','这':'這','个':'個','时':'時',
-  '们':'們','还':'還','为':'為','实':'實','见':'見','证':'證','过':'過',
-  '现':'現','长':'長','怀':'懷','认':'認','当':'當','从':'從','开':'開',
-  '继':'繼','结':'結','进':'進','风':'風','际':'際','问':'問','难':'難',
-  '该':'該','则':'則','单':'單','动':'動','场':'場','标':'標','叹':'嘆',
-  '谜':'謎','话':'話','观':'觀','险':'險','获':'獲','误':'誤','识':'識',
-  '热':'熱','丽':'麗','华':'華','类':'類','总':'總','统':'統','联':'聯',
-  '义':'義','选':'選','变':'變','气':'氣','导':'導','无':'無','预':'預',
-  '没':'沒','讯':'訊','诡':'詭','称':'稱','飞':'飛','续':'續','连':'連',
-  '应':'應','记':'記','闻':'聞','绝':'絕','让':'讓','带':'帶','层':'層',
-  '须':'須','搁':'擱','浅':'淺','岛':'島','态':'態','献':'獻','间':'間',
-  '异':'異','横':'橫','传':'傳','样':'樣','种':'種','强':'強','图':'圖',
-  '较':'較','对':'對','给':'給','乱':'亂','两':'兩','买':'買','门':'門',
-  '钱':'錢','请':'請','确':'確','题':'題','条':'條','听':'聽','头':'頭',
-  '团':'團','万':'萬','语':'語','员':'員','远':'遠','运':'運','杂':'雜',
-  '张':'張','针':'針','转':'轉','装':'裝','组':'組','决':'決','战':'戰',
-  '术':'術','试':'試','视':'視','势':'勢','审':'審','摄':'攝','赞':'讚',
-  '账':'帳','报':'報','边':'邊','补':'補','车':'車','处':'處','灯':'燈',
-  '点':'點','电':'電','断':'斷','费':'費','购':'購','关':'關','号':'號',
-  '坏':'壞','换':'換','机':'機','计':'計','价':'價','经':'經','满':'滿',
-  '拟':'擬','宁':'寧','盘':'盤','亲':'親','赛':'賽','伤':'傷','设':'設',
-  '书':'書','数':'數','体':'體','务':'務','业':'業','拥':'擁','帮':'幫',
-  '兴':'興','树':'樹','贝':'貝','军':'軍','云':'雲','讨':'討','盗':'盜',
-  '飓':'颶','释':'釋','测':'測','专':'專','尝':'嘗','严':'嚴','丰':'豐',
-  '锁':'鎖','链':'鏈','码':'碼','键':'鍵','签':'簽','权':'權','删':'刪',
-  '档':'檔','损':'損','缩':'縮','编':'編','译':'譯','验':'驗','输':'輸',
-  '据':'據','库':'庫','网':'網','络':'絡','线':'線','终':'終','频':'頻',
-  '节':'節','录':'錄','载':'載','别':'別','织':'織','壳':'殼','舰':'艦',
-  '论':'論','响':'響','显':'顯','围':'圍','毕':'畢','喷':'噴','达':'達',
-  '础':'礎','创':'創','协':'協','划':'劃','剧':'劇','陈':'陳','阵':'陣',
-  '队':'隊','尽':'盡','极':'極','绕':'繞','诉':'訴','历':'歷','属':'屬',
-  '担':'擔','顺':'順','畅':'暢','荐':'薦','亿':'億','与':'與','内':'內',
-  '调':'調','贴':'貼','杆':'桿','够':'夠','护':'護','觉':'覺','轻':'輕',
-  '饱':'飽','负':'負','厕':'廁','规':'規','国':'國','游':'遊','饮':'飲',
-  '议':'議','虑':'慮','详':'詳','细':'細','栏':'欄','换':'換','环':'環',
-  '虾':'蝦','鱼':'魚','鸡':'雞','猪':'豬','鸭':'鴨','虫':'蟲','饭':'飯',
-  '汤':'湯','锅':'鍋','盐':'鹽','酱':'醬','饼':'餅','糕':'糕','馒':'饅',
-  '饺':'餃','馄':'餛','饨':'飩','壶':'壺','瓶':'瓶',
-};
 
-const SKIP = new Set(['划','攻','磁','特','冒','比','珊','瑚','航','候','疏','朋','感','跟','才','系','窗','向','自','大','中','小','上','下','左','右','万','里','华','云','边','发','长','国','过','来','说','还','为','对','给','时','们','从','开','将','后','变','动','实','当','处','间','里']);
 
 let raw = '', fileName = '', blocks = [], finalContent = '';
 let suspects = [];
@@ -439,22 +397,11 @@ function runSilentScanThenAI() {
 }
 
 function runStep3Silent() {
-  const simpChars = Object.keys(S2T).filter(c => !SKIP.has(c) && S2T[c] !== c);
   // 自動她→他、妳→你
   blocks.forEach(block => {
     block.text = block.text.split('\n').map(line => {
       return line.replace(/她/g,'他').replace(/妳/g,'你');
     }).join('\n');
-  });
-  // 記錄簡體字可疑處供自動掃描使用（靜默，不顯示卡片）
-  window._silentSimpIssues = [];
-  blocks.forEach(block => {
-    block.text.split('\n').forEach(line => {
-      const hits = simpChars.filter(c => line.includes(c));
-      if (hits.length > 0) {
-        window._silentSimpIssues.push({ ts: block.start, text: line, tag: 'simp', hint: `簡體：${hits.map(c=>`「${c}」→「${S2T[c]}」`).join(' ')}`, blockRef: block });
-      }
-    });
   });
   document.getElementById('st-seg').textContent = blocks.length;
 }
@@ -582,100 +529,9 @@ if (pasteWrap) {
 }
 
 // ============================================================
-// STEP 3: 簡體字檢查
-// ============================================================
-function runStep3AI() {
-  // AI 模式：步驟三跑完後，按鈕進步驟四（AI Prompt 卡片）
-  runStep3();
-  const btn = document.getElementById('step3btns');
-  if (btn) {
-    btn.innerHTML = '<button class="btn" onclick="goToAIPromptStep()">修正完成，繼續 →</button>';
-  }
-}
-
-function goToAIPromptStep() {
-  // 靜默詞庫修正，進 AI 步驟四
-  blocks.forEach(b => {
-    for (const [old, neu] of Object.entries(TERMS)) {
-      if (b.text.includes(old)) b.text = b.text.split(old).join(neu);
-    }
-  });
-  for (let i = 0; i < blocks.length-1; i++) {
-    try {
-      const gap = tsToMs(blocks[i+1].start) - tsToMs(blocks[i].end);
-      if (gap > 0 && gap <= 300) blocks[i].end = blocks[i+1].start;
-    } catch(e) {}
-  }
-  goStep(4);
-  // 產生 prompt 自動填入
-  generateAIPromptStep();
-}
-
-function runStep3() {
-  const simpChars = Object.keys(S2T).filter(c => !SKIP.has(c) && S2T[c] !== c);
-  const found = [];
-
-  document.getElementById('st-seg').textContent = blocks.length;
-
-  blocks.forEach(block => {
-    const textLines = block.text.split('\n');
-    textLines.forEach(line => {
-      const hits = simpChars.filter(c => line.includes(c));
-      if (hits.length > 0) {
-        found.push({ ts: block.start, text: line, hits, blockRef: block });
-      }
-    });
-  });
-
-  if (found.length === 0) {
-    log('log3', '✅ 未發現簡體字，可以繼續', 'ok');
-    document.getElementById('step3btns').style.display = 'flex';
-    document.getElementById('stp3').classList.remove('active');
-    document.getElementById('stp3').classList.add('done');
-  } else {
-    log('log3', `⚠ 發現 ${found.length} 行仍有簡體字，請修正後繼續`, 'warn');
-    const list = document.getElementById('simpList');
-    found.forEach((f, idx) => {
-      const div = document.createElement('div');
-      div.className = 'issue-row';
-      div.innerHTML = `
-        <div class="issue-ts">${f.ts}</div>
-        <div>
-          <div class="issue-text">${f.text}</div>
-          <div style="font-size:0.62rem;color:#f87171;margin-top:3px;">簡體：${f.hits.map(c=>`「${c}」→「${S2T[c]}」`).join('  ')}</div>
-          <input class="issue-edit show" id="edit3_${idx}" value="${f.text}" placeholder="修正後的文字">
-        </div>
-        <div>
-          <button class="btn-sm" onclick="applySimp(${idx}, '${f.ts}', this)">套用</button>
-        </div>`;
-      list.appendChild(div);
-    });
-    document.getElementById('step3btns').style.display = 'flex';
-    document.getElementById('stp3').classList.add('warn');
-  }
-}
-
-function applySimp(idx, ts, btn) {
-  const val = document.getElementById('edit3_' + idx).value;
-  // 更新 blocks
-  blocks.forEach(b => {
-    if (b.start === ts) {
-      b.text = b.text.split('\n').map(l => {
-        const edit = document.getElementById('edit3_' + idx);
-        if (edit && l.trim() === edit.defaultValue.trim()) return val;
-        return l;
-      }).join('\n');
-    }
-  });
-  btn.textContent = '✓';
-  btn.classList.add('applied');
-}
-
+// STEP 3 merged into silent scan
 // ============================================================
 
-
-// STEP 4: 詞庫修正 + 重複詞偵測
-// ============================================================
 function runStep4() {
   // 跑詞庫
   let fixes = 0;
@@ -719,6 +575,12 @@ function autoDetectNames() {
     'NG','BGM','CM','TV','PC','DJ','MC','VIP','YouTube','IG','FB','AI',
     'app','App','APP','DX','SRT','OST','MV','EP','ft','feat','ver','vol',
     'Vol','No','Mr','Mrs','Ms','Dr','ice','Ice','are',
+    'Email','email','EMAIL','LINE','Line','YouTube','Youtube','Instagram','Facebook','Google','Apple',
+    'iPhone','iPad','Mac','Windows','Android','iOS','Spotify','Netflix','Amazon','Twitter','TikTok',
+    'Uber','Grab','PayPal','ChatGPT','Claude','OpenAI','Discord','Notion','Slack','Zoom',
+    'Nike','Adidas','Gucci','Chanel','Dior','Prada','Zara','IKEA','Uniqlo','GU',
+    'Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday',
+    'January','February','March','April','June','July','August','September','October','November','December',
   ]);
   const allText = blocks.map(b => b.text).join('\n');
   const wordMap = {};
@@ -761,6 +623,12 @@ function scanStep4() {
     'NG','BGM','CM','TV','PC','DJ','MC','VIP','YouTube','IG','FB','AI',
     'app','App','APP','DX','SRT','OST','MV','EP','ft','feat','ver','vol',
     'Vol','No','Mr','Mrs','Ms','Dr','ice','Ice','are',
+    'Email','email','EMAIL','LINE','Line','YouTube','Youtube','Instagram','Facebook','Google','Apple',
+    'iPhone','iPad','Mac','Windows','Android','iOS','Spotify','Netflix','Amazon','Twitter','TikTok',
+    'Uber','Grab','PayPal','ChatGPT','Claude','OpenAI','Discord','Notion','Slack','Zoom',
+    'Nike','Adidas','Gucci','Chanel','Dior','Prada','Zara','IKEA','Uniqlo','GU',
+    'Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday',
+    'January','February','March','April','June','July','August','September','October','November','December',
   ]);
   const allText = blocks.map(b => b.text).join('\n');
 
@@ -904,8 +772,6 @@ function runStep6() {
     }
   }
   suspects = [];
-  const simpChars = Object.keys(S2T).filter(c => !SKIP.has(c) && S2T[c] !== c);
-
   // ── 自動他→它（確定指物的情況）──
   const autoItPatterns = [
     // 他的 + 物品名詞
@@ -937,11 +803,7 @@ function runStep6() {
 
   blocks.forEach(block => {
     block.text.split('\n').forEach(line => {
-      // 簡體字
-      const simpHits = simpChars.filter(c => line.includes(c));
-      if (simpHits.length > 0) {
-        suspects.push({ ts: block.start, text: line, tag: 'simp', hint: `簡體：${simpHits.map(c=>`「${c}」→「${S2T[c]}」`).join(' ')}`, blockRef: block });
-      }
+
       // 她/妳 → 一律自動改為 他/你
       if (line.includes('她') || line.includes('妳')) {
         const fixed = line.replace(/她/g,'他').replace(/妳/g,'你');
@@ -992,10 +854,10 @@ function runStep6() {
     const isIt = s.tag === 'it';
     const quickBtns = isHe
       ? `<button class="btn-sm" data-idx="${idx}" data-from="他" data-to="它" onclick="quickReplaceBtn(this)" style="background:rgba(255,235,200,0.9);border-color:rgba(200,150,60,0.4);color:#c07830;">它</button>
-         <button class="btn-sm" onclick="toggleEdit(\`edit6_${idx}\`, this)" style="color:#7db8b2;">手動改</button>`
+         <button class="btn-sm" onclick="toggleEdit(\`edit6_${idx}\`, this)" style="color:#7db8b2;">手動修正</button>`
       : isIt
       ? `<button class="btn-sm" data-idx="${idx}" data-from="它" data-to="他" onclick="quickReplaceBtn(this)" style="background:rgba(200,230,255,0.9);border-color:rgba(80,150,220,0.3);color:#3878b8;">他</button>
-         <button class="btn-sm" onclick="toggleEdit(\`edit6_${idx}\`, this)" style="color:#7db8b2;">手動改</button>`
+         <button class="btn-sm" onclick="toggleEdit(\`edit6_${idx}\`, this)" style="color:#7db8b2;">手動修正</button>`
       : `<button class="btn-sm" onclick="applyIssue(${idx}, this)">套用修改</button>`;
 
     div.innerHTML = `
@@ -1003,7 +865,7 @@ function runStep6() {
       <div>
         <div class="issue-text">${s.text}</div>
         <div style="font-size:0.62rem;color:#7db8b2;margin-top:3px;">${s.hint}</div>
-        <input class="issue-edit ${!isHe && !isIt ? 'show' : ''}" id="edit6_${idx}" value="${s.text}" placeholder="修正後的文字">
+        <input class="issue-edit show" id="edit6_${idx}" value="${s.text}" placeholder="修正後的文字">
         <div class="issue-actions">
           ${quickBtns}
           ${isHe || isIt ? `<button class="btn-sm" onclick="applyIssue(${idx}, this)" style="display:none;" id="applyBtn${idx}">套用</button>` : ''}
@@ -1032,7 +894,7 @@ function toggleEdit(editId, btn) {
   if (input.classList.contains('show')) {
     input.classList.remove('show');
     if (applyBtn) applyBtn.style.display = 'none';
-    btn.textContent = '手動改';
+    btn.textContent = '手動修正';
   } else {
     input.classList.add('show');
     if (applyBtn) applyBtn.style.display = 'inline-block';
@@ -1283,7 +1145,7 @@ function renderCombinedList(combined) {
         <div>
           <div class="issue-text">${(iss.original || '').replace(/</g,'&lt;')}</div>
           <div style="font-size:0.62rem;color:#7db8b2;margin-top:3px;">${(iss.desc || '').replace(/</g,'&lt;')}</div>
-          <input class="issue-edit show" id="${aid}" value="${(iss.suggestion||iss.original||'').replace(/"/g,'&quot;').replace(/</g,'&lt;')}" placeholder="修正後的文字">
+          <input class="issue-edit show" id="${aid}" value="${(iss.suggestion||iss.original||'').replace(/"/g,'&quot;').replace(/</g,'&lt;')}" placeholder="修正後的文字" oninput="resetAIBtn(${idx})">
           <div class="issue-actions">
             <button class="btn-sm" onclick="applyAI(${idx},'${(iss.time||'').replace(/'/g,"\\'")}','${(iss.original||'').replace(/'/g,"\\'").replace(/\n/g,' ')}',this)">套用修改</button>
           </div>
@@ -1296,11 +1158,9 @@ function renderCombinedList(combined) {
       const isHe = s.tag === 'he';
       const isIt = s.tag === 'it';
       const quickBtns = isHe
-        ? `<button class="btn-sm" data-idx="${rIdx}" data-from="他" data-to="它" onclick="quickReplaceBtn(this)" style="background:rgba(255,235,200,0.9);border-color:rgba(200,150,60,0.4);color:#c07830;">它</button>
-           <button class="btn-sm" onclick="toggleEdit('edit6_${rIdx}', this)" style="color:#7db8b2;">手動改</button>`
+        ? `<button class="btn-sm" data-idx="${rIdx}" data-from="他" data-to="它" onclick="quickReplaceBtn(this)" style="background:rgba(255,235,200,0.9);border-color:rgba(200,150,60,0.4);color:#c07830;">它</button>`
         : isIt
-        ? `<button class="btn-sm" data-idx="${rIdx}" data-from="它" data-to="他" onclick="quickReplaceBtn(this)" style="background:rgba(200,230,255,0.9);border-color:rgba(80,150,220,0.3);color:#3878b8;">他</button>
-           <button class="btn-sm" onclick="toggleEdit('edit6_${rIdx}', this)" style="color:#7db8b2;">手動改</button>`
+        ? `<button class="btn-sm" data-idx="${rIdx}" data-from="它" data-to="他" onclick="quickReplaceBtn(this)" style="background:rgba(200,230,255,0.9);border-color:rgba(80,150,220,0.3);color:#3878b8;">他</button>`
         : `<button class="btn-sm" onclick="applyIssue(${rIdx}, this)">套用修改</button>`;
       div.innerHTML = `
         <div class="issue-ts">${s.ts}</div>
@@ -1310,13 +1170,18 @@ function renderCombinedList(combined) {
           <input class="issue-edit ${!isHe && !isIt ? 'show' : ''}" id="edit6_${rIdx}" value="${s.text.replace(/"/g,'&quot;').replace(/</g,'&lt;')}" placeholder="修正後的文字">
           <div class="issue-actions">
             ${quickBtns}
-            ${isHe || isIt ? `<button class="btn-sm" onclick="applyIssue(${rIdx}, this)" style="display:none;" id="applyBtn${rIdx}">套用</button>` : ''}
+
           </div>
         </div>
         <span class="issue-tag ${tagClass}">${s.tag === 'simp' ? '簡體字' : s.tag === 'he' ? '他→它？' : s.tag === 'it' ? '它→他？' : '中英混合'}</span>`;
     }
     list.appendChild(div);
   });
+}
+
+function resetAIBtn(idx) {
+  const btn = document.querySelector(`#airow_${idx} .btn-sm`);
+  if (btn) { btn.textContent = '套用修改'; btn.classList.remove('applied'); }
 }
 
 function applyAI(idx, time, original, btn) {
@@ -1331,7 +1196,7 @@ function applyAI(idx, time, original, btn) {
   input.dataset.applied = newText;
   btn.textContent = '✓ 套用';
   btn.classList.add('applied');
-  document.getElementById('airow_' + idx).style.opacity = '0.6';
+
 }
 
 function ignoreAI(idx, btn) {
