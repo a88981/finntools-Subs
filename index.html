@@ -1323,12 +1323,15 @@ function applyAI(idx, time, original, btn) {
   const input = document.getElementById('ai_' + idx);
   if (!input) return;
   const newText = input.value.trim();
+  // 用 defaultValue 追蹤上次套用的值，支援重複修改
+  const prevText = input.dataset.applied || original;
   blocks.forEach(b => {
-    if (b.start === time) b.text = b.text.split(original).join(newText);
+    if (b.start === time) b.text = b.text.split(prevText).join(newText);
   });
+  input.dataset.applied = newText;
   btn.textContent = '✓ 套用';
   btn.classList.add('applied');
-  document.getElementById('airow_' + idx).style.opacity = '0.4';
+  document.getElementById('airow_' + idx).style.opacity = '0.6';
 }
 
 function ignoreAI(idx, btn) {
