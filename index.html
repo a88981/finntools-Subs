@@ -41,7 +41,7 @@ header p { font-size: 0.75rem; color: #5ab5ac; font-weight: 700; letter-spacing:
 .info-box a { color: #2e9088; text-decoration: underline; font-weight: 800; }
 .info-box strong { color: #2a5550; }
 
-.stats { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; }
+.stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; }
 .stat { background: rgba(255,255,255,0.88); border: 1.5px solid rgba(110,196,188,0.25); border-radius: 12px; padding: 14px 10px; text-align: center; }
 .stat .v { font-size: 1.5rem; font-weight: 800; color: #4aada5; display: block; }
 .stat .k { font-size: 0.6rem; color: #7dc8c0; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; margin-top: 4px; }
@@ -124,16 +124,23 @@ textarea.paste-area::placeholder { color: #98d0ca; }
     <div class="stp-line"></div>
     <div class="stp" id="stp4"><div class="stp-n">4</div><div class="stp-l">詞庫修正</div></div>
     <div class="stp-line"></div>
-    <div class="stp" id="stp5"><div class="stp-n">5</div><div class="stp-l">時間碼</div></div>
-    <div class="stp-line"></div>
-    <div class="stp" id="stp55"><div class="stp-n">★</div><div class="stp-l">人名品牌</div></div>
-    <div class="stp-line"></div>
-    <div class="stp" id="stp6"><div class="stp-n">6</div><div class="stp-l">二次掃描</div></div>
+    <div class="stp" id="stp5"><div class="stp-n">5</div><div class="stp-l">二次掃描</div></div>
   </div>
 
   <!-- STEP 1: 提醒轉繁體 -->
   <div class="card show" id="c1">
-    <div class="card-title">步驟一 — 轉繁體並貼入</div>
+    <div class="card-title">步驟一</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;">
+      <div id="modeFull" onclick="selectMode('full')" style="background:rgba(110,196,188,0.12);border:2px solid #6ec4bc;border-radius:12px;padding:14px 16px;cursor:pointer;transition:all 0.2s;">
+        <div style="font-size:0.88rem;font-weight:800;color:#2a5550;margin-bottom:5px;">🔍 完整模式</div>
+        <div style="font-size:0.7rem;color:#7dc8c0;line-height:1.6;">簡體字檢查・他/它修正・可疑處人工確認</div>
+      </div>
+      <div id="modeQuick" onclick="selectMode('quick')" style="background:rgba(255,255,255,0.88);border:2px solid rgba(110,196,188,0.2);border-radius:12px;padding:14px 16px;cursor:pointer;transition:all 0.2s;">
+        <div style="font-size:0.88rem;font-weight:800;color:#2a5550;margin-bottom:5px;">⚡ 快速模式</div>
+        <div style="font-size:0.7rem;color:#7dc8c0;line-height:1.6;">詞庫修正・時間碼接合・直接下載</div>
+      </div>
+    </div>
+    <div class="divider"></div>
     <div class="info-box" style="margin-bottom:14px;">
       先去轉繁體：<a href="https://www.zhconvert.org" target="_blank">🔗 zhconvert.org</a>
       &nbsp;→ 貼上 SRT 全文 → 選「<strong>繁體中文（台灣）</strong>」→ 複製結果貼到下方
@@ -156,29 +163,14 @@ textarea.paste-area::placeholder { color: #98d0ca; }
   <!-- STEP 2 placeholder (hidden, kept for goStep logic) -->
   <div class="card" id="c2" style="display:none!important;"></div>
 
-  <!-- Mode selector -->
-  <div class="card" id="modeCard" style="display:none;">
-    <div class="card-title">選擇模式</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-      <div id="modeQuick" onclick="selectMode('quick')" style="background:rgba(232,248,245,0.5);border:2px solid rgba(110,196,188,0.2);border-radius:14px;padding:18px;cursor:pointer;transition:all 0.2s;text-align:center;">
-        <div style="font-size:1.4rem;margin-bottom:8px;">⚡</div>
-        <div style="font-weight:800;color:#2a5550;font-size:0.85rem;margin-bottom:4px;">快速模式</div>
-        <div style="font-size:0.7rem;color:#7dc8c0;line-height:1.6;">詞庫修正<br>時間碼接合<br>直接下載</div>
-      </div>
-      <div id="modeFull" onclick="selectMode('full')" style="background:rgba(232,248,245,0.5);border:2px solid rgba(110,196,188,0.2);border-radius:14px;padding:18px;cursor:pointer;transition:all 0.2s;text-align:center;">
-        <div style="font-size:1.4rem;margin-bottom:8px;">🔍</div>
-        <div style="font-weight:800;color:#2a5550;font-size:0.85rem;margin-bottom:4px;">完整模式</div>
-        <div style="font-size:0.7rem;color:#7dc8c0;line-height:1.6;">簡體檢查<br>他/它自動修正<br>可疑處人工確認</div>
-      </div>
-    </div>
-  </div>
+
 
   <!-- Stats -->
   <div id="statsBox" style="display:none;">
     <div class="stats">
       <div class="stat"><span class="v" id="st-seg">—</span><span class="k">總段數</span></div>
       <div class="stat"><span class="v" id="st-fix">—</span><span class="k">詞庫修正</span></div>
-      <div class="stat"><span class="v" id="st-mg">—</span><span class="k">時間碼接合</span></div>
+
       <div class="stat warn-stat"><span class="v" id="st-iss">—</span><span class="k">待確認</span></div>
     </div>
   </div>
@@ -200,42 +192,34 @@ textarea.paste-area::placeholder { color: #98d0ca; }
     <div class="card-title">步驟四 — 重複詞偵測・詞庫修正</div>
     <div class="log-box" id="log4"></div>
     <div id="repeatList" style="display:flex;flex-direction:column;gap:6px;margin-top:10px;"></div>
-    <div class="row" style="margin-top:12px;">
+
+    <div class="divider"></div>
+    <div style="font-size:0.72rem;color:#3a7872;font-weight:700;margin-bottom:6px;">字詞確認與修正</div>
+    <div class="info-box" style="margin-bottom:10px;font-size:0.72rem;line-height:1.8;">
+      點「<strong>自動辨識</strong>」讓工具找出字幕裡重複出現的詞，或自己輸入想確認的人名品牌。<br>
+      確認後點「<strong>修正</strong>」，結果會列出來，右邊填替換後的詞即可。<br>
+      <span style="color:#a0c8c4;">不需要修正的詞直接刪掉，或留著空白不填都可以。</span>
+    </div>
+    <textarea id="nameInput55" class="paste-area" style="min-height:140px;margin-bottom:8px;" placeholder="輸入想確認的人名或品牌名（一行一個）&#10;例如：Kiki&#10;阿圓&#10;BEIGY&#10;&#10;也可以點「自動辨識」讓工具幫你找"></textarea>
+    <div class="row" style="margin-top:0;margin-bottom:4px;">
+      <button class="btn-ghost" onclick="autoDetectNames()">自動辨識</button>
+      <button class="btn" onclick="detectNames55()">修正 →</button>
+    </div>
+    <div id="nameResult55" style="display:flex;flex-direction:column;gap:6px;margin-top:8px;"></div>
+
+    <div class="row" style="margin-top:14px;">
       <button class="btn" onclick="applyStep4AndContinue()">套用並繼續 →</button>
     </div>
   </div>
 
-  <!-- STEP 5: 時間碼 -->
-  <div class="card" id="c5">
-    <div class="card-title">步驟五 — 時間碼無縫接合（300ms）</div>
-    <div class="log-box" id="log5"></div>
-    <div class="row" style="margin-top:10px;">
-      <button class="btn" onclick="goStep(55); runStep55()">繼續 →</button>
-    </div>
-  </div>
 
-  <!-- STEP 5.5: 人名品牌批次替換 -->
-  <div class="card" id="c55">
-    <div class="card-title">人名・品牌批次確認</div>
-    <div class="info-box" style="margin-bottom:14px;">
-      填入這份字幕裡的<strong>人名或品牌名</strong>，工具會找出所有出現的地方，右邊填替換後的詞一鍵全換。<strong>空白就保留原樣。</strong>
-    </div>
-    <div style="font-size:0.72rem;color:#3a7872;font-weight:700;margin-bottom:6px;">人名・品牌名（一行一個）：</div>
-    <textarea id="nameInput55" class="paste-area" style="min-height:90px;margin-bottom:10px;" placeholder="例如：Kiki&#10;阿圓&#10;BEIGY&#10;IVE"></textarea>
-    <div class="row" style="margin-top:0;margin-bottom:14px;">
-      <button class="btn" onclick="detectNames55()">掃描 →</button>
-      <button class="btn-ghost" onclick="goStep(6); runStep6()">略過</button>
-    </div>
-    <div id="nameResult55" style="display:flex;flex-direction:column;gap:6px;"></div>
-    <div id="nameApply55" class="row" style="display:none;">
-      <button class="btn" onclick="applyNames55()">套用全部並繼續 →</button>
-      <button class="btn-ghost" onclick="goStep(6); runStep6()">略過</button>
-    </div>
-  </div>
 
   <!-- STEP 6: 二次掃描 -->
   <div class="card" id="c6">
     <div class="card-title">步驟六 — 二次掃描・可疑處修正</div>
+    <div style="font-size:0.72rem;color:#7db8b2;margin-bottom:10px;line-height:1.8;">
+      以下列出可疑的地方，修改後點「套用修改」。<span style="color:#a0c8c4;">未修改的直接保留，不需要做任何動作。</span>
+    </div>
     <div class="row" style="margin-bottom:14px;">
       <button class="btn" onclick="runStep6()">開始掃描 →</button>
     </div>
@@ -353,11 +337,12 @@ function goStep(n) {
     if (i < stepN) stp.classList.add('done');
     else if (i === Math.ceil(stepN)) stp.classList.add('active');
   });
-  ['c1','c2','c3','c4','c5','c55','c6','c7'].forEach((id) => {
+  ['c1','c2','c3','c4','c6','c7'].forEach((id) => {
     const el = document.getElementById(id);
     if (!el) return;
-    const cardN = id === 'c55' ? 55 : parseInt(id.replace('c',''));
-    el.classList.toggle('show', cardN === n);
+    const cardN = parseInt(id.replace('c',''));
+    const showN = cardN === 6 && n === 5 ? true : cardN === n;
+    el.classList.toggle('show', showN);
   });
   if (n > 2) {
     document.getElementById('statsBox').style.display = 'block';
@@ -389,8 +374,7 @@ function handleFile(input) {
       blocks.push({ start: m[1], end: m[2], text: lines.slice(2).join('\n').trim() });
     });
     document.getElementById('st-seg').textContent = blocks.length;
-    document.getElementById('modeCard').style.display = 'block';
-    document.getElementById('statsBox').style.display = 'block';
+      document.getElementById('statsBox').style.display = 'block';
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
   r.readAsText(file, 'UTF-8');
@@ -424,12 +408,13 @@ function handlePaste() {
     blocks.push({ start: m[1], end: m[2], text: lines.slice(2).join('\n').trim() });
   });
   document.getElementById('st-seg').textContent = blocks.length;
-  // 隱藏步驟一，顯示模式選擇
-  document.getElementById('c1').classList.remove('show');
-  document.getElementById('modeCard').style.display = 'block';
-  document.getElementById('modeCard').classList.add('show');
   document.getElementById('statsBox').style.display = 'block';
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+  // 直接依照已選模式執行
+  if (currentMode === 'quick') {
+    runStep4Quick();
+  } else {
+    goStep(3); runStep3();
+  }
 }
 
 function selectMode(mode) {
@@ -440,15 +425,12 @@ function selectMode(mode) {
     quick.style.borderColor = '#6ec4bc';
     quick.style.background = 'rgba(110,196,188,0.12)';
     full.style.borderColor = 'rgba(110,196,188,0.2)';
-    full.style.background = 'rgba(232,248,245,0.5)';
-    // 快速模式：跳過簡體檢查直接跑詞庫+時間碼
-    setTimeout(() => { runStep4Quick(); }, 300);
+    full.style.background = 'rgba(255,255,255,0.88)';
   } else {
     full.style.borderColor = '#6ec4bc';
     full.style.background = 'rgba(110,196,188,0.12)';
     quick.style.borderColor = 'rgba(110,196,188,0.2)';
-    quick.style.background = 'rgba(232,248,245,0.5)';
-    setTimeout(() => { goStep(3); runStep3(); }, 300);
+    quick.style.background = 'rgba(255,255,255,0.88)';
   }
 }
 
@@ -469,7 +451,6 @@ function runStep4Quick() {
     } catch(e) {}
   }
   document.getElementById('st-fix').textContent = fixes;
-  document.getElementById('st-mg').textContent = merged;
   document.getElementById('st-iss').textContent = '—';
   buildFinal();
   document.getElementById('doneMsg').textContent = `快速模式完成！共 ${blocks.length} 段，詞庫修正 ${fixes} 處，時間碼接合 ${merged} 處`;
@@ -556,7 +537,7 @@ function applySimp(idx, ts, btn) {
 // STEP 4: 詞庫修正 + 重複詞偵測
 // ============================================================
 function runStep4() {
-  // 先跑詞庫
+  // 跑詞庫
   let fixes = 0;
   blocks.forEach(b => {
     for (const [old, neu] of Object.entries(TERMS)) {
@@ -564,73 +545,152 @@ function runStep4() {
     }
   });
   if (fixes > 0) log('log4', `✅ 詞庫自動修正 ${fixes} 處`, 'ok');
-
-  // 偵測重複出現的詞（中文2字以上、英文3字以上、出現2次以上）
-  const allText = blocks.map(b => b.text).join('\n');
-
-  const wordMap = {};
-  // 只偵測英文詞（可能是人名/品牌）
-  const IGNORE_EN = new Set([
-    'ok','OK','yes','no','hi','wow','oh','ah','the','and','but','or','is','are','was','for',
-    'to','of','in','on','at','it','he','she','we','you','my','your','our','this','that',
-    'NG','BGM','CM','TV','PC','DJ','MC','VIP','YouTube','IG','FB','AI','app','APP','DX',
-    'SRT','BGM','OST','MV','EP','ft','feat','ver','Vol','No','Mr','Mrs','Ms','Dr',
-  ]);
-  (allText.match(/[A-Za-z][a-zA-Z]{1,}/g)||[]).forEach(w => {
-    if (!IGNORE_EN.has(w) && !IGNORE_EN.has(w.toLowerCase())) {
-      wordMap[w] = (wordMap[w]||0)+1;
-    }
-  });
-
-  const detected = Object.entries(wordMap)
-    .filter(([w,c]) => c >= 2)
-    .sort((a,b) => b[1]-a[1])
-    .slice(0, 20);
-
-  const list = document.getElementById('repeatList');
-  list.innerHTML = '';
-
-  if (detected.length === 0) {
-    log('log4', '— 未偵測到重複詞', 'dim');
-  } else {
-    log('log4', `偵測到 ${detected.length} 個重複詞，確認是否需要替換：`, 'info');
-    detected.forEach(([w, c]) => {
-      const row = document.createElement('div');
-      row.className = 'issue-row';
-      row.style.marginBottom = '6px';
-      row.innerHTML = `
-        <div class="issue-ts" style="font-size:0.73rem;color:#2a5550;font-weight:700;padding-top:8px;">
-          ${w}
-          <span style="color:#7dc8c0;font-size:0.62rem;display:block;margin-top:2px;">${c}次</span>
-        </div>
-        <div>
-          <input class="repeat-to" data-from="${w}"
-            placeholder="替換後（空白=保留原樣）"
-            style="width:100%;background:rgba(255,255,255,0.9);border:1.5px solid rgba(110,196,188,0.2);border-radius:8px;padding:7px 10px;font-size:0.73rem;color:#2a5550;font-weight:600;outline:none;font-family:inherit;transition:border-color 0.2s;"
-            onfocus="this.style.borderColor='#6ec4bc'" onblur="this.style.borderColor='rgba(110,196,188,0.2)'">
-        </div>
-        <div></div>`;
-      list.appendChild(row);
-    });
-  }
-
   document.getElementById('st-fix').textContent = fixes;
   document.getElementById('stp4').classList.remove('active');
   document.getElementById('stp4').classList.add('done');
 }
 
+function autoDetectNames() {
+  const IGNORE_EN = new Set([
+    'ok','OK','Ok','yes','Yes','YES','no','No','NO','hi','Hi','HI','hey','Hey',
+    'wow','Wow','oh','Oh','ah','Ah','uh','Uh','um','Um','hmm','Hmm',
+    'the','The','and','And','but','But','or','Or','is','Is','are','Are',
+    'was','Was','for','For','to','To','of','Of','in','In','on','On','at','At',
+    'it','It','he','He','she','She','we','We','you','You','my','My',
+    'your','Your','our','Our','this','This','that','That','they','They',
+    'what','What','when','When','where','Where','who','Who','how','How','why','Why',
+    'can','Can','will','Will','do','Do','did','Did','get','Get','got','Got',
+    'go','Go','come','Come','see','See','know','Know','think','Think','want','Want',
+    'look','Look','one','One','two','Two','three','Three','just','Just','like','Like',
+    'so','So','than','Than','then','Then','there','There','all','All','very','Very',
+    'not','Not','have','Have','has','Has','had','Had','been','Been','with','With',
+    'from','From','about','About','out','Out','up','Up','down','Down',
+    'me','Me','him','Him','her','Her','us','Us','them','Them',
+    'its','Its','his','His','some','Some','any','Any','more','More',
+    'well','Well','now','Now','still','Still','back','Back','even','Even',
+    'here','Here','too','Too','also','Also','really','Really','actually','Actually',
+    'already','Already','please','Please','sorry','Sorry','thank','Thank','thanks','Thanks',
+    'okay','Okay','sure','Sure','right','Right','maybe','Maybe','wait','Wait',
+    'because','Because','never','Never','always','Always','every','Every','only','Only',
+    'again','Again','need','Need','make','Make','take','Take','time','Time',
+    'way','Way','day','Day','say','Say','tell','Tell','let','Let',
+    'new','New','good','Good','great','Great','nice','Nice','last','Last',
+    'long','Long','little','Little','much','Much','many','Many','same','Same',
+    'NG','BGM','CM','TV','PC','DJ','MC','VIP','YouTube','IG','FB','AI',
+    'app','App','APP','DX','SRT','OST','MV','EP','ft','feat','ver','vol',
+    'Vol','No','Mr','Mrs','Ms','Dr','ice','Ice','are',
+  ]);
+  const allText = blocks.map(b => b.text).join('\n');
+  const wordMap = {};
+  (allText.match(/[A-Za-z][a-zA-Z]{1,}/g)||[]).forEach(w => {
+    if (!IGNORE_EN.has(w) && !IGNORE_EN.has(w.toLowerCase())) wordMap[w] = (wordMap[w]||0)+1;
+  });
+  const detected = Object.entries(wordMap).filter(([w,c]) => c >= 2).sort((a,b) => b[1]-a[1]).slice(0,20).map(([w]) => w);
+  const textarea = document.getElementById('nameInput55');
+  const existing = textarea.value.trim().split('\n').map(n=>n.trim()).filter(n=>n);
+  const merged = [...new Set([...existing, ...detected])];
+  textarea.value = merged.join('\n');
+}
+
+function scanStep4() {
+  const IGNORE_EN = new Set([
+    'ok','OK','Ok','yes','Yes','YES','no','No','NO','hi','Hi','HI','hey','Hey',
+    'wow','Wow','oh','Oh','ah','Ah','uh','Uh','um','Um','hmm','Hmm',
+    'the','The','and','And','but','But','or','Or','is','Is','are','Are',
+    'was','Was','for','For','to','To','of','Of','in','In','on','On','at','At',
+    'it','It','he','He','she','She','we','We','you','You','my','My',
+    'your','Your','our','Our','this','This','that','That','they','They',
+    'what','What','when','When','where','Where','who','Who','how','How','why','Why',
+    'can','Can','will','Will','do','Do','did','Did','get','Get','got','Got',
+    'go','Go','come','Come','see','See','know','Know','think','Think','want','Want',
+    'look','Look','one','One','two','Two','three','Three','just','Just','like','Like',
+    'so','So','than','Than','then','Then','there','There','all','All','very','Very',
+    'not','Not','have','Have','has','Has','had','Had','been','Been','with','With',
+    'from','From','about','About','out','Out','up','Up','down','Down',
+    'me','Me','him','Him','her','Her','us','Us','them','Them',
+    'its','Its','his','His','some','Some','any','Any','more','More',
+    'well','Well','now','Now','still','Still','back','Back','even','Even',
+    'here','Here','too','Too','also','Also','really','Really','actually','Actually',
+    'already','Already','please','Please','sorry','Sorry','thank','Thank','thanks','Thanks',
+    'okay','Okay','sure','Sure','right','Right','maybe','Maybe','wait','Wait',
+    'because','Because','never','Never','always','Always','every','Every','only','Only',
+    'again','Again','need','Need','make','Make','take','Take','time','Time',
+    'way','Way','day','Day','say','Say','tell','Tell','let','Let',
+    'new','New','good','Good','great','Great','nice','Nice','last','Last',
+    'long','Long','little','Little','much','Much','many','Many','same','Same',
+    'NG','BGM','CM','TV','PC','DJ','MC','VIP','YouTube','IG','FB','AI',
+    'app','App','APP','DX','SRT','OST','MV','EP','ft','feat','ver','vol',
+    'Vol','No','Mr','Mrs','Ms','Dr','ice','Ice','are',
+  ]);
+  const allText = blocks.map(b => b.text).join('\n');
+
+  // 已在人名輸入框的詞不重複列出
+  const nameInputWords = new Set(
+    (document.getElementById('nameInput55').value.trim().split('\n')||[]).map(n=>n.trim()).filter(n=>n)
+  );
+  // 英文重複詞
+  const wordMap = {};
+  (allText.match(/[A-Za-z][a-zA-Z]{1,}/g)||[]).forEach(w => {
+    if (!IGNORE_EN.has(w) && !IGNORE_EN.has(w.toLowerCase()) && !nameInputWords.has(w)) wordMap[w] = (wordMap[w]||0)+1;
+  });
+  const detected = Object.entries(wordMap).filter(([w,c]) => c >= 2).sort((a,b) => b[1]-a[1]).slice(0,20);
+
+  const list = document.getElementById('repeatList');
+  list.innerHTML = '';
+  if (detected.length > 0) {
+    const label = document.createElement('div');
+    label.style.cssText = 'font-size:0.72rem;color:#3a7872;font-weight:700;margin-bottom:8px;';
+    label.textContent = '偵測到重複出現的英文詞：';
+    list.appendChild(label);
+    detected.forEach(([w, c]) => {
+      const row = document.createElement('div');
+      row.className = 'issue-row';
+      row.style.marginBottom = '6px';
+      row.innerHTML = `
+        <div class="issue-ts" style="font-size:0.73rem;color:#2a5550;font-weight:700;padding-top:8px;">${w}<span style="color:#7dc8c0;font-size:0.62rem;display:block;margin-top:2px;">${c}次</span></div>
+        <div><input class="repeat-to" data-from="${w}" placeholder="替換後（空白=保留）"
+          style="width:100%;background:rgba(255,255,255,0.9);border:1.5px solid rgba(110,196,188,0.2);border-radius:8px;padding:7px 10px;font-size:0.73rem;color:#2a5550;font-weight:600;outline:none;font-family:inherit;"
+          onfocus="this.style.borderColor='#6ec4bc'" onblur="this.style.borderColor='rgba(110,196,188,0.2)'"></div>
+        <div></div>`;
+      list.appendChild(row);
+    });
+  }
+
+  // 人名品牌掃描
+  detectNames55();
+
+  // scanResults integrated
+}
+
 function applyStep4AndContinue() {
   let applied = 0;
+
+  // 重複詞替換
   document.querySelectorAll('.repeat-to').forEach(input => {
     const from = input.dataset.from;
     const to = input.value.trim();
-    if (from && to) {
-      blocks.forEach(b => { b.text = b.text.split(from).join(to); });
-      applied++;
-    }
+    if (from && to) { blocks.forEach(b => { b.text = b.text.split(from).join(to); }); applied++; }
   });
+
+  // 人名品牌替換
+  document.querySelectorAll('.name-to-55').forEach(input => {
+    const from = input.dataset.from;
+    const to = input.value.trim();
+    if (from && to) { blocks.forEach(b => { b.text = b.text.split(from).join(to); }); applied++; }
+  });
+
   if (applied > 0) log('log4', `✅ 替換 ${applied} 個詞`, 'ok');
-  goStep(5); runStep5();
+
+  // 時間碼接合（靜默背景執行）
+  let merged = 0;
+  for (let i = 0; i < blocks.length-1; i++) {
+    try {
+      const gap = tsToMs(blocks[i+1].start) - tsToMs(blocks[i].end);
+      if (gap > 0 && gap <= 300) { blocks[i].end = blocks[i+1].start; merged++; }
+    } catch(e) {}
+  }
+
+  goStep(5); runStep6();
 }
 
 // ============================================================
@@ -644,7 +704,6 @@ function runStep5() {
       if (gap > 0 && gap <= 300) { blocks[i].end = blocks[i+1].start; merged++; }
     } catch(e) {}
   }
-  document.getElementById('st-mg').textContent = merged;
   log('log5', `✅ 接合 ${merged} 處間距`, merged > 0 ? 'ok' : 'dim');
   document.getElementById('stp5').classList.remove('active');
   document.getElementById('stp5').classList.add('done');
@@ -654,19 +713,28 @@ function runStep5() {
 // STEP 5.5: 人名品牌批次替換
 function runStep55() {
   document.getElementById('nameResult55').innerHTML = '';
-  document.getElementById('nameApply55').style.display = 'none';
 }
 
 function detectNames55() {
   const input = document.getElementById('nameInput55').value.trim();
-  if (!input) { goStep(6); runStep6(); return; }
+  if (!input) return;
   const names = input.split('\n').map(n=>n.trim()).filter(n=>n);
   const result = document.getElementById('nameResult55');
   result.innerHTML = '';
-
+  if (names.length > 0) {
+    const label = document.createElement('div');
+    label.style.cssText = 'font-size:0.72rem;color:#3a7872;font-weight:700;margin-bottom:8px;margin-top:4px;';
+    label.textContent = '人名・品牌掃描結果：';
+    result.appendChild(label);
+  }
   names.forEach(name => {
     const allText = blocks.map(b=>b.text).join('\n');
-    const count = allText.split(name).length - 1;
+    // 大小寫不敏感計算次數
+    const regex = new RegExp(name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+    const matches = allText.match(regex);
+    const count = matches ? matches.length : 0;
+    // 找實際出現的形式（原字幕裡的寫法）
+    const actualForm = matches ? matches[0] : name;
     const row = document.createElement('div');
     row.className = 'issue-row';
     row.style.marginBottom = '6px';
@@ -676,7 +744,7 @@ function detectNames55() {
         <span style="color:#7dc8c0;font-size:0.62rem;display:block;margin-top:2px;">${count > 0 ? count+'次' : '未找到'}</span>
       </div>
       <div>
-        <input class="name-to-55" data-from="${name}"
+        <input class="name-to-55" data-from="${actualForm}"
           placeholder="${count > 0 ? '替換後（空白=保留）' : '字幕中未找到'}"
           ${count === 0 ? 'disabled' : ''}
           style="width:100%;background:rgba(255,255,255,0.9);border:1.5px solid rgba(110,196,188,0.2);border-radius:8px;padding:7px 10px;font-size:0.73rem;color:#2a5550;font-weight:600;outline:none;font-family:inherit;opacity:${count===0?'0.4':'1'};">
@@ -685,19 +753,9 @@ function detectNames55() {
     result.appendChild(row);
   });
 
-  document.getElementById('nameApply55').style.display = 'flex';
 }
 
-function applyNames55() {
-  document.querySelectorAll('.name-to-55').forEach(input => {
-    const from = input.dataset.from;
-    const to = input.value.trim();
-    if (from && to) {
-      blocks.forEach(b => { b.text = b.text.split(from).join(to); });
-    }
-  });
-  goStep(6); runStep6();
-}
+
 
 // STEP 6: 二次掃描
 // ============================================================
@@ -791,14 +849,11 @@ function runStep6() {
     const isIt = s.tag === 'it';
     const quickBtns = isHe
       ? `<button class="btn-sm" data-idx="${idx}" data-from="他" data-to="它" onclick="quickReplaceBtn(this)" style="background:rgba(255,235,200,0.9);border-color:rgba(200,150,60,0.4);color:#c07830;">它</button>
-         <button class="btn-sm" onclick="ignoreIssue(${idx}, this)">他</button>
          <button class="btn-sm" onclick="toggleEdit(\`edit6_${idx}\`, this)" style="color:#7db8b2;">手動改</button>`
       : isIt
       ? `<button class="btn-sm" data-idx="${idx}" data-from="它" data-to="他" onclick="quickReplaceBtn(this)" style="background:rgba(200,230,255,0.9);border-color:rgba(80,150,220,0.3);color:#3878b8;">他</button>
-         <button class="btn-sm" onclick="ignoreIssue(${idx}, this)">它</button>
          <button class="btn-sm" onclick="toggleEdit(\`edit6_${idx}\`, this)" style="color:#7db8b2;">手動改</button>`
-      : `<button class="btn-sm" onclick="applyIssue(${idx}, this)">套用修改</button>
-         <button class="btn-sm" onclick="ignoreIssue(${idx}, this)">忽略</button>`;
+      : `<button class="btn-sm" onclick="applyIssue(${idx}, this)">套用修改</button>`;
 
     div.innerHTML = `
       <div class="issue-ts">${s.ts}</div>
@@ -811,7 +866,7 @@ function runStep6() {
           ${isHe || isIt ? `<button class="btn-sm" onclick="applyIssue(${idx}, this)" style="display:none;" id="applyBtn${idx}">套用</button>` : ''}
         </div>
       </div>
-      <span class="issue-tag ${tagClass}">${s.tag === 'simp' ? '簡體' : s.tag === 'pronoun' ? '代詞' : s.tag === 'name' ? '人名/品牌' : s.tag === 'he' ? '他→它？' : s.tag === 'it' ? '它→他？' : '確認'}</span>`;
+      <span class="issue-tag ${tagClass}">${s.tag === 'simp' ? '簡體字' : s.tag === 'pronoun' ? '代詞' : s.tag === 'name' ? '人名/品牌' : s.tag === 'he' ? '他→它？' : s.tag === 'it' ? '它→他？' : '中英混合'}</span>`;
     list.appendChild(div);
   });
 
@@ -853,34 +908,31 @@ function quickReplaceBtn(btn) {
 function quickReplace(idx, fromChar, toChar, btn) {
   const s = suspects[idx];
   blocks.forEach(b => {
-    if (b.start === s.ts && b.text.includes(s.text)) {
-      const fixed = s.text.replace(new RegExp(fromChar, 'g'), toChar);
-      b.text = b.text.split(s.text).join(fixed);
+    if (b.start === s.ts) {
+      b.text = b.text.replace(new RegExp(fromChar, 'g'), toChar);
     }
   });
-  btn.textContent = '✓ 已套用';
-  btn.classList.add('applied');
-  btn.closest('.issue-row').style.opacity = '0.4';
+  btn.textContent = '✓';
+  setTimeout(() => { btn.textContent = btn.dataset.to || toChar; }, 1000);
 }
 
 function applyIssue(idx, btn) {
   const val = document.getElementById('edit6_' + idx).value;
   const s = suspects[idx];
+  // 每次以最新的 text 欄位值套用（支援重複修改）
+  const currentText = document.getElementById('edit6_' + idx).defaultValue || s.text;
   blocks.forEach(b => {
-    if (b.start === s.ts && b.text.includes(s.text)) {
-      b.text = b.text.split(s.text).join(val);
+    if (b.start === s.ts) {
+      b.text = b.text.split(currentText).join(val);
     }
   });
-  btn.textContent = '✓ 已套用';
-  btn.classList.add('applied');
+  // 更新 defaultValue 讓下次再改可以正確替換
+  document.getElementById('edit6_' + idx).defaultValue = val;
+  btn.textContent = '✓ 套用';
+  setTimeout(() => { btn.textContent = '套用修改'; }, 1000);
 }
 
-function ignoreIssue(idx, btn) {
-  btn.textContent = '已忽略';
-  btn.classList.add('applied');
-  const row = btn.closest('.issue-row');
-  row.style.opacity = '0.35';
-}
+
 
 
 
