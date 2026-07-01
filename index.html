@@ -823,8 +823,11 @@ function runStep6() {
           suspects.push({ ts: block.start, text: line, tag: 'it', hint: '確認「它」是否應為「他」（指人）', blockRef: block });
         }
       }
-      // 中英混合
-      if (/[a-zA-Z]{3,}/.test(line) && /[\u4e00-\u9fff]/.test(line)) {
+      // 中英混合（忽略常見英文單字）
+      const MIXED_IGNORE = new Set(['Email','email','Airbnb','iPhone','iPad','YouTube','Instagram','Facebook','LINE','Google','Apple','Netflix','Spotify','Amazon','Discord','Notion','Slack','Zoom','TikTok','Uber','PayPal','ChatGPT','Claude','Nike','Adidas','IKEA','Uniqlo','Windows','Android','WiFi','Wifi','OK','BGM','MV','EP','DJ','MC','VIP','NG','AI','App','APP','PC','TV','CM']);
+      const engWords = line.match(/[A-Za-z]{3,}/g) || [];
+      const hasUnknownEng = engWords.some(w => !MIXED_IGNORE.has(w) && !MIXED_IGNORE.has(w.toLowerCase()));
+      if (hasUnknownEng && /[\u4e00-\u9fff]/.test(line)) {
         if (!suspects.find(s => s.ts === block.start && s.text === line)) {
           suspects.push({ ts: block.start, text: line, tag: 'mixed', hint: '中英混合，確認辨識是否正確', blockRef: block });
         }
