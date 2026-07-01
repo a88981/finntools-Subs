@@ -854,10 +854,10 @@ function runStep6() {
     const isIt = s.tag === 'it';
     const quickBtns = isHe
       ? `<button class="btn-sm" data-idx="${idx}" data-from="他" data-to="它" onclick="quickReplaceBtn(this)" style="background:rgba(255,235,200,0.9);border-color:rgba(200,150,60,0.4);color:#c07830;">它</button>
-         <button class="btn-sm" onclick="toggleEdit(\`edit6_${idx}\`, this)" style="color:#7db8b2;">手動修正</button>`
+         <button class="btn-sm" onclick="toggleEdit(\`edit6_${idx}\`, this)" style="color:#7db8b2;">手動修改</button>`
       : isIt
       ? `<button class="btn-sm" data-idx="${idx}" data-from="它" data-to="他" onclick="quickReplaceBtn(this)" style="background:rgba(200,230,255,0.9);border-color:rgba(80,150,220,0.3);color:#3878b8;">他</button>
-         <button class="btn-sm" onclick="toggleEdit(\`edit6_${idx}\`, this)" style="color:#7db8b2;">手動修正</button>`
+         <button class="btn-sm" onclick="toggleEdit(\`edit6_${idx}\`, this)" style="color:#7db8b2;">手動修改</button>`
       : `<button class="btn-sm" onclick="applyIssue(${idx}, this)">套用修改</button>`;
 
     div.innerHTML = `
@@ -865,7 +865,7 @@ function runStep6() {
       <div>
         <div class="issue-text">${s.text}</div>
         <div style="font-size:0.62rem;color:#7db8b2;margin-top:3px;">${s.hint}</div>
-        <input class="issue-edit show" id="edit6_${idx}" value="${s.text}" placeholder="修正後的文字">
+        <input class="issue-edit ${!isHe && !isIt ? 'show' : ''}" id="edit6_${idx}" value="${s.text}" placeholder="修正後的文字">
         <div class="issue-actions">
           ${quickBtns}
           ${isHe || isIt ? `<button class="btn-sm" onclick="applyIssue(${idx}, this)" style="display:none;" id="applyBtn${idx}">套用</button>` : ''}
@@ -894,7 +894,7 @@ function toggleEdit(editId, btn) {
   if (input.classList.contains('show')) {
     input.classList.remove('show');
     if (applyBtn) applyBtn.style.display = 'none';
-    btn.textContent = '手動修正';
+    btn.textContent = '手動修改';
   } else {
     input.classList.add('show');
     if (applyBtn) applyBtn.style.display = 'inline-block';
@@ -1158,9 +1158,11 @@ function renderCombinedList(combined) {
       const isHe = s.tag === 'he';
       const isIt = s.tag === 'it';
       const quickBtns = isHe
-        ? `<button class="btn-sm" data-idx="${rIdx}" data-from="他" data-to="它" onclick="quickReplaceBtn(this)" style="background:rgba(255,235,200,0.9);border-color:rgba(200,150,60,0.4);color:#c07830;">它</button>`
+        ? `<button class="btn-sm" data-idx="${rIdx}" data-from="他" data-to="它" onclick="quickReplaceBtn(this)" style="background:rgba(255,235,200,0.9);border-color:rgba(200,150,60,0.4);color:#c07830;">它</button>
+           <button class="btn-sm" onclick="toggleEdit('edit6_${rIdx}', this)" style="color:#7db8b2;">手動修改</button>`
         : isIt
-        ? `<button class="btn-sm" data-idx="${rIdx}" data-from="它" data-to="他" onclick="quickReplaceBtn(this)" style="background:rgba(200,230,255,0.9);border-color:rgba(80,150,220,0.3);color:#3878b8;">他</button>`
+        ? `<button class="btn-sm" data-idx="${rIdx}" data-from="它" data-to="他" onclick="quickReplaceBtn(this)" style="background:rgba(200,230,255,0.9);border-color:rgba(80,150,220,0.3);color:#3878b8;">他</button>
+           <button class="btn-sm" onclick="toggleEdit('edit6_${rIdx}', this)" style="color:#7db8b2;">手動修改</button>`
         : `<button class="btn-sm" onclick="applyIssue(${rIdx}, this)">套用修改</button>`;
       div.innerHTML = `
         <div class="issue-ts">${s.ts}</div>
