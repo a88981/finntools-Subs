@@ -15,7 +15,7 @@ body {
   padding: 32px 20px 80px;
   display: flex; flex-direction: column; align-items: center;
 }
-header { text-align: center; margin-bottom: 28px; }
+header { text-align: center; margin-bottom: 12px; }
 header h1 { font-size: 1.5rem; font-weight: 800; color: #2a5550; letter-spacing: 0.04em; margin-bottom: 6px; }
 header p { font-size: 0.75rem; color: #5ab5ac; font-weight: 700; letter-spacing: 0.08em; }
 .wrap { width: 100%; max-width: 820px; display: flex; flex-direction: column; gap: 16px; }
@@ -92,6 +92,11 @@ textarea.paste-area::placeholder { color: #98d0ca; }
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: rgba(110,196,188,0.3); border-radius: 4px; }
+.tooltip-wrap { position: relative; display: inline-flex; align-items: center; }
+.tooltip-icon { width: 16px; height: 16px; border-radius: 50%; border: 1.5px solid #7dc8c0; color: #7dc8c0; font-size: 0.6rem; font-weight: 800; display: inline-flex; align-items: center; justify-content: center; cursor: help; margin-left: 5px; flex-shrink: 0; }
+.tooltip-box { display: none; position: absolute; top: 24px; left: 0; background: #2a5550; color: #e8f8f5; font-size: 0.72rem !important; font-weight: 600; line-height: 2; border-radius: 10px; padding: 12px 16px; width: 240px; z-index: 100; box-shadow: 0 4px 16px rgba(0,0,0,0.15); pointer-events: none; }
+.tooltip-box * { font-size: 0.72rem !important; }
+.tooltip-wrap:hover .tooltip-box { display: block; }
 </style>
 </head>
 </head>
@@ -112,6 +117,10 @@ textarea.paste-area::placeholder { color: #98d0ca; }
 </p>
 </header>
 
+<div style="width:100%;max-width:820px;background:rgba(255,255,255,0.7);border:1.5px solid rgba(110,196,188,0.2);border-radius:12px;padding:10px 16px;margin-bottom:14px;font-size:0.72rem;color:#5a8a85;line-height:1.8;text-align:center;">
+  ⚠ 本工具為<strong>輔助工具</strong>，結果僅供參考。字幕最終仍需由人工確認，請勿完全依賴自動修正結果。
+</div>
+
 <div class="wrap">
 
   <!-- Step indicator -->
@@ -128,16 +137,31 @@ textarea.paste-area::placeholder { color: #98d0ca; }
     <div class="card-title">步驟一</div>
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:16px;">
       <div id="modeQuick" onclick="selectMode('quick')" style="background:rgba(255,255,255,0.88);border:2px solid rgba(110,196,188,0.2);border-radius:12px;padding:14px 16px;cursor:pointer;transition:all 0.2s;">
-        <div style="font-size:0.88rem;font-weight:800;color:#2a5550;margin-bottom:5px;">⚡ 快速模式</div>
-        <div style="font-size:0.7rem;color:#7dc8c0;line-height:1.6;">詞庫修正・時間碼接合・直接下載</div>
+        <div style="display:flex;align-items:center;" onclick="event.stopPropagation()">
+          <span style="font-size:0.88rem;font-weight:800;color:#2a5550;" onclick="selectMode('quick')">⚡ 快速模式</span>
+          <span class="tooltip-wrap">
+            <span class="tooltip-icon">?</span>
+            <span class="tooltip-box">時間碼接合<br>他/它自動修正</span>
+          </span>
+        </div>
       </div>
       <div id="modeFull" onclick="selectMode('full')" style="background:rgba(110,196,188,0.12);border:2px solid #6ec4bc;border-radius:12px;padding:14px 16px;cursor:pointer;transition:all 0.2s;">
-        <div style="font-size:0.88rem;font-weight:800;color:#2a5550;margin-bottom:5px;">🔍 完整模式</div>
-        <div style="font-size:0.7rem;color:#7dc8c0;line-height:1.6;">簡字檢查・人名品牌確認・可疑處人工校對</div>
+        <div style="display:flex;align-items:center;" onclick="event.stopPropagation()">
+          <span style="font-size:0.88rem;font-weight:800;color:#2a5550;" onclick="selectMode('full')">🔍 完整模式</span>
+          <span class="tooltip-wrap">
+            <span class="tooltip-icon">?</span>
+            <span class="tooltip-box">時間碼接合<br>他/它自動修正<br>可疑處人工確認</span>
+          </span>
+        </div>
       </div>
       <div id="modeAI" onclick="selectMode('ai')" style="background:rgba(255,255,255,0.88);border:2px solid rgba(110,196,188,0.2);border-radius:12px;padding:14px 16px;cursor:pointer;transition:all 0.2s;">
-        <div style="font-size:0.88rem;font-weight:800;color:#2a5550;margin-bottom:5px;">✨ AI 模式</div>
-        <div style="font-size:0.7rem;color:#7dc8c0;line-height:1.6;">AI 生成 Prompt，Claude 輔助修正字幕</div>
+        <div style="display:flex;align-items:center;" onclick="event.stopPropagation()">
+          <span style="font-size:0.88rem;font-weight:800;color:#2a5550;" onclick="selectMode('ai')">✨ AI 模式</span>
+          <span class="tooltip-wrap">
+            <span class="tooltip-icon">?</span>
+            <span class="tooltip-box">時間碼接合<br>他/它自動修正<br>可疑處人工確認<br>Claude 輔助判斷辨識<br><span style="color:#a8e6df;">⚠ 需使用到 Claude</span></span>
+          </span>
+        </div>
       </div>
     </div>
     <div class="divider"></div>
@@ -191,7 +215,7 @@ textarea.paste-area::placeholder { color: #98d0ca; }
     <div id="aiReplySection" style="display:none;">
       <div style="font-size:0.72rem;font-weight:800;color:#4a8bc4;margin-bottom:8px;letter-spacing:0.06em;">把 Claude 的回覆貼在這裡</div>
       <textarea id="aiReplyText" class="paste-area" placeholder='貼上 Claude 回覆的 JSON' style="min-height:100px;font-size:0.68rem;"></textarea>
-      <div class="row" style="margin-top:8px;">
+      <div class="row" style="margin-top:8px;justify-content:center;gap:12px;">
         <button class="btn" onclick="applyAIReplyAndContinue()">套用並查看結果 →</button>
         <button class="btn-ghost" onclick="skipAIAndContinue()">略過，直接看掃描結果</button>
       </div>
@@ -202,17 +226,18 @@ textarea.paste-area::placeholder { color: #98d0ca; }
   <div class="card" id="c4">
     <div class="card-title">步驟二 — 字詞確認與修正</div>
     <div class="info-box" style="margin-bottom:10px;font-size:0.72rem;line-height:1.8;">
-      點「<strong>自動辨識</strong>」讓工具找出字幕裡重複出現的詞，或自己輸入想確認的人名品牌。<br>
-      確認後點「<strong>修正</strong>」，結果會列出來，右邊填替換後的詞即可。<br>
-      <span style="color:#a0c8c4;">不需要修正的詞直接刪掉，或留著空白不填都可以。</span>
+      輸入字幕裡想批次替換的詞（一行一個），點「<strong>修正</strong>」後填入替換後的詞，工具會<strong>全部一起換掉</strong>。<br>
+      也可以點「<strong>自動辨識</strong>」讓工具自動找出重複出現的英文詞。<br>
+      <span style="color:#a0c8c4;">不需要替換的直接留空即可。</span>
     </div>
     <textarea id="nameInput55" class="paste-area" style="min-height:140px;margin-bottom:8px;" placeholder="輸入想確認的人名或品牌名（一行一個）&#10;例如：Kiki&#10;阿圓&#10;BEIGY&#10;&#10;也可以點「自動辨識」讓工具幫你找"></textarea>
-    <div class="row" style="margin-top:0;margin-bottom:4px;">
-      <button class="btn-ghost" onclick="autoDetectNames()">自動辨識</button>
-      <button class="btn" onclick="detectNames55()">修正 →</button>
+    <div class="row" style="margin-top:0;margin-bottom:4px;justify-content:flex-start;">
+      <button class="btn-ghost" onclick="autoDetectNames()" style="font-size:0.7rem;padding:7px 14px;color:#7dc8c0;border-color:rgba(110,196,188,0.2);">自動辨識</button>
+      <button class="btn-ghost" onclick="detectNames55()" style="font-size:0.7rem;padding:7px 14px;color:#4aada5;border-color:rgba(110,196,188,0.4);">修正 →</button>
     </div>
     <div id="nameResult55" style="display:flex;flex-direction:column;gap:6px;margin-top:8px;"></div>
-    <div class="row" style="margin-top:14px;">
+    <div class="row" style="margin-top:14px;justify-content:center;gap:12px;">
+      <button class="btn-ghost" onclick="location.reload()">↺ 重新開始</button>
       <button class="btn" onclick="applyStep4AndContinue()">套用並繼續 →</button>
     </div>
   </div>
@@ -243,7 +268,7 @@ textarea.paste-area::placeholder { color: #98d0ca; }
       <div class="divider"></div>
       <div style="font-size:0.72rem;font-weight:800;color:#4a8bc4;margin-bottom:8px;letter-spacing:0.06em;">② 把 Claude 的回覆貼在這裡</div>
       <textarea id="aiReplyText" class="paste-area" placeholder='把 Claude 回覆的 JSON 貼在這裡，例如：&#10;{"issues":[{"num":3,"time":"00:00:12,500","original":"你你好","type":"重複字","suggestion":"你好","desc":"重複了「你」"}]}' style="min-height:120px;font-size:0.68rem;"></textarea>
-      <div class="row" style="margin-top:8px;">
+      <div class="row" style="margin-top:8px;justify-content:center;">
         <button class="btn" onclick="applyAIReply()">套用 AI 結果 →</button>
         <button class="btn-ghost" onclick="document.getElementById('aiPromptBox').style.display='none'">收起</button>
       </div>
@@ -255,13 +280,15 @@ textarea.paste-area::placeholder { color: #98d0ca; }
 
     <div id="noIssueSection" style="display:none;">
       <div class="divider"></div>
-      <div class="row">
+      <div class="row" style="justify-content:center;gap:12px;">
+        <button class="btn-ghost" onclick="location.reload()">↺ 重新開始</button>
         <button class="btn-green" onclick="showDownload()">✅ 無可疑處，直接下載</button>
       </div>
     </div>
     <div id="hasIssueDownload" style="display:none;">
       <div class="divider"></div>
-      <div class="row">
+      <div class="row" style="justify-content:center;gap:12px;">
+        <button class="btn-ghost" onclick="location.reload()">↺ 重新開始</button>
         <button class="btn-green" onclick="showDownload()">完成修改，下載 →</button>
       </div>
     </div>
@@ -274,9 +301,9 @@ textarea.paste-area::placeholder { color: #98d0ca; }
       <div style="font-size:2rem;margin-bottom:10px;">✅</div>
       <div style="color:#4ade80;font-size:0.85rem;" id="doneMsg"></div>
     </div>
-    <div class="row" style="justify-content:center;">
+    <div class="row" style="justify-content:center;gap:16px;">
+      <button class="btn-ghost" onclick="location.reload()">↺ 重新開始</button>
       <button class="btn-green" onclick="download()">⬇ 下載修正後 SRT</button>
-      <button class="btn-ghost" onclick="location.reload()">重新處理</button>
     </div>
   </div>
 
@@ -295,7 +322,7 @@ const TERMS = {
   '理论':'理論','影响':'影響','希腊':'希臘','明显':'明顯',
   '周围':'周圍','夸张':'誇張','组织':'組織','对不对':'對不對',
   '然后':'然後','超级':'超級','攻击':'攻擊','之后':'之後',
-  '哎':'欸','诶':'欸',
+  '哎':'欸','诶':'欸','哈嘍':'哈囉','拜拜':'掰掰',
   '以后':'以後','什么':'什麼','怎么':'怎麼','那么':'那麼',
 };
 
@@ -335,6 +362,8 @@ function goStep(n) {
   });
   if (n > 2) {
     document.getElementById('statsBox').style.display = 'block';
+  } else if (n === 1) {
+    document.getElementById('statsBox').style.display = 'none';
   }
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
@@ -542,11 +571,14 @@ function runStep4() {
   });
   if (fixes > 0) log('log4', `✅ 詞庫自動修正 ${fixes} 處`, 'ok');
   document.getElementById('st-fix').textContent = fixes;
-  document.getElementById('stp4').classList.remove('active');
-  document.getElementById('stp4').classList.add('done');
+  if(document.getElementById('stp4')){document.getElementById('stp4').classList.remove('active');document.getElementById('stp4').classList.add('done');}
 }
 
 function autoDetectNames() {
+  if (!blocks || blocks.length === 0) {
+    alert('請先上傳並處理 SRT 檔案！');
+    return;
+  }
   const IGNORE_EN = new Set([
     'ok','OK','Ok','yes','Yes','YES','no','No','NO','hi','Hi','HI','hey','Hey',
     'wow','Wow','oh','Oh','ah','Ah','uh','Uh','um','Um','hmm','Hmm',
@@ -871,7 +903,7 @@ function runStep6() {
         <input class="issue-edit ${!isHe && !isIt ? 'show' : ''}" id="edit6_${idx}" value="${s.text}" placeholder="修正後的文字">
         <div class="issue-actions">
           ${quickBtns}
-          ${isHe || isIt ? `<button class="btn-sm" onclick="applyIssue(${idx}, this)" style="display:none;" id="applyBtn${idx}">套用</button>` : ''}
+          ${isHe || isIt ? `<button class="btn-sm" onclick="applyIssue(${idx}, this)" style="display:none;" id="applyBtn${idx}">套用修改</button>` : ''}
         </div>
       </div>
       <span class="issue-tag ${tagClass}">${s.tag === 'simp' ? '簡體字' : s.tag === 'pronoun' ? '代詞' : s.tag === 'name' ? '人名/品牌' : s.tag === 'he' ? '他→它？' : s.tag === 'it' ? '它→他？' : '中英混合'}</span>`;
@@ -894,14 +926,10 @@ function runStep6() {
 function toggleEdit(editId, btn) {
   const input = document.getElementById(editId);
   const applyBtn = document.getElementById('applyBtn' + editId.replace('edit6_',''));
-  if (input.classList.contains('show')) {
-    input.classList.remove('show');
-    if (applyBtn) applyBtn.style.display = 'none';
-    btn.textContent = '手動修改';
-  } else {
+  if (!input.classList.contains('show')) {
     input.classList.add('show');
     if (applyBtn) applyBtn.style.display = 'inline-block';
-    btn.textContent = '收起';
+    btn.style.display = 'none'; // 手動修改按鈕隱藏
     input.focus();
   }
 }
@@ -921,7 +949,7 @@ function quickReplace(idx, fromChar, toChar, btn) {
     }
   });
   btn.textContent = '✓';
-  setTimeout(() => { btn.textContent = btn.dataset.to || toChar; }, 1000);
+  btn.classList.add('applied');
 }
 
 function applyIssue(idx, btn) {
@@ -936,8 +964,14 @@ function applyIssue(idx, btn) {
   });
   // 更新 defaultValue 讓下次再改可以正確替換
   document.getElementById('edit6_' + idx).defaultValue = val;
-  btn.textContent = '✓ 套用';
-  setTimeout(() => { btn.textContent = '套用修改'; }, 1000);
+  btn.textContent = '✓ 套用修改';
+  btn.classList.add('applied');
+  // 監聽輸入框變更，變更後跳回「套用修改」
+  const input = document.getElementById('edit6_' + idx);
+  input.oninput = () => {
+    btn.textContent = '套用修改';
+    btn.classList.remove('applied');
+  };
 }
 
 
@@ -1186,7 +1220,7 @@ function renderCombinedList(combined) {
 
 function resetAIBtn(idx) {
   const btn = document.querySelector(`#airow_${idx} .btn-sm`);
-  if (btn) { btn.textContent = '套用修改'; btn.classList.remove('applied'); }
+  if (btn) { btn.textContent = '✓ 套用修改'; btn.classList.add('applied'); }
 }
 
 function applyAI(idx, time, original, btn) {
@@ -1199,7 +1233,8 @@ function applyAI(idx, time, original, btn) {
     if (b.start === time) b.text = b.text.split(prevText).join(newText);
   });
   input.dataset.applied = newText;
-  btn.textContent = '✓ 套用';
+  btn.textContent = '✓ 套用修改';
+  btn.classList.add('applied');
   btn.classList.add('applied');
 
 }
