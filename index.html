@@ -200,7 +200,6 @@ textarea.paste-area::placeholder { color: #98d0ca; }
       <span style="color:#4a8bc4;">✦ AI 會自動偵測：重複字詞・明顯錯字・漏字・人名品牌不同寫法</span>
     </div>
 
-    
     <div style="margin-bottom:14px;">
       <textarea id="aiPromptText" readonly style="background:rgba(74,139,196,0.06);border:1.5px solid rgba(74,139,196,0.2);border-radius:12px;color:#2a4060;font-size:0.68rem;line-height:1.7;min-height:140px;outline:none;padding:12px 14px;resize:vertical;width:100%;font-family:inherit;font-weight:600;display:none;margin-bottom:10px;"></textarea>
       <div style="display:flex;gap:10px;align-items:center;">
@@ -242,9 +241,14 @@ textarea.paste-area::placeholder { color: #98d0ca; }
     <div class="card-title">步驟三 — 批次替換確認</div>
     <div class="info-box" style="margin-bottom:14px;font-size:0.72rem;line-height:1.8;">
       以下是 AI 偵測到的專有名詞（APP名/店名/人名等）。<br>
-      確認拼法是否正確，需要替換的點「<strong>一鍵全換</strong>」，不需要的直接跳過。<br>
-      也可以手動新增替換規則。
+      確認後修改替換詞，不需要的直接跳過，完成後點「確認完成，繼續」。<br>出現一次的詞會在下一步驟個別確認。<br>下方搜尋欄可手動新增中文詞彙。
     </div>
+    <div id="autoTagListAI" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;"></div>
+    <div style="display:flex;gap:8px;margin-bottom:10px;align-items:center;">
+      <input id="searchWordInputAI" type="text" placeholder="可手動輸入中文品牌名、人名，按 Enter 新增後會顯示全文次數與替換欄位。" style="flex:1;background:rgba(255,255,255,0.9);border:1.5px solid rgba(110,196,188,0.35);border-radius:100px;padding:8px 16px;font-size:0.78rem;color:#2a5550;outline:none;font-family:inherit;" onkeydown="if(event.key==='Enter')addSearchWordAI()">
+      <button class="btn-ghost" onclick="addSearchWordAI()" style="font-size:0.7rem;padding:7px 16px;color:#4aada5;border-color:rgba(110,196,188,0.4);white-space:nowrap;">搜尋</button>
+    </div>
+    <div id="fullBatchListAI" style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px;"></div>
     <div id="batchListNew" style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px;"></div>
     <div id="batchEmptyNew" style="display:none;font-size:0.72rem;color:#a0c8c4;padding:8px 0;">AI 未偵測到需確認的專有名詞</div>
     <div id="manualBatchRowsNew" style="display:flex;flex-direction:column;gap:6px;margin-top:8px;margin-bottom:8px;"></div>
@@ -284,7 +288,7 @@ textarea.paste-area::placeholder { color: #98d0ca; }
       <div style="font-size:0.72rem;font-weight:800;color:#4a8bc4;margin-bottom:8px;letter-spacing:0.06em;">② 把 Claude 的回覆貼在這裡</div>
       <textarea id="aiReplyText" class="paste-area" placeholder='把 Claude 回覆的 JSON 貼在這裡，例如：&#10;{"issues":[{"num":3,"time":"00:00:12,500","original":"你你好","type":"重複字","suggestion":"你好","desc":"重複了「你」"}]}' style="min-height:120px;font-size:0.68rem;"></textarea>
       <div class="row" style="margin-top:8px;justify-content:center;">
-        <button class="btn" onclick="applyAIReply()">套用 AI 結果 →</button>
+        <button class="btn" onclick="applyAIReplyAndContinue()">套用並查看結果 →</button>
         <button class="btn-ghost" onclick="document.getElementById('aiPromptBox').style.display='none'">收起</button>
       </div>
     </div>
@@ -622,6 +626,79 @@ function runStep4() {
   if(document.getElementById('stp4')){document.getElementById('stp4').classList.remove('active');document.getElementById('stp4').classList.add('done');}
 }
 
+function autoDetectAndRenderAI() {
+  if (!blocks || blocks.length === 0) return;
+  // 複用 autoDetectAndRender 的邏輯但輸出到 AI 的 tag list
+  const IGNORE_EN = new Set([
+    'ok','OK','Ok','okay','Okay','yes','Yes','YES','no','No','NO',
+    'hi','Hi','HI','hey','Hey','HEY','hello','Hello','bye','Bye',
+    'wow','Wow','WOW','oh','Oh','OH','ah','Ah','AH','uh','Uh','UH',
+    'um','Um','UM','hmm','Hmm','hm','Hm','er','Er',
+    'yeah','Yeah','YEAH','yep','Yep','nope','Nope','sure','Sure',
+    'omg','OMG','wtf','WTF','lol','LOL',
+    'the','The','and','And','but','But','or','Or','so','So',
+    'is','Is','are','Are','was','Was','be','Be','been','Been',
+    'for','For','to','To','of','Of','in','In','on','On','at','At',
+    'it','It','he','He','she','She','we','We','you','You','they','They',
+    'my','My','your','Your','our','Our','his','His','her','Her','its','Its',
+    'this','This','that','That','these','These','those','Those',
+    'a','an','as','if','do','go','get','got','let','can','will','just','not',
+    'la','La','LA','don','Don','da','Da','de','De',
+    'NG','BGM','CM','TV','PC','DJ','MC','VIP','AI','app','App','APP','DX',
+    'SRT','OST','MV','EP','ft','feat','ver','vol','Vol','No','Mr','Mrs','Ms','Dr',
+    'YouTube','Youtube','IG','FB','LINE','Line','Google','Apple','iPhone','iPad',
+    'Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday',
+    'January','February','March','April','May','June','July','August','September','October','November','December',
+  ]);
+  const allText = blocks.map(b=>b.text).join('\n');
+  const enMap = {};
+  (allText.match(/[A-Za-z][a-zA-Z]{1,}/g)||[]).forEach(w => {
+    const key = w.toLowerCase();
+    if (!IGNORE_EN.has(w) && !IGNORE_EN.has(key)) {
+      if (!enMap[key]) enMap[key] = { count: 0, first: w };
+      enMap[key].count++;
+    }
+  });
+  const items = Object.entries(enMap)
+    .filter(([,v]) => v.count >= 4)
+    .sort((a,b) => b[1].count - a[1].count)
+    .slice(0, 20)
+    .map(([,v]) => v.first);
+
+  const tagList = document.getElementById('autoTagListAI');
+  if (!tagList) return;
+  tagList.innerHTML = '';
+  if (items.length === 0) {
+    tagList.innerHTML = '<div style="font-size:0.78rem;color:#7a9e9b;padding:4px 0;">未偵測到重複出現的英文詞</div>';
+    return;
+  }
+  items.forEach(word => {
+    const tag = document.createElement('button');
+    tag.textContent = word;
+    tag.setAttribute('data-tag-word', word);
+    tag.style.cssText = 'background:rgba(110,196,188,0.15);border:1.5px solid rgba(110,196,188,0.4);border-radius:100px;padding:5px 14px;font-size:0.75rem;font-weight:700;color:#2a5550;cursor:pointer;font-family:inherit;transition:all 0.15s;';
+    tag.onmouseenter = () => { if (!tag.classList.contains('active')) tag.style.background = 'rgba(110,196,188,0.28)'; };
+    tag.onmouseleave = () => { if (!tag.classList.contains('active')) tag.style.background = 'rgba(110,196,188,0.15)'; };
+    tag.onclick = () => {
+      const existing = document.getElementById('fullBatchListAI').querySelector('[data-batch-word="'+word+'"]');
+      if (existing) {
+        existing.remove();
+        tag.classList.remove('active');
+        tag.style.background = 'rgba(110,196,188,0.15)';
+        tag.style.borderColor = 'rgba(110,196,188,0.4)';
+        tag.style.color = '#2a5550';
+      } else {
+        tag.classList.add('active');
+        tag.style.background = '#6ec4bc';
+        tag.style.borderColor = '#6ec4bc';
+        tag.style.color = '#fff';
+        appendBatchRowAI(word);
+      }
+    };
+    tagList.appendChild(tag);
+  });
+}
+
 function autoDetectAndRender() {
   if (!blocks || blocks.length === 0) return;
   const IGNORE_EN = new Set([
@@ -672,6 +749,52 @@ function autoDetectAndRender() {
     .forEach(([key, v]) => results.push({ word: v.first, count: v.count, suggestion: v.first }));
 
   renderFullBatchList(results);
+}
+
+function addSearchWordAI() {
+  const input = document.getElementById('searchWordInputAI');
+  if (!input) return;
+  const word = input.value.trim();
+  if (!word) return;
+  const allText = blocks.map(b=>b.text).join('\n');
+  const count = allText.split(word).length - 1;
+  if (count === 0) {
+    input.style.borderColor = '#e8934a';
+    input.placeholder = '找不到「' + word + '」，請確認字詞是否正確';
+    input.value = '';
+    setTimeout(() => {
+      input.style.borderColor = 'rgba(110,196,188,0.35)';
+      input.placeholder = '輸入品牌名、人名，按 Enter 新增';
+    }, 2500);
+    input.focus();
+    return;
+  }
+  input.value = '';
+  appendBatchRowAI(word);
+  input.focus();
+}
+
+function appendBatchRowAI(word, suggestion) {
+  const list = document.getElementById('fullBatchListAI');
+  if (!list) return;
+  const allText = blocks.map(b=>b.text).join('\n');
+  const count = allText.split(word).length - 1;
+  const sugg = suggestion || word;
+  const row = document.createElement('div');
+  row.setAttribute('data-batch-row','1');
+  row.setAttribute('data-batch-word', word);
+  row.style.cssText = 'background:rgba(255,255,255,0.88);border:1.5px solid rgba(110,196,188,0.2);border-radius:12px;padding:12px 16px;';
+  const safeSugg = sugg.replace(/</g,'&lt;');
+  row.innerHTML = `
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+      <div style="flex:1;min-width:100px;">
+        <div style="font-size:0.78rem;font-weight:700;color:#2a5550;">${word.replace(/</g,'&lt;')}</div>
+        <div style="font-size:0.62rem;color:#7dc8c0;margin-top:2px;">全文共 ${count} 處</div>
+      </div>
+      <div style="font-size:0.75rem;color:#aaa;">→</div>
+      <input class="batch-to-input" value="${safeSugg}" style="flex:2;min-width:140px;background:rgba(255,255,255,0.9);border:1.5px solid rgba(110,196,188,0.25);border-radius:8px;padding:6px 10px;font-size:0.75rem;color:#2a5550;font-weight:600;outline:none;font-family:inherit;">
+    </div>`;
+  list.appendChild(row);
 }
 
 function addSearchWord() {
@@ -739,8 +862,7 @@ function appendBatchRow(word, suggestion, tagEl) {
         <div style="font-size:0.62rem;color:#7dc8c0;margin-top:2px;">全文共 ${count} 處</div>
       </div>
       <div style="font-size:0.75rem;color:#aaa;">→</div>
-      <input class="batch-to-input" value="${safeSugg}" style="flex:1;min-width:100px;background:rgba(255,255,255,0.9);border:1.5px solid rgba(110,196,188,0.25);border-radius:8px;padding:6px 10px;font-size:0.75rem;color:#2a5550;font-weight:600;outline:none;font-family:inherit;">
-      <button class="btn-sm" onclick="batchReplaceAI('${safeFrom}',this)" style="background:rgba(74,139,196,0.12);border-color:rgba(74,139,196,0.3);color:#4a8bc4;font-weight:800;white-space:nowrap;">一鍵全換（${count}處）</button>
+      <input class="batch-to-input" value="${safeSugg}" style="flex:2;min-width:140px;background:rgba(255,255,255,0.9);border:1.5px solid rgba(110,196,188,0.25);border-radius:8px;padding:6px 10px;font-size:0.75rem;color:#2a5550;font-weight:600;outline:none;font-family:inherit;">
     </div>`;
   list.appendChild(row);
 }
@@ -898,6 +1020,17 @@ function scanStep4() {
 }
 
 function applyStep4AndContinue() {
+  // 自動套用所有未點「一鍵全換」的批次替換列（含 AI 步驟二）
+  document.querySelectorAll('[data-batch-row]').forEach(row => {
+    if (row.style.opacity === '0.5') return; // 已套用過的跳過
+    const fromEl = row.querySelector('[data-batch-word]') ? row : null;
+    const word = row.getAttribute('data-batch-word');
+    const input = row.querySelector('.batch-to-input');
+    if (word && input) {
+      const to = input.value.trim();
+      if (to) blocks.forEach(b => { b.text = b.text.split(word).join(to); });
+    }
+  });
   let applied = 0;
   document.querySelectorAll('.name-to-55').forEach(input => {
     const from = input.dataset.from;
@@ -1064,6 +1197,8 @@ function runStep6() {
 
   document.getElementById('st-iss').textContent = suspects.length;
 
+  if (currentMode === 'ai') return; // AI 模式由 goToIssueStep 統一渲染
+
   if (suspects.length === 0) {
     log('log6', '✅ 自動掃描清零！', 'ok');
     document.getElementById('noIssueSection').style.display = 'block';
@@ -1071,8 +1206,6 @@ function runStep6() {
     document.getElementById('stp6').classList.add('done');
     return;
   }
-
-  log('log6', `發現 ${suspects.length} 處可疑，請逐一確認或修改`, 'warn');
 
   const list = document.getElementById('issueList');
   suspects.forEach((s, idx) => {
@@ -1242,8 +1375,14 @@ function skipAIAndContinue() {
 
 function runStep6WithAI() {
   const aiIssues = window._pendingAIIssues || [];
-  const batchIssues = aiIssues.filter(i => i.type === '批次替換' || i.type === '人名錯誤');
-  window._otherAIIssues = aiIssues.filter(i => i.type !== '批次替換' && i.type !== '人名錯誤');
+  const allText = blocks.map(b=>b.text).join('\n');
+  const isBatch = i => {
+    if (i.type !== '批次替換' && i.type !== '人名錯誤') return false;
+    const count = allText.split(i.original).length - 1;
+    return count >= 2; // 出現 >=2 次才放步驟三
+  };
+  const batchIssues = aiIssues.filter(isBatch);
+  window._otherAIIssues = aiIssues.filter(i => !isBatch(i));
   window._pendingAIIssues = [];
 
   // 填入批次替換列表
@@ -1270,7 +1409,7 @@ function runStep6WithAI() {
             <div style="font-size:0.75rem;color:#aaa;">→</div>
             <input class="batch-to-input" value="${safeSugg}" style="flex:1;min-width:100px;background:rgba(255,255,255,0.9);border:1.5px solid rgba(74,139,196,0.25);border-radius:8px;padding:6px 10px;font-size:0.75rem;color:#2a5550;font-weight:600;outline:none;font-family:inherit;">
             <div style="font-size:0.65rem;color:#888;flex:2;">${(iss.desc||'').replace(/</g,'&lt;')}</div>
-            <button class="btn-sm" onclick="batchReplaceAI('${safeFrom}',this)" style="background:rgba(74,139,196,0.12);border-color:rgba(74,139,196,0.3);color:#4a8bc4;font-weight:800;white-space:nowrap;">一鍵全換（${count}處）</button>
+
           </div>`;
         list.appendChild(row);
       });
@@ -1281,6 +1420,7 @@ function runStep6WithAI() {
   }
 
   // 顯示 c3batch
+  autoDetectAndRenderAI();
   ['c1','c4','c4ai','c3batch','c6','c7'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.classList.toggle('show', id === 'c3batch');
@@ -1311,26 +1451,7 @@ function goToIssueStep() {
   runStep6();
   const otherIssues = window._otherAIIssues || [];
 
-  if (otherIssues.length > 0 || suspects.length > 0) {
-    const aiItems = otherIssues.map(iss => ({ source: 'ai', data: iss }));
-    const ruleItems = suspects.map(s => ({ source: 'rule', data: s }));
-    const aiTsPrefixes = new Set(otherIssues.map(iss => (iss.time || '').slice(0, 8)));
-    const filteredRule = ruleItems.filter(r => !aiTsPrefixes.has((r.data.ts || '').slice(0, 8)));
-    const combined = [...filteredRule, ...aiItems].sort((a, b) => {
-      const tsA = a.source === 'ai' ? (a.data.time || '') : (a.data.ts || '');
-      const tsB = b.source === 'ai' ? (b.data.time || '') : (b.data.ts || '');
-      return tsA.localeCompare(tsB);
-    });
-    document.getElementById('issueList').innerHTML = '';
-    renderCombinedList(combined);
-    const statusEl = document.getElementById('aiStatus');
-    if (statusEl && (otherIssues.length > 0 || suspects.length > 0)) {
-      statusEl.style.display = 'block';
-      statusEl.style.cssText = 'display:block;font-size:0.73rem;font-weight:600;padding:10px 14px;border-radius:10px;margin-bottom:10px;background:rgba(200,160,48,0.1);border:1.5px solid rgba(200,160,48,0.2);color:#8a6820;';
-      statusEl.textContent = `✨ AI 發現 ${otherIssues.length} 個問題 + 自動掃描 ${suspects.length} 處，請逐一確認`;
-    }
-  }
-
+  // 先切換畫面，讓 c6 顯示出來
   ['c1','c4','c4ai','c3batch','c6','c7'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.classList.toggle('show', id === 'c6');
@@ -1343,6 +1464,30 @@ function goToIssueStep() {
     if (i < 4) stp.classList.add('done');
     else if (i === 4) stp.classList.add('active');
   });
+
+  // 再渲染內容
+  const aiItems = otherIssues.map(iss => ({ source: 'ai', data: iss }));
+  const ruleItems = suspects.map(s => ({ source: 'rule', data: s }));
+  const aiTsPrefixes = new Set(otherIssues.map(iss => (iss.time || '').slice(0, 8)));
+  const filteredRule = ruleItems.filter(r => !aiTsPrefixes.has((r.data.ts || '').slice(0, 8)));
+  const combined = [...filteredRule, ...aiItems].sort((a, b) => {
+    const tsA = a.source === 'ai' ? (a.data.time || '') : (a.data.ts || '');
+    const tsB = b.source === 'ai' ? (b.data.time || '') : (b.data.ts || '');
+    return tsA.localeCompare(tsB);
+  });
+
+  const issueList = document.getElementById('issueList');
+  if (issueList) {
+    issueList.innerHTML = '';
+    renderCombinedList(combined);
+  }
+
+  const statusEl = document.getElementById('aiStatus');
+  if (statusEl) {
+    statusEl.style.display = 'block';
+    statusEl.style.cssText = 'display:block;font-size:0.73rem;font-weight:600;padding:10px 14px;border-radius:10px;margin-bottom:10px;background:rgba(200,160,48,0.1);border:1.5px solid rgba(200,160,48,0.2);color:#8a6820;';
+    statusEl.textContent = `✨ AI 發現 ${otherIssues.length} 個問題 + 自動掃描 ${suspects.length} 處，請逐一確認`;
+  }
 
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
@@ -1473,7 +1618,9 @@ function renderCombinedList(combined) {
     if (item.source === 'ai') {
       const iss = item.data;
       const aid = 'ai_' + idx;
-      const tc = typeClass[iss.type] || 'tag-mixed';
+      const primaryType = (iss.type || '').split('|')[0].trim();
+      const tc = typeClass[primaryType] || 'tag-mixed';
+      const displayType = iss.type || '';
       div.id = 'airow_' + idx;
       div.style.background = 'rgba(255,248,210,0.85)';
       div.innerHTML = `
@@ -1488,7 +1635,7 @@ function renderCombinedList(combined) {
             <button class="btn-sm" onclick="applyAI(${idx},'${(iss.time||'').replace(/'/g,"\\'")}','${(iss.original||'').replace(/'/g,"\\'").replace(/\n/g,' ')}',this)">套用修改</button>
           </div>
         </div>
-        <span class="issue-tag ${tc}">${iss.type}</span>`;
+        <span class="issue-tag ${tc}">${displayType}</span>`;
     } else {
       const s = item.data;
       const rIdx = suspects.indexOf(s);
@@ -1522,6 +1669,18 @@ function renderCombinedList(combined) {
 function resetAIBtn(idx) {
   const btn = document.querySelector(`#airow_${idx} .btn-sm`);
   if (btn) { btn.textContent = '✓ 套用修改'; btn.classList.add('applied'); }
+}
+
+function addManualBatchRowNew() {
+  const container = document.getElementById('manualBatchRowsNew');
+  const row = document.createElement('div');
+  row.style.cssText = 'display:grid;grid-template-columns:1fr auto 1fr auto;gap:8px;align-items:center;';
+  row.innerHTML = `
+    <input placeholder="原文" style="background:rgba(255,255,255,0.9);border:1.5px solid rgba(110,196,188,0.2);border-radius:8px;padding:7px 10px;font-size:0.73rem;color:#2a5550;font-weight:600;outline:none;font-family:inherit;">
+    <span style="color:#7dc8c0;font-weight:800;">→</span>
+    <input placeholder="替換後" style="background:rgba(255,255,255,0.9);border:1.5px solid rgba(110,196,188,0.2);border-radius:8px;padding:7px 10px;font-size:0.73rem;color:#2a5550;font-weight:600;outline:none;font-family:inherit;">
+    <button class="btn-sm" onclick="applyManualBatch(this)">全換</button>`;
+  container.appendChild(row);
 }
 
 function addManualBatchRow() {
