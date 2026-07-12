@@ -476,6 +476,10 @@ function runTermsSilent() {
       if (gap > 0 && gap <= 300) blocks[i].end = blocks[i+1].start;
     } catch(e) {}
   }
+  // 刪除語助詞「呃」
+  blocks.forEach(b => {
+    b.text = b.text.replace(/呃/g, '').replace(/  +/g, ' ').trim();
+  });
   document.getElementById('st-fix').textContent = fixes;
 }
 
