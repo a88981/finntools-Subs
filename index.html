@@ -196,7 +196,7 @@ textarea.paste-area::placeholder { color: #98d0ca; }
   <div class="card" id="c4ai">
     <div class="card-title">步驟二 — AI Prompt</div>
     <div class="info-box" style="margin-bottom:14px;font-size:0.72rem;line-height:2;">
-      點「<strong>✨ 複製並前往 Claude</strong>」後自動複製 Prompt 並開新的 Claude 對話，貼上後把 Claude 的回覆複製回來貼到下方，即可套用結果。<br>
+      點「<strong>✨ 複製並前往 Claude</strong>」後自動複製 Prompt 並開新的 Claude 對話。<br>把 Claude 的回覆複製回來貼到下方，即可套用結果。<br>
       <span style="color:#4a8bc4;">✦ AI 會自動偵測：重複字詞・明顯錯字・漏字・人名品牌不同寫法</span>
     </div>
 
@@ -208,8 +208,7 @@ textarea.paste-area::placeholder { color: #98d0ca; }
       </div>
     </div>
     <div id="aiReplySection" style="display:none;">
-      <div style="font-size:0.72rem;font-weight:800;color:#4a8bc4;margin-bottom:8px;letter-spacing:0.06em;">把 Claude 的回覆貼在這裡</div>
-      <textarea id="aiReplyText" class="paste-area" placeholder='貼上 Claude 回覆的 JSON' style="min-height:100px;font-size:0.68rem;overflow:hidden;resize:none;" oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'" onpaste="setTimeout(()=>{this.style.height='auto';this.style.height=this.scrollHeight+'px'},0)"></textarea>
+      <textarea id="aiReplyText" class="paste-area" placeholder='把 Claude 的回覆貼在這裡' style="min-height:100px;font-size:0.68rem;overflow:hidden;resize:none;" oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'" onpaste="setTimeout(()=>{this.style.height='auto';this.style.height=this.scrollHeight+'px'},0)"></textarea>
       <div class="row" style="margin-top:8px;justify-content:center;gap:12px;">
         <button class="btn" onclick="applyAIReplyAndContinue()">套用並查看結果 →</button>
         <button class="btn-ghost" onclick="skipAIAndContinue()">略過，直接看掃描結果</button>
@@ -519,12 +518,12 @@ const MODE_DESC = {
 ✔ 詞庫修正、手動搜尋替換特定字詞<br>
 ✔ 可疑處自動掃描，逐一人工確認<br><br>
 <span style="color:#6ec4bc;">適合：含品牌名、人名、專有名詞，需要手動把關的檔案。</span>`,
-  ai: `<strong>🤖 完整模式(AI)</strong>｜自動處理 + 手動確認 + Claude 輔助　<span style="color:#e8a020;">⚠ 需搭配 Claude 使用</span><br><br>
+  ai: `<strong>🤖 完整模式(AI)</strong>｜自動處理 + 手動確認 + Claude 輔助　<span style="color:#e8a020;">⚠ 需搭配 Claude 帳號使用</span><br><br>
 ✔ 自動完成時間碼空隙接合<br>
 ✔ 她/妳 → 他/你 自動修正<br>
 ✔ 詞庫修正、手動搜尋替換特定字詞<br>
-✔ 可疑處 AI 辨識，逐一人工確認<br>
-✔ Claude 自動辨識錯字、用詞邏輯錯誤<br><br>
+✔ 工具自動生成 Prompt，複製後貼到 Claude 讓 AI 辨識錯字、漏字、人名品牌問題<br>
+✔ 把 Claude 回覆貼回工具，逐一確認套用<br><br>
 <span style="color:#6ec4bc;">適合：字幕較複雜、要求較高，或想借助 AI 二次把關的檔案。</span>`
 };
 
@@ -1124,10 +1123,20 @@ function runStep6() {
   const legend = document.getElementById('step6Legend');
   if (info) {
     if (currentMode === 'ai') {
-      info.innerHTML = '已AI自動辨識完成，結果列在下方，修改後點「套用修改」，不需修改的直接略過即可。';
+      info.innerHTML = `
+  <ul style="padding-left:1.4em;margin:0;line-height:2.4;color:#3a7872;">
+    <li>確認採用自動 &amp; AI 修改建議後，按「<strong style="color:#4aada5;">套用修改</strong>」可 <strong style="color:#4aada5;">完成修改</strong></li>
+    <li>原字幕正確「<strong style="color:#4aada5;">直接略過</strong>」，將 <strong style="color:#4aada5;">保持原字幕不會修改</strong></li>
+    <li>修改後顯示「<strong style="color:#4aada5;">✓ 套用修改</strong>」，表示 <strong style="color:#4aada5;">完成修改</strong></li>
+  </ul>`;
       if (legend) legend.style.display = 'flex';
     } else {
-      info.innerHTML = '已自動辨識完成，結果列在下方，修改後點「套用修改」，不需修改的直接略過即可。';
+      info.innerHTML = `
+  <ul style="padding-left:1.4em;margin:0;line-height:2.4;color:#3a7872;">
+    <li>確認採用自動修改建議後，按「<strong style="color:#4aada5;">套用修改</strong>」可 <strong style="color:#4aada5;">完成修改</strong></li>
+    <li>原字幕正確「<strong style="color:#4aada5;">直接略過</strong>」，將 <strong style="color:#4aada5;">保持原字幕不會修改</strong></li>
+    <li>修改後顯示「<strong style="color:#4aada5;">✓ 套用修改</strong>」，表示 <strong style="color:#4aada5;">完成修改</strong></li>
+  </ul>`;
       if (legend) legend.style.display = 'none';
     }
   }
@@ -1217,21 +1226,23 @@ function runStep6() {
     const isIt = s.tag === 'it';
     const quickBtns = isHe
       ? `<button class="btn-sm" data-idx="${idx}" data-from="他" data-to="它" onclick="quickReplaceBtn(this)" style="background:rgba(255,235,200,0.9);border-color:rgba(200,150,60,0.4);color:#c07830;">它</button>
-         <button class="btn-sm" onclick="toggleEdit(\`edit6_${idx}\`, this)" style="color:#7db8b2;">手動修改</button>`
+         <button class="btn-sm" onclick="toggleEdit(\`edit6_${idx}\`, this)" style="color:#7db8b2;">手動修改</button>
+         <button class="btn-sm" id="ruleApplyBtn_${idx}" onclick="applyIssue(${idx}, this)" style="display:none;">套用修改</button>`
       : isIt
       ? `<button class="btn-sm" data-idx="${idx}" data-from="它" data-to="他" onclick="quickReplaceBtn(this)" style="background:rgba(200,230,255,0.9);border-color:rgba(80,150,220,0.3);color:#3878b8;">他</button>
-         <button class="btn-sm" onclick="toggleEdit(\`edit6_${idx}\`, this)" style="color:#7db8b2;">手動修改</button>`
-      : `<button class="btn-sm" onclick="applyIssue(${idx}, this)">套用修改</button>`;
+         <button class="btn-sm" onclick="toggleEdit(\`edit6_${idx}\`, this)" style="color:#7db8b2;">手動修改</button>
+         <button class="btn-sm" id="ruleApplyBtn_${idx}" onclick="applyIssue(${idx}, this)" style="display:none;">套用修改</button>`
+      : `<button class="btn-sm" id="ruleApplyBtn_${idx}" onclick="applyIssue(${idx}, this)">套用修改</button>`;
 
     div.innerHTML = `
       <div class="issue-ts">${s.ts}</div>
       <div>
         <div class="issue-text">${s.text}</div>
         <div style="font-size:0.62rem;color:#7db8b2;margin-top:3px;">${s.hint}</div>
-        <input class="issue-edit ${!isHe && !isIt ? 'show' : ''}" id="edit6_${idx}" value="${s.text}" placeholder="修正後的文字">
+        <input class="issue-edit ${!isHe && !isIt ? 'show' : ''}" id="edit6_${idx}" value="${s.text}" data-original="${s.text}" data-ridx="${idx}" placeholder="修正後的文字" onblur="autoApplyRule(this)">
         <div class="issue-actions">
           ${quickBtns}
-          ${isHe || isIt ? `<button class="btn-sm" onclick="applyIssue(${idx}, this)" style="display:none;" id="applyBtn${idx}">套用修改</button>` : ''}
+
         </div>
       </div>
       <span class="issue-tag ${tagClass}">${s.tag === 'simp' ? '簡體字' : s.tag === 'pronoun' ? '代詞' : s.tag === 'name' ? '人名/品牌' : s.tag === 'he' ? '他→它？' : s.tag === 'it' ? '它→他？' : '中英混合'}</span>`;
@@ -1253,11 +1264,12 @@ function runStep6() {
 
 function toggleEdit(editId, btn) {
   const input = document.getElementById(editId);
-  const applyBtn = document.getElementById('applyBtn' + editId.replace('edit6_',''));
+  const idx = editId.replace('edit6_','');
+  const applyBtn = document.getElementById('ruleApplyBtn_' + idx);
   if (!input.classList.contains('show')) {
     input.classList.add('show');
     if (applyBtn) applyBtn.style.display = 'inline-block';
-    btn.style.display = 'none'; // 手動修改按鈕隱藏
+    btn.style.display = 'none';
     input.focus();
   }
 }
@@ -1340,7 +1352,7 @@ function buildPrompt(lines) {
 
 口語詞哈哈嗯欸啊不算錯誤，英中混用正常。沒有問題就回傳 {"issues":[]}
 
-suggestion 只填修正後的字幕文字，不要加標點符號、不要加說明文字、不要改變句子結構。
+suggestion 欄位規則（非常重要）：只填修正後的純文字，不加任何說明；絕對禁止出現，！。這三個標點符號；引號「」可保留；？只有原字幕本來就有才能保留；不改變句子原有結構，只修正錯誤的字。
 
 只回傳JSON不要其他任何文字或說明：
 {"issues":[{"num":序號,"time":"時間戳","original":"原文","type":"重複字|錯字|漏字|人名錯誤|需回聽|批次替換","suggestion":"建議修正","desc":"說明"}]}
@@ -1520,7 +1532,7 @@ function generateAIPrompt() {
 
 口語詞哈哈嗯欸啊不算錯誤，英中混用正常。沒有問題就回傳 {"issues":[]}
 
-suggestion 只填修正後的字幕文字，不要加標點符號、不要加說明文字、不要改變句子結構。
+suggestion 欄位規則（非常重要）：只填修正後的純文字，不加任何說明；絕對禁止出現，！。這三個標點符號；引號「」可保留；？只有原字幕本來就有才能保留；不改變句子原有結構，只修正錯誤的字。
 
 只回傳JSON不要其他任何文字或說明：
 {"issues":[{"num":序號,"time":"時間戳","original":"原文","type":"重複字|錯字|漏字|人名錯誤|需回聽|批次替換","suggestion":"建議修正","desc":"說明"}]}
@@ -1635,12 +1647,12 @@ function renderCombinedList(combined) {
       div.style.background = 'rgba(255,248,210,0.85)';
       div.innerHTML = `
         <div class="issue-ts">
-          <span style="font-size:0.6rem;color:#7dc8c0;">${iss.time || ''}</span>
+          <span style="font-size:0.6rem;color:#4aada5;">${iss.time || ''}</span>
         </div>
         <div>
           <div class="issue-text">${(iss.original || '').replace(/</g,'&lt;')}</div>
           <div style="font-size:0.62rem;color:#7db8b2;margin-top:3px;">${(iss.desc || '').replace(/</g,'&lt;')}</div>
-          <input class="issue-edit show" id="${aid}" value="${(iss.suggestion||iss.original||'').replace(/"/g,'&quot;').replace(/</g,'&lt;')}" placeholder="修正後的文字" oninput="resetAIBtn(${idx})">
+          <input class="issue-edit show" id="${aid}" value="${(iss.suggestion||iss.original||'').replace(/"/g,'&quot;').replace(/</g,'&lt;')}" placeholder="修正後的文字" data-original="${(iss.original||''). replace(/"/g,'&quot;')}" data-time="${iss.time||''}" oninput="resetAIBtn(${idx})" onblur="autoApplyAI(${idx},this.dataset.time,this)">
           <div class="issue-actions">
             <button class="btn-sm" onclick="applyAI(${idx},'${(iss.time||'').replace(/'/g,"\\'")}','${(iss.original||'').replace(/'/g,"\\'").replace(/\n/g,' ')}',this)">套用修改</button>
           </div>
@@ -1654,17 +1666,19 @@ function renderCombinedList(combined) {
       const isIt = s.tag === 'it';
       const quickBtns = isHe
         ? `<button class="btn-sm" data-idx="${rIdx}" data-from="他" data-to="它" onclick="quickReplaceBtn(this)" style="background:rgba(255,235,200,0.9);border-color:rgba(200,150,60,0.4);color:#c07830;">它</button>
-           <button class="btn-sm" onclick="toggleEdit('edit6_${rIdx}', this)" style="color:#7db8b2;">手動修改</button>`
+           <button class="btn-sm" onclick="toggleEdit('edit6_${rIdx}', this)" style="color:#7db8b2;">手動修改</button>
+           <button class="btn-sm" id="ruleApplyBtn_${rIdx}" onclick="applyIssue(${rIdx}, this)" style="display:none;">套用修改</button>`
         : isIt
         ? `<button class="btn-sm" data-idx="${rIdx}" data-from="它" data-to="他" onclick="quickReplaceBtn(this)" style="background:rgba(200,230,255,0.9);border-color:rgba(80,150,220,0.3);color:#3878b8;">他</button>
-           <button class="btn-sm" onclick="toggleEdit('edit6_${rIdx}', this)" style="color:#7db8b2;">手動修改</button>`
-        : `<button class="btn-sm" onclick="applyIssue(${rIdx}, this)">套用修改</button>`;
+           <button class="btn-sm" onclick="toggleEdit('edit6_${rIdx}', this)" style="color:#7db8b2;">手動修改</button>
+           <button class="btn-sm" id="ruleApplyBtn_${rIdx}" onclick="applyIssue(${rIdx}, this)" style="display:none;">套用修改</button>`
+        : `<button class="btn-sm" id="ruleApplyBtn_${rIdx}" onclick="applyIssue(${rIdx}, this)">套用修改</button>`;
       div.innerHTML = `
         <div class="issue-ts">${s.ts}</div>
         <div>
           <div class="issue-text">${s.text.replace(/</g,'&lt;')}</div>
           <div style="font-size:0.62rem;color:#7db8b2;margin-top:3px;">${s.hint}</div>
-          <input class="issue-edit ${!isHe && !isIt ? 'show' : ''}" id="edit6_${rIdx}" value="${s.text.replace(/"/g,'&quot;').replace(/</g,'&lt;')}" placeholder="修正後的文字">
+          <input class="issue-edit ${!isHe && !isIt ? 'show' : ''}" id="edit6_${rIdx}" value="${s.text.replace(/"/g,'&quot;').replace(/</g,'&lt;')}" data-original="${s.text.replace(/"/g,'&quot;')}" data-ridx="${rIdx}" placeholder="修正後的文字" onblur="autoApplyRule(this)">
           <div class="issue-actions">
             ${quickBtns}
 
@@ -1676,9 +1690,38 @@ function renderCombinedList(combined) {
   });
 }
 
-function resetAIBtn(idx) {
+function autoApplyRule(input) {
+  const newText = input.value.trim();
+  const prevText = input.dataset.applied || input.getAttribute('data-original') || '';
+  if (!newText || newText === prevText) return;
+  const rIdx = parseInt(input.dataset.ridx);
+  const s = suspects[rIdx];
+  if (!s) return;
+  blocks.forEach(b => {
+    if (b.start === s.ts) b.text = b.text.split(prevText).join(newText);
+  });
+  input.dataset.applied = newText;
+  // 找套用按鈕：優先找 applyBtn，其次找 issue-actions 裡最後一個 btn-sm
+  const row = input.closest('.issue-row');
+  const btn = document.getElementById('ruleApplyBtn_' + rIdx);
+  if (btn) { btn.style.display = ''; btn.textContent = '✓ 套用修改'; btn.classList.add('applied'); }
+}
+
+function autoApplyAI(idx, time, input) {
+  const newText = input.value.trim();
+  const prevText = input.dataset.applied || input.getAttribute('data-original') || '';
+  if (!newText || newText === prevText) return;
+  blocks.forEach(b => {
+    if (b.start === time) b.text = b.text.split(prevText).join(newText);
+  });
+  input.dataset.applied = newText;
   const btn = document.querySelector(`#airow_${idx} .btn-sm`);
   if (btn) { btn.textContent = '✓ 套用修改'; btn.classList.add('applied'); }
+}
+
+function resetAIBtn(idx) {
+  const btn = document.querySelector(`#airow_${idx} .btn-sm`);
+  if (btn) { btn.textContent = '套用修改'; btn.classList.remove('applied'); }
 }
 
 function addManualBatchRowNew() {
