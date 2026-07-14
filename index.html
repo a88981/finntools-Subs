@@ -59,6 +59,8 @@ header p { font-size: 0.75rem; color: #5ab5ac; font-weight: 700; letter-spacing:
 .issue-list { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
 .issue-row { display: grid; grid-template-columns: 120px 1fr auto; gap: 10px; align-items: start; background: rgba(232,248,245,0.5); border: 1.5px solid rgba(110,196,188,0.15); border-radius: 12px; padding: 12px 14px; transition: border-color 0.2s; }
 .issue-row:hover { border-color: rgba(110,196,188,0.35); }
+.issue-row-ai { background: rgba(255,248,210,0.85) !important; border-color: rgba(210,180,60,0.25) !important; }
+.issue-row-ai:hover { border-color: rgba(210,160,40,0.45) !important; }
 .issue-ts { font-size: 0.65rem; color: #4aada5; font-weight: 800; padding-top: 2px; }
 .issue-text { font-size: 0.75rem; color: #2a5550; line-height: 1.5; font-weight: 600; }
 .issue-edit { width: 100%; background: rgba(255,255,255,0.9); border: 1.5px solid rgba(110,196,188,0.25); border-radius: 8px; color: #2a5550; font-size: 0.73rem; padding: 7px 10px; outline: none; margin-top: 6px; grid-column: 1/-1; display: none; font-family: inherit; font-weight: 600; transition: border-color 0.2s; }
@@ -1395,8 +1397,14 @@ function applyAIReplyAndContinue() {
     alert('解析失敗，請確認貼入的是完整 JSON');
     return;
   }
-  // 人名錯誤：不自動替換，列為「批次確認」讓用戶決定
-  window._pendingAIIssues = aiIssues.filter(i => i.type !== '需回聽');
+  // 濾掉需回聽、以及 AI 說「正確/不需修改」的項目（suggestion 與 original 相同才濾）
+  const noActionKeywords = /正確|不需修改|無需修改|用法正確|無問題|沒有問題|無誤|保留/;
+  window._pendingAIIssues = aiIssues.filter(i =>
+    i.type !== '需回聽' && 
+    !(noActionKeywords.test(i.desc || '') && i.suggestion === i.original)
+  );
+
+
   window._nameFixMsg = null;
   goStep(3);
   runStep6WithAI();
@@ -1432,7 +1440,7 @@ function runStep6WithAI() {
         const allText = blocks.map(b=>b.text).join('\n');
         const count = allText.split(iss.original).length - 1;
         const row = document.createElement('div');
-        row.style.cssText = 'background:rgba(255,255,255,0.88);border:1.5px solid rgba(110,196,188,0.2);border-radius:12px;padding:12px 16px;';
+        row.style.cssText = 'background:rgba(255,248,210,0.85);border:1.5px solid rgba(210,180,60,0.25);border-radius:12px;padding:12px 16px;';
         const safeFrom = (iss.original||'').replace(/'/g,"\\'").replace(/</g,'&lt;');
         const safeSugg = (iss.suggestion||iss.original||'').replace(/</g,'&lt;');
         row.setAttribute('data-batch-row','1');
@@ -1448,7 +1456,7 @@ function runStep6WithAI() {
             </div>
             <div style="font-size:0.75rem;color:#aaa;padding-top:4px;">→</div>
             <div style="flex:2;min-width:140px;">
-              <input class="batch-to-input" value="${safeSugg}" style="width:100%;background:rgba(255,255,255,0.9);border:1.5px solid rgba(74,139,196,0.25);border-radius:8px;padding:6px 10px;font-size:0.75rem;color:#2a5550;font-weight:600;outline:none;font-family:inherit;">
+              <input class="batch-to-input" value="${safeSugg}" style="width:100%;background:rgba(255,255,255,0.9);border:1.5px solid rgba(210,130,40,0.35);border-radius:8px;padding:6px 10px;font-size:0.75rem;color:#2a5550;font-weight:600;outline:none;font-family:inherit;">
               <div style="font-size:0.6rem;color:#aaa;margin-top:3px;">修改替換詞後，點「確認完成，繼續」會自動套用至全文</div>
             </div>
           </div>`;
@@ -1653,7 +1661,7 @@ function renderCombinedList(combined) {
       const tc = typeClass[primaryType] || 'tag-mixed';
       const displayType = iss.type || '';
       div.id = 'airow_' + idx;
-      div.style.background = 'rgba(255,248,210,0.85)';
+      if (primaryType === '批次替換') div.classList.add('issue-row-ai');
       div.innerHTML = `
         <div class="issue-ts">
           <span style="font-size:0.6rem;color:#4aada5;">${iss.time || ''}</span>
