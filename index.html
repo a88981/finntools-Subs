@@ -1739,9 +1739,13 @@ function autoApplyAI(idx, time, input) {
   const newText = input.value.trim();
   const prevText = input.dataset.applied || input.getAttribute('data-original') || '';
   if (!newText || newText === prevText) return;
+  let applied = false;
   blocks.forEach(b => {
-    if (b.start === time) b.text = b.text.split(prevText).join(newText);
+    if (b.start === time) { b.text = b.text.split(prevText).join(newText); applied = true; }
   });
+  if (!applied) {
+    blocks.forEach(b => { if (b.text.includes(prevText)) b.text = b.text.split(prevText).join(newText); });
+  }
   input.dataset.applied = newText;
   const btn = document.querySelector(`#airow_${idx} .btn-sm`);
   if (btn) { btn.textContent = '✓ 套用修改'; btn.classList.add('applied'); }
@@ -1809,16 +1813,19 @@ function applyAI(idx, time, original, btn) {
   const input = document.getElementById('ai_' + idx);
   if (!input) return;
   const newText = input.value.trim();
-  // 用 defaultValue 追蹤上次套用的值，支援重複修改
   const prevText = input.dataset.applied || original;
+  if (!newText) return;
+  // 先嘗試時間碼比對，找不到就用原文比對
+  let applied = false;
   blocks.forEach(b => {
-    if (b.start === time) b.text = b.text.split(prevText).join(newText);
+    if (b.start === time) { b.text = b.text.split(prevText).join(newText); applied = true; }
   });
+  if (!applied) {
+    blocks.forEach(b => { if (b.text.includes(prevText)) b.text = b.text.split(prevText).join(newText); });
+  }
   input.dataset.applied = newText;
   btn.textContent = '✓ 套用修改';
   btn.classList.add('applied');
-  btn.classList.add('applied');
-
 }
 
 function ignoreAI(idx, btn) {
