@@ -1426,7 +1426,18 @@ function runStep6WithAI() {
     return count >= 2; // 出現 >=2 次才放步驟三
   };
   const batchIssues = aiIssues.filter(isBatch);
-  window._otherAIIssues = aiIssues.filter(i => !isBatch(i));
+  // 收集步驟三所有批次詞的 original 和 suggestion，步驟四濾掉重疊的
+  const batchOriginals = new Set(batchIssues.map(i => (i.original||'').toLowerCase()));
+  const batchSuggestions = new Set(batchIssues.map(i => (i.suggestion||'').toLowerCase()));
+  window._otherAIIssues = aiIssues.filter(i => {
+    if (isBatch(i)) return false;
+    const orig = (i.original||'').toLowerCase();
+    const sugg = (i.suggestion||'').toLowerCase();
+    // 如果這筆的 original 或 suggestion 已在步驟三出現，跳過
+    if (batchOriginals.has(orig) || batchOriginals.has(sugg)) return false;
+    if (batchSuggestions.has(orig) || batchSuggestions.has(sugg)) return false;
+    return true;
+  });
   window._pendingAIIssues = [];
 
   // 填入批次替換列表
