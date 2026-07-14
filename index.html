@@ -1417,6 +1417,28 @@ function skipAIAndContinue() {
 }
 
 
+function extractBatchWord(original, suggestion, allText) {
+  // 兩者都是短詞，直接用 original
+  if (original.length <= 10 && suggestion.length <= 10) return original || null;
+  // suggestion 是短詞，original 是長句：從 original 裡找出跟 suggestion 最相似的子字串
+  if (suggestion.length <= 10 && original.length > 10) {
+    // 先看 suggestion 的前2字是否在全文出現（可能是正確詞），找 original 裡的對應錯詞
+    // 嘗試：找 original 和 suggestion 的最長公共前綴/後綴，差異部分就是要替換的詞
+    let prefixLen = 0;
+    while (prefixLen < original.length && prefixLen < suggestion.length && original[prefixLen] === suggestion[prefixLen]) prefixLen++;
+    let suffixLen = 0;
+    while (suffixLen < original.length - prefixLen && suffixLen < suggestion.length - prefixLen &&
+           original[original.length-1-suffixLen] === suggestion[suggestion.length-1-suffixLen]) suffixLen++;
+    const wrongWord = original.slice(prefixLen, original.length - suffixLen);
+    if (wrongWord && wrongWord.length <= 10 && allText.includes(wrongWord)) return wrongWord;
+    // fallback：suggestion 本身如果在全文找不到，回傳 null（不渲染）
+    return null;
+  }
+  // original 短，suggestion 長：不合理，跳過
+  if (original.length <= 10) return original;
+  return null;
+}
+
 function runStep6WithAI() {
   const aiIssues = window._pendingAIIssues || [];
   const allText = blocks.map(b=>b.text).join('\n');
@@ -1453,18 +1475,21 @@ function runStep6WithAI() {
       if (emptyEl) emptyEl.style.display = 'none';
       batchIssues.forEach(iss => {
         const allText = blocks.map(b=>b.text).join('\n');
-        const count = allText.split(iss.original).length - 1;
+        // 從 original（可能是整行）和 suggestion 抽出真正要替換的詞
+        const fromWord = extractBatchWord(iss.original||'', iss.suggestion||'', allText);
+        if (!fromWord) return; // 抽不出詞就跳過
+        const toWord = (iss.suggestion||'').length <= 15 ? (iss.suggestion||fromWord) : fromWord;
+        const count = allText.split(fromWord).length - 1;
         const row = document.createElement('div');
         row.style.cssText = 'background:rgba(255,248,210,0.85);border:1.5px solid rgba(210,180,60,0.25);border-radius:12px;padding:12px 16px;';
-        const safeFrom = (iss.original||'').replace(/'/g,"\\'").replace(/</g,'&lt;');
-        const safeSugg = (iss.suggestion||iss.original||'').replace(/</g,'&lt;');
+        const safeSugg = toWord.replace(/</g,'&lt;');
         row.setAttribute('data-batch-row','1');
-        row.setAttribute('data-batch-word', iss.original||'');
+        row.setAttribute('data-batch-word', fromWord);
         row.innerHTML = `
           <div style="display:flex;align-items:flex-start;gap:10px;flex-wrap:wrap;">
             <div style="flex:1;min-width:100px;">
               <div style="display:flex;align-items:center;gap:7px;margin-bottom:3px;">
-                <div style="font-size:0.78rem;font-weight:700;color:#2a5550;">${(iss.original||'').replace(/</g,'&lt;')}</div>
+                <div style="font-size:0.78rem;font-weight:700;color:#2a5550;">${fromWord.replace(/</g,'&lt;')}</div>
                 <span style="font-size:0.58rem;background:rgba(230,145,50,0.12);border:1px solid rgba(210,130,40,0.3);border-radius:100px;padding:1px 7px;color:#c07020;font-weight:800;white-space:nowrap;">全文替換</span>
               </div>
               <div style="font-size:0.62rem;color:#7dc8c0;">全文共 ${count} 處</div>
