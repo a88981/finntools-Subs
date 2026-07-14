@@ -87,6 +87,9 @@ textarea.paste-area::placeholder { color: #98d0ca; }
 .btn-sm { background: rgba(255,255,255,0.8); border: 1.5px solid rgba(110,196,188,0.25); border-radius: 100px; color: #5ab5ac; cursor: pointer; font-size: 0.65rem; font-weight: 700; padding: 4px 12px; transition: all 0.2s; font-family: inherit; }
 .btn-sm:hover { border-color: #6ec4bc; color: #4aada5; }
 .btn-sm.applied { border-color: #6ec4bc; color: #4aada5; background: rgba(110,196,188,0.1); }
+.btn-batch { background: rgba(230,145,50,0.1); border: 1.5px solid rgba(210,130,40,0.4); border-radius: 100px; color: #c07020; cursor: pointer; font-size: 0.65rem; font-weight: 800; padding: 4px 14px; transition: all 0.2s; font-family: inherit; letter-spacing: 0.02em; }
+.btn-batch:hover { background: rgba(230,145,50,0.2); border-color: rgba(210,130,40,0.65); }
+.btn-batch.applied { background: rgba(230,145,50,0.15); border-color: rgba(210,130,40,0.5); color: #a06010; }
 .row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; align-items: center; }
 .divider { height: 1.5px; background: rgba(110,196,188,0.15); margin: 16px 0; border-radius: 2px; }
 ::-webkit-scrollbar { width: 4px; }
@@ -789,13 +792,19 @@ function appendBatchRowAI(word, suggestion) {
   row.style.cssText = 'background:rgba(255,255,255,0.88);border:1.5px solid rgba(110,196,188,0.2);border-radius:12px;padding:12px 16px;';
   const safeSugg = sugg.replace(/</g,'&lt;');
   row.innerHTML = `
-    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+    <div style="display:flex;align-items:flex-start;gap:10px;flex-wrap:wrap;">
       <div style="flex:1;min-width:100px;">
-        <div style="font-size:0.78rem;font-weight:700;color:#2a5550;">${word.replace(/</g,'&lt;')}</div>
-        <div style="font-size:0.62rem;color:#7dc8c0;margin-top:2px;">全文共 ${count} 處</div>
+        <div style="display:flex;align-items:center;gap:7px;margin-bottom:3px;">
+          <div style="font-size:0.78rem;font-weight:700;color:#2a5550;">${word.replace(/</g,'&lt;')}</div>
+          <span style="font-size:0.58rem;background:rgba(230,145,50,0.12);border:1px solid rgba(210,130,40,0.3);border-radius:100px;padding:1px 7px;color:#c07020;font-weight:800;white-space:nowrap;">全文替換</span>
+        </div>
+        <div style="font-size:0.62rem;color:#7dc8c0;">全文共 ${count} 處</div>
       </div>
-      <div style="font-size:0.75rem;color:#aaa;">→</div>
-      <input class="batch-to-input" value="${safeSugg}" style="flex:2;min-width:140px;background:rgba(255,255,255,0.9);border:1.5px solid rgba(110,196,188,0.25);border-radius:8px;padding:6px 10px;font-size:0.75rem;color:#2a5550;font-weight:600;outline:none;font-family:inherit;">
+      <div style="font-size:0.75rem;color:#aaa;padding-top:4px;">→</div>
+      <div style="flex:2;min-width:140px;">
+        <input class="batch-to-input" value="${safeSugg}" style="width:100%;background:rgba(255,255,255,0.9);border:1.5px solid rgba(110,196,188,0.25);border-radius:8px;padding:6px 10px;font-size:0.75rem;color:#2a5550;font-weight:600;outline:none;font-family:inherit;">
+        <div style="font-size:0.6rem;color:#aaa;margin-top:3px;">修改替換詞後，點「確認完成，繼續」會自動套用至全文</div>
+      </div>
     </div>`;
   list.appendChild(row);
 }
@@ -1196,13 +1205,15 @@ function runStep6() {
           suspects.push({ ts: block.start, text: line, tag: 'it', hint: '確認「它」是否應為「他」（指人）', blockRef: block });
         }
       }
-      // 中英混合（忽略常見英文單字）
-      const MIXED_IGNORE = new Set(['Email','email','Airbnb','iPhone','iPad','YouTube','Instagram','Facebook','LINE','Google','Apple','Netflix','Spotify','Amazon','Discord','Notion','Slack','Zoom','TikTok','Uber','PayPal','ChatGPT','Claude','Nike','Adidas','IKEA','Uniqlo','Windows','Android','WiFi','Wifi','OK','BGM','MV','EP','DJ','MC','VIP','NG','AI','App','APP','PC','TV','CM']);
-      const engWords = line.match(/[A-Za-z]{3,}/g) || [];
-      const hasUnknownEng = engWords.some(w => !MIXED_IGNORE.has(w) && !MIXED_IGNORE.has(w.toLowerCase()));
-      if (hasUnknownEng && /[\u4e00-\u9fff]/.test(line)) {
-        if (!suspects.find(s => s.ts === block.start && s.text === line)) {
-          suspects.push({ ts: block.start, text: line, tag: 'mixed', hint: '中英混合，確認辨識是否正確', blockRef: block });
+      // 中英混合：AI 模式由 AI 自行判斷，基本模式才用規則偵測
+      if (currentMode !== 'ai') {
+        const MIXED_IGNORE = new Set(['Email','email','Airbnb','iPhone','iPad','YouTube','Instagram','Facebook','LINE','Google','Apple','Netflix','Spotify','Amazon','Discord','Notion','Slack','Zoom','TikTok','Uber','PayPal','ChatGPT','Claude','Nike','Adidas','IKEA','Uniqlo','Windows','Android','WiFi','Wifi','OK','BGM','MV','EP','DJ','MC','VIP','NG','AI','App','APP','PC','TV','CM']);
+        const engWords = line.match(/[A-Za-z]{3,}/g) || [];
+        const hasUnknownEng = engWords.some(w => !MIXED_IGNORE.has(w) && !MIXED_IGNORE.has(w.toLowerCase()));
+        if (hasUnknownEng && /[\u4e00-\u9fff]/.test(line)) {
+          if (!suspects.find(s => s.ts === block.start && s.text === line)) {
+            suspects.push({ ts: block.start, text: line, tag: 'mixed', hint: '中英混合，確認辨識是否正確', blockRef: block });
+          }
         }
       }
     });
@@ -1353,15 +1364,16 @@ function buildPrompt(lines) {
 4. 人名／地名／品牌疑似打錯，或同一個人名品牌在不同段有不同寫法（例如「Kiki」和「kikei」）
 5. 只有??或???需回聽
 6. 重複出現的名詞（人名、店名、APP名、商品名、品牌等），不管拼法是否一致，只要是專有名詞都要列出，讓使用者確認是否正確。此類一律用 type="批次替換"，original 填目前字幕中的寫法，suggestion 填建議的正確寫法（若不確定則填與 original 相同），time 填第一次出現的時間戳，desc 說明這是什麼詞以及你的判斷理由。
+7. 英中混用中，英文詞有自然的中文說法，且在這句話的語境下說話者不太可能會說英文的（例：「他想要control這件事」→「他想要控制這件事」）。type 用「英翻中」，original 填整行原文，suggestion 填整行修正後的文字，desc 說明建議翻譯的理由。不要改專有名詞、品牌、APP名稱、外來語（如 OK、bye、cafe、WiFi、NG、BGM）。判斷標準是：說這句話的人，在日常中文對話裡會不會說這個英文？若會，不要回報。
 
-口語詞哈哈嗯欸啊不算錯誤，英中混用正常。沒有問題就回傳 {"issues":[]}
+口語詞哈哈嗯欸啊不算錯誤。沒有問題就回傳 {"issues":[]}
 
 跨段斷句（同一句話被切成兩段，例如「桌」和「子」分在不同行）不要回報，使用者會自行處理。
 
 suggestion 欄位規則（非常重要）：只填修正後的純文字，不加任何說明；絕對禁止出現，！。這三個標點符號；引號「」可保留；？只有原字幕本來就有才能保留；不改變句子原有結構，只修正錯誤的字。
 
 只回傳JSON不要其他任何文字或說明：
-{"issues":[{"num":序號,"time":"時間戳","original":"原文","type":"重複字|錯字|漏字|人名錯誤|需回聽|批次替換","suggestion":"建議修正","desc":"說明"}]}
+{"issues":[{"num":序號,"time":"時間戳","original":"原文","type":"重複字|錯字|漏字|人名錯誤|需回聽|批次替換|英翻中","suggestion":"建議修正","desc":"說明"}]}
 
 字幕：
 ${lines}`;
@@ -1421,15 +1433,20 @@ function runStep6WithAI() {
         const safeSugg = (iss.suggestion||iss.original||'').replace(/</g,'&lt;');
         row.setAttribute('data-batch-row','1');
         row.innerHTML = `
-          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+          <div style="display:flex;align-items:flex-start;gap:10px;flex-wrap:wrap;">
             <div style="flex:1;min-width:100px;">
-              <div style="font-size:0.78rem;font-weight:700;color:#2a5550;">${(iss.original||'').replace(/</g,'&lt;')}</div>
-              <div style="font-size:0.62rem;color:#7dc8c0;margin-top:2px;">全文共 ${count} 處</div>
+              <div style="display:flex;align-items:center;gap:7px;margin-bottom:3px;">
+                <div style="font-size:0.78rem;font-weight:700;color:#2a5550;">${(iss.original||'').replace(/</g,'&lt;')}</div>
+                <span style="font-size:0.58rem;background:rgba(230,145,50,0.12);border:1px solid rgba(210,130,40,0.3);border-radius:100px;padding:1px 7px;color:#c07020;font-weight:800;white-space:nowrap;">全文替換</span>
+              </div>
+              <div style="font-size:0.62rem;color:#7dc8c0;">全文共 ${count} 處</div>
+              <div style="font-size:0.62rem;color:#999;margin-top:2px;">${(iss.desc||'').replace(/</g,'&lt;')}</div>
             </div>
-            <div style="font-size:0.75rem;color:#aaa;">→</div>
-            <input class="batch-to-input" value="${safeSugg}" style="flex:1;min-width:100px;background:rgba(255,255,255,0.9);border:1.5px solid rgba(74,139,196,0.25);border-radius:8px;padding:6px 10px;font-size:0.75rem;color:#2a5550;font-weight:600;outline:none;font-family:inherit;">
-            <div style="font-size:0.65rem;color:#888;flex:2;">${(iss.desc||'').replace(/</g,'&lt;')}</div>
-
+            <div style="font-size:0.75rem;color:#aaa;padding-top:4px;">→</div>
+            <div style="flex:2;min-width:140px;">
+              <input class="batch-to-input" value="${safeSugg}" style="width:100%;background:rgba(255,255,255,0.9);border:1.5px solid rgba(74,139,196,0.25);border-radius:8px;padding:6px 10px;font-size:0.75rem;color:#2a5550;font-weight:600;outline:none;font-family:inherit;">
+              <div style="font-size:0.6rem;color:#aaa;margin-top:3px;">修改替換詞後，點「確認完成，繼續」會自動套用至全文</div>
+            </div>
           </div>`;
         list.appendChild(row);
       });
@@ -1526,27 +1543,7 @@ function generateAIPrompt() {
 
   const lines = blocks.map((b, i) => `[${i+1}] ${b.start}　${b.text.replace(/\n/g,' ')}`).join('\n');
 
-  const prompt = `你是繁體中文字幕審查員。找出以下字幕的真正錯誤。
-
-只回報這幾類，不要雞蛋挑骨頭：
-1. 重複字詞（你你、的的、去去、我我、他他、了了 等）
-2. 明顯錯字（語音辨識錯誤或錯別字，非口語）
-3. 漏字（語意不完整）
-4. 人名／地名／品牌疑似打錯，或同一個人名品牌在不同段有不同寫法（例如「Kiki」和「kikei」）
-5. 只有??或???需回聽
-6. 重複出現的名詞（人名、店名、APP名、商品名、品牌等），不管拼法是否一致，只要是專有名詞都要列出，讓使用者確認是否正確。此類一律用 type="批次替換"，original 填目前字幕中的寫法，suggestion 填建議的正確寫法（若不確定則填與 original 相同），time 填第一次出現的時間戳，desc 說明這是什麼詞以及你的判斷理由。
-
-口語詞哈哈嗯欸啊不算錯誤，英中混用正常。沒有問題就回傳 {"issues":[]}
-
-跨段斷句（同一句話被切成兩段，例如「桌」和「子」分在不同行）不要回報，使用者會自行處理。
-
-suggestion 欄位規則（非常重要）：只填修正後的純文字，不加任何說明；絕對禁止出現，！。這三個標點符號；引號「」可保留；？只有原字幕本來就有才能保留；不改變句子原有結構，只修正錯誤的字。
-
-只回傳JSON不要其他任何文字或說明：
-{"issues":[{"num":序號,"time":"時間戳","original":"原文","type":"重複字|錯字|漏字|人名錯誤|需回聽|批次替換","suggestion":"建議修正","desc":"說明"}]}
-
-字幕：
-${lines}`;
+  const prompt = buildPrompt(lines);
 
   document.getElementById('aiPromptText').value = prompt;
   document.getElementById('aiPromptBox').style.display = 'block';
