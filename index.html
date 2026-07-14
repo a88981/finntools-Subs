@@ -516,7 +516,6 @@ function handlePaste() {
 const MODE_DESC = {
   quick: `<strong>⚡ 快速模式</strong>｜自動處理，直接下載<br><br>
 ✔ 自動完成時間碼空隙接合<br>
-✔ 她/妳 → 他/你 自動修正<br>
 ✔ 簡易詞庫修正<br><br>
 <span style="color:#6ec4bc;">適合：字幕品質穩定、不需要手動確認，快速出檔。</span>`,
   full: `<strong>🔍 基本模式</strong>｜自動處理 + 手動確認<br><br>
@@ -527,9 +526,8 @@ const MODE_DESC = {
 <span style="color:#6ec4bc;">適合：含品牌名、人名、專有名詞，需要手動把關的檔案。</span>`,
   ai: `<strong>🤖 完整模式(AI)</strong>｜自動處理 + 手動確認 + Claude 輔助　<span style="color:#e8a020;">⚠ 需搭配 Claude 帳號使用</span><br><br>
 ✔ 自動完成時間碼空隙接合<br>
-✔ 她/妳 → 他/你 自動修正<br>
 ✔ 詞庫修正、手動搜尋替換特定字詞<br>
-✔ 工具自動生成 Prompt，複製後貼到 Claude 讓 AI 辨識錯字、漏字、人名品牌問題<br>
+✔ 工具自動生成 Prompt，複製後貼到 Claude 讓 AI 辨識問題<br>
 ✔ 把 Claude 回覆貼回工具，逐一確認套用<br><br>
 <span style="color:#6ec4bc;">適合：字幕較複雜、要求較高，或想借助 AI 二次把關的檔案。</span>`
 };
@@ -1154,7 +1152,8 @@ function runStep6() {
     }
   }
   suspects = [];
-  // ── 自動他→它（確定指物的情況）──
+  // ── 自動他→它（確定指物的情況）── 只在基本模式執行，AI 模式由 AI 判斷
+  if (currentMode !== 'ai') {
   const autoItPatterns = [
     // 他的 + 物品名詞
     /他的(衣服|包包|顏色|設計|品牌|款式|材質|價格|尺寸|大小|重量|功能|效果|口感|味道|香氣|氣味|外觀|外型|造型|形狀|圖案|花紋|質感|質地|成分|配方|包裝|容量|份量|分量|熱量|卡路里|評價|評分|星級|評論|口碑|名字|名稱|標語|廣告|官網|售價|定價|折扣|優惠)/,
@@ -1182,6 +1181,7 @@ function runStep6() {
     });
     block.text = newLines.join('\n');
   });
+  } // end if (currentMode !== 'ai') for autoItPatterns
 
   blocks.forEach(block => {
     block.text.split('\n').forEach(line => {
@@ -1191,6 +1191,8 @@ function runStep6() {
         const fixed = line.replace(/她/g,'他').replace(/妳/g,'你');
         block.text = block.text.replace(line, fixed);
       }
+      // 他→它？、它→他？ — AI 模式由 AI 判斷，基本模式才用規則偵測
+      if (currentMode !== 'ai') {
       // 他 — 排除明顯指人的動詞組合，其餘全列出
       if (line.includes('他')) {
         const skipHe = /他說|他去|他來|他做|他看|他想|他覺得|他知道|他不|他也|他就|他們|他有|他是|他在|他會|他要|他能|他把|他跟|他和|他對|他被|他讓|他給|他帶|他拿|他用|他吃|他喝|他買|他賣|他走|他跑|他坐|他站|他笑|他哭|他問|他答|他回|他告訴|他表示|他認為|他希望|他決定|他開始|他繼續|他停|他離|他到|他從|他記|他懂|他學|他教|他試|他選|他找|他等|他打|他發|他說過|他提|他講|他解|他分|他寫|他讀|他唱|他跳|他玩|他睡|他醒|他哭|他笑|他罵|他愛|他恨|他怕|他敢|他願|他肯|他敢|他後來|他最後|他突然|他終於|他已經|他還是|他卻|他其實|他竟然|他根本|他明明|他一直|他一定|他可能|他應該|他似乎|他好像|他大概|他差點|他幾乎|他甚至|他才|他又|他再|他還|他更|他越|他愈|教他|考他|跟他|叫他|問他|找他|告訴他|讓他|幫他|給他|看他|聽他|跟著他|陪他|等他|罵他|愛他|恨他|怕他|笑他|逼他|求他|拜託他|感謝他|支持他|鼓勵他|相信他|了解他|認識他|遇到他|看到他|聽到他|想到他|記得他|忘了他|在他|對他|為他|和他|與他|替他|幫他|向他|跟他|從他|被他|讓他|給他|把他|的他|他的|他剛/;
@@ -1205,6 +1207,7 @@ function runStep6() {
           suspects.push({ ts: block.start, text: line, tag: 'it', hint: '確認「它」是否應為「他」（指人）', blockRef: block });
         }
       }
+      } // end if (currentMode !== 'ai') for he/it
       // 中英混合：AI 模式由 AI 自行判斷，基本模式才用規則偵測
       if (currentMode !== 'ai') {
         const MIXED_IGNORE = new Set(['Email','email','Airbnb','iPhone','iPad','YouTube','Instagram','Facebook','LINE','Google','Apple','Netflix','Spotify','Amazon','Discord','Notion','Slack','Zoom','TikTok','Uber','PayPal','ChatGPT','Claude','Nike','Adidas','IKEA','Uniqlo','Windows','Android','WiFi','Wifi','OK','BGM','MV','EP','DJ','MC','VIP','NG','AI','App','APP','PC','TV','CM']);
@@ -1364,7 +1367,8 @@ function buildPrompt(lines) {
 4. 人名／地名／品牌疑似打錯，或同一個人名品牌在不同段有不同寫法（例如「Kiki」和「kikei」）
 5. 只有??或???需回聽
 6. 重複出現的名詞（人名、店名、APP名、商品名、品牌等），不管拼法是否一致，只要是專有名詞都要列出，讓使用者確認是否正確。此類一律用 type="批次替換"，original 填目前字幕中的寫法，suggestion 填建議的正確寫法（若不確定則填與 original 相同），time 填第一次出現的時間戳，desc 說明這是什麼詞以及你的判斷理由。
-7. 英中混用中，英文詞有自然的中文說法，且在這句話的語境下說話者不太可能會說英文的（例：「他想要control這件事」→「他想要控制這件事」）。type 用「英翻中」，original 填整行原文，suggestion 填整行修正後的文字，desc 說明建議翻譯的理由。不要改專有名詞、品牌、APP名稱、外來語（如 OK、bye、cafe、WiFi、NG、BGM）。判斷標準是：說這句話的人，在日常中文對話裡會不會說這個英文？若會，不要回報。
+7. 「他」/「它」用錯：「他」指人，「它」指物品、店家、品牌、食物等。遇到用「他」但語境是指物/店/品牌的，type 用「他→它」；遇到用「它」但語境是指人的，type 用「它→他」。只回報確定用錯的，不確定的不要回報。original 填整行原文，suggestion 填整行修正後文字。
+8. 英中混用中，英文詞有自然的中文說法，且在這句話的語境下說話者不太可能會說英文的（例：「他想要control這件事」→「他想要控制這件事」）。type 用「英翻中」，original 填整行原文，suggestion 填整行修正後的文字，desc 說明建議翻譯的理由。不要改專有名詞、品牌、APP名稱、外來語（如 OK、bye、cafe、WiFi、NG、BGM）。判斷標準是：說這句話的人，在日常中文對話裡會不會說這個英文？若會，不要回報。
 
 口語詞哈哈嗯欸啊不算錯誤。沒有問題就回傳 {"issues":[]}
 
@@ -1373,7 +1377,7 @@ function buildPrompt(lines) {
 suggestion 欄位規則（非常重要）：只填修正後的純文字，不加任何說明；絕對禁止出現，！。這三個標點符號；引號「」可保留；？只有原字幕本來就有才能保留；不改變句子原有結構，只修正錯誤的字。
 
 只回傳JSON不要其他任何文字或說明：
-{"issues":[{"num":序號,"time":"時間戳","original":"原文","type":"重複字|錯字|漏字|人名錯誤|需回聽|批次替換|英翻中","suggestion":"建議修正","desc":"說明"}]}
+{"issues":[{"num":序號,"time":"時間戳","original":"原文","type":"重複字|錯字|漏字|人名錯誤|需回聽|批次替換|他→它|它→他|英翻中","suggestion":"建議修正","desc":"說明"}]}
 
 字幕：
 ${lines}`;
@@ -1635,8 +1639,8 @@ function applyAIReply() {
 
 function renderCombinedList(combined) {
   const list = document.getElementById('issueList');
-  const typeColor = { '重複字': '#c05050', '錯字': '#c07830', '漏字': '#7850b8', '人名錯誤': '#3a9088', '批次替換': '#4a8bc4' };
-  const typeClass = { '重複字': 'tag-simp', '錯字': 'tag-he', '漏字': 'tag-pronoun', '人名錯誤': 'tag-name', '批次替換': 'tag-name' };
+  const typeColor = { '重複字': '#c05050', '錯字': '#c07830', '漏字': '#7850b8', '人名錯誤': '#3a9088', '批次替換': '#4a8bc4', '他→它': '#c07830', '它→他': '#3878b8', '英翻中': '#7a70b8' };
+  const typeClass = { '重複字': 'tag-simp', '錯字': 'tag-he', '漏字': 'tag-pronoun', '人名錯誤': 'tag-name', '批次替換': 'tag-name', '他→它': 'tag-he', '它→他': 'tag-it', '英翻中': 'tag-mixed' };
 
   combined.forEach((item, idx) => {
     const div = document.createElement('div');
