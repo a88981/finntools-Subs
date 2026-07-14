@@ -247,7 +247,7 @@ textarea.paste-area::placeholder { color: #98d0ca; }
       以下是 AI 偵測到的專有名詞（APP名/店名/人名等）。<br>
       確認後修改替換詞，不需要的直接跳過，完成後點「確認完成，繼續」。<br>出現一次的詞會在下一步驟個別確認。<br>下方搜尋欄可手動新增中文詞彙。
     </div>
-    <div id="autoTagListAI" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;"></div>
+    <div id="autoTagListAI" style="display:none;flex-wrap:wrap;gap:6px;margin-bottom:12px;"></div>
     <div style="display:flex;gap:8px;margin-bottom:10px;align-items:center;">
       <input id="searchWordInputAI" type="text" placeholder="可手動輸入中文品牌名、人名，按 Enter 新增後會顯示全文次數與替換欄位。" style="flex:1;background:rgba(255,255,255,0.9);border:1.5px solid rgba(110,196,188,0.35);border-radius:100px;padding:8px 16px;font-size:0.78rem;color:#2a5550;outline:none;font-family:inherit;" onkeydown="if(event.key==='Enter')addSearchWordAI()">
       <button class="btn-ghost" onclick="addSearchWordAI()" style="font-size:0.7rem;padding:7px 16px;color:#4aada5;border-color:rgba(110,196,188,0.4);white-space:nowrap;">搜尋</button>
@@ -1366,19 +1366,23 @@ function buildPrompt(lines) {
 1. 重複字詞（你你、的的、去去、我我、他他、了了 等）
 2. 明顯錯字（語音辨識錯誤或錯別字，非口語）
 3. 漏字（語意不完整）
-4. 人名／地名／品牌疑似打錯，或同一個人名品牌在不同段有不同寫法（例如「Kiki」和「kikei」）
-5. 只有??或???需回聽
-6. 重複出現的專有名詞（人名、店名、景點、品牌、APP名、商品名等）：
-   - 找出全片出現多次、但有不同寫法的詞（例如「高地」和「高第」是同一個人名的不同寫法）
-   - 每一種「錯誤寫法」各回傳一筆，type="批次替換"
-   - original 只填那個「錯誤寫法的詞本身」，例如「高地」（絕對不能填整行句子）
-   - suggestion 只填「正確寫法的詞本身」，例如「高第」（絕對不能填整行句子）
-   - time 填該錯誤寫法第一次出現的時間戳
-   - desc 說明這是什麼詞、為什麼建議替換
-   - 若某詞只出現一種寫法但你不確定是否正確，也可回報，original 和 suggestion 填一樣的詞，讓使用者確認
-7. 字幕中出現的人名（真實人物、節目來賓、被提及的第三者）：若能從上下文判斷這是一個人名（例如「大千他去了葡萄牙」），且該名字出現多次，回報一筆 type="批次替換"，original 填目前字幕中的寫法，suggestion 填同樣的詞（讓使用者確認是否正確），desc 說明這是人名及出現次數。若有不同寫法，每種各回一筆。
-8. 「他」/「它」用錯：「他」指人，「它」指物品、店家、品牌、食物等。遇到用「他」但語境是指物/店/品牌的，type 用「他→它」；遇到用「它」但語境是指人的，type 用「它→他」。只回報確定用錯的，不確定的不要回報。original 填整行原文，suggestion 填整行修正後文字。
-8. 英中混用中，英文詞有自然的中文說法，且在這句話的語境下說話者不太可能會說英文的（例：「他想要control這件事」→「他想要控制這件事」）。type 用「英翻中」，original 填整行原文，suggestion 填整行修正後的文字，desc 說明建議翻譯的理由。不要改專有名詞、品牌、APP名稱、外來語（如 OK、bye、cafe、WiFi、NG、BGM）。判斷標準是：說這句話的人，在日常中文對話裡會不會說這個英文？若會，不要回報。
+4. 只有??或???需回聽
+5. 專有名詞統一（人名、地名、景點、店名、品牌、APP名等）：
+   - 從上下文判斷是否為專有名詞，例如：
+     · 人名：後面接「他/她去」「他/她說」「跟XX一起」「XX的」，或被稱呼、被提及的對象
+     · 地名/景點：前後有「去」「到」「在」「參觀」「附近」「這裡是」等
+     · 品牌/店名：前後有「買」「吃」「喝」「用」「這家」「那個牌子」等
+   - 找出全片出現的專有名詞，包含只出現一種寫法但你判斷可能有誤的
+   - 若有不同寫法（例如「高地」和「高第」、「大千」和「大錢」），每種錯誤寫法各回一筆
+   - 若只出現一種寫法但出現 2 次以上，也回一筆讓使用者確認
+   - 一律用 type="批次替換"
+   - original 只填那個詞本身（例如「高地」），絕對不能填整行句子
+   - wrongWord 填字幕中出現的錯誤寫法本身（例如「高地」），絕對不能填整行句子
+   - suggestion 只填建議的正確寫法本身（例如「高第」），不確定就填跟 original 一樣，絕對不能填整行句子
+   - time 填該寫法第一次出現的時間戳
+   - desc 說明這是什麼詞、從哪裡判斷出來的、出現次數
+6. 「他」/「它」用錯：「他」指人，「它」指物品、店家、品牌、食物等。遇到確定用錯的，type 用「他→它」或「它→他」，original 填整行原文，suggestion 填整行修正後文字。
+7. 英中混用：英文詞有對應的中文說法，且說話者在日常中文語境下不太可能說英文的（例「他想要control這件事」→「他想要控制這件事」），type 用「英翻中」，original 填整行原文，suggestion 填整行修正後文字。專有名詞、品牌、外來語（OK、bye、WiFi、NG、BGM）不要改。
 
 口語詞哈哈嗯欸啊不算錯誤。沒有問題就回傳 {"issues":[]}
 
@@ -1388,8 +1392,10 @@ function buildPrompt(lines) {
 
 suggestion 欄位規則（非常重要）：只填修正後的純文字，不加任何說明；絕對禁止出現，！。這三個標點符號；引號「」可保留；？只有原字幕本來就有才能保留；不改變句子原有結構，只修正錯誤的字。
 
+重要補充：type="批次替換" 時，必須額外填寫 wrongWord 欄位，只填字幕中出現的那個錯誤寫法的詞本身（例如「高地」），不能填整行句子。這個欄位是工具自動搜尋用的，非常重要。
+
 只回傳JSON不要其他任何文字或說明：
-{"issues":[{"num":序號,"time":"時間戳","original":"原文","type":"重複字|錯字|漏字|人名錯誤|需回聽|批次替換|他→它|它→他|英翻中","suggestion":"建議修正","desc":"說明"}]}
+{"issues":[{"num":序號,"time":"時間戳","original":"原文","type":"重複字|錯字|漏字|需回聽|批次替換|他→它|它→他|英翻中","suggestion":"建議修正","wrongWord":"（批次替換專用）字幕中的錯誤寫法詞本身","desc":"說明"}]}
 
 字幕：
 ${lines}`;
@@ -1491,17 +1497,25 @@ function runStep6WithAI() {
     return false;
   };
   const batchIssues = aiIssues.filter(isBatch);
-  // 收集步驟三所有批次詞的 original 和 suggestion，步驟四濾掉重疊的
-  const batchOriginals = new Set(batchIssues.map(i => (i.original||'').toLowerCase()));
-  const batchSuggestions = new Set(batchIssues.map(i => (i.suggestion||'').toLowerCase()));
+  // 收集步驟三所有批次詞（original、wrongWord、suggestion），步驟四濾掉重疊的
+  const batchTerms = new Set();
+  batchIssues.forEach(i => {
+    if (i.original) batchTerms.add((i.original||'').toLowerCase());
+    if (i.wrongWord) batchTerms.add((i.wrongWord||'').toLowerCase());
+    if (i.suggestion) batchTerms.add((i.suggestion||'').toLowerCase());
+  });
   window._otherAIIssues = aiIssues.filter(i => {
     if (isBatch(i)) return false;
-    if (i.type === '批次替換') return false; // 批次替換一律只在步驟三
+    if (i.type === '批次替換') return false;
     const orig = (i.original||'').toLowerCase();
     const sugg = (i.suggestion||'').toLowerCase();
-    // 如果這筆的 original 或 suggestion 已在步驟三出現，跳過
-    if (batchOriginals.has(orig) || batchOriginals.has(sugg)) return false;
-    if (batchSuggestions.has(orig) || batchSuggestions.has(sugg)) return false;
+    const wrong = (i.wrongWord||'').toLowerCase();
+    // original、suggestion、wrongWord 任一在步驟三的批次詞裡，就跳過
+    if (batchTerms.has(orig) || batchTerms.has(sugg) || batchTerms.has(wrong)) return false;
+    // 也檢查 original 是否包含批次詞（處理 original 是整行句子的情況）
+    for (const term of batchTerms) {
+      if (term && orig.includes(term)) return false;
+    }
     return true;
   });
   window._pendingAIIssues = [];
@@ -1517,30 +1531,32 @@ function runStep6WithAI() {
         const allText = blocks.map(b=>b.text).join('\n');
         const orig = (iss.original||'').trim();
         const sugg = (iss.suggestion||'').trim();
-        // 判斷 original 是否是真正的詞：在全文出現 >=2 次，或 suggestion 跟它不同（代表 AI 有給修正建議）
+        const wrong = (iss.wrongWord||'').trim();
+        // 優先用 wrongWord（AI 專門填的錯誤詞），其次試 original（短詞才用）
         const origCount = orig ? allText.split(orig).length - 1 : 0;
-        const isWordLike = orig.length <= 10 && origCount >= 1;
-        const searchWord = isWordLike ? orig : '';
+        const wrongCount = wrong ? allText.split(wrong).length - 1 : 0;
+        const searchWord = wrong && wrong.length <= 10 ? wrong :
+                          (orig.length <= 8 && origCount >= 1 ? orig : '');
+        const count = searchWord ? allText.split(searchWord).length - 1 : 0;
         const replaceWord = sugg.length <= 10 ? sugg : '';
-        const count = searchWord ? origCount : 0;
         const row = document.createElement('div');
         row.style.cssText = 'background:rgba(255,248,210,0.85);border:1.5px solid rgba(210,180,60,0.25);border-radius:12px;padding:12px 16px;';
         row.setAttribute('data-batch-row','1');
         row.setAttribute('data-batch-word', searchWord);
         row.innerHTML = `
-          <div style="display:flex;align-items:flex-start;gap:10px;flex-wrap:wrap;">
+          <div style="font-size:0.62rem;color:#7a9e9b;margin-bottom:10px;line-height:1.6;">${(iss.desc||'').replace(/</g,'&lt;')}</div>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
             <div style="flex:1;min-width:100px;">
               <div style="font-size:0.6rem;color:#c07020;font-weight:700;margin-bottom:3px;">搜尋（換掉的詞）</div>
               <input class="batch-from-input" value="${searchWord.replace(/</g,'&lt;')}" placeholder="填入要換掉的詞" style="width:100%;background:rgba(255,255,255,0.9);border:1.5px solid rgba(210,130,40,0.4);border-radius:8px;padding:6px 10px;font-size:0.78rem;color:#2a5550;font-weight:700;outline:none;font-family:inherit;" oninput="updateBatchWord(this)">
               <div style="font-size:0.6rem;color:#7dc8c0;margin-top:3px;">${searchWord ? `全文共 ${count} 處` : '請填入要搜尋的詞'}</div>
             </div>
-            <div style="font-size:1rem;color:#bbb;flex-shrink:0;padding-top:18px;">→</div>
+            <div style="font-size:1rem;color:#bbb;flex-shrink:0;padding-top:16px;">→</div>
             <div style="flex:1;min-width:100px;">
               <div style="font-size:0.6rem;color:#4aada5;font-weight:700;margin-bottom:3px;">取代為</div>
               <input class="batch-to-input" value="${replaceWord.replace(/</g,'&lt;')}" placeholder="填入替換後的詞" style="width:100%;background:rgba(255,255,255,0.9);border:1.5px solid rgba(110,196,188,0.3);border-radius:8px;padding:6px 10px;font-size:0.78rem;color:#2a5550;font-weight:700;outline:none;font-family:inherit;">
-              <div style="font-size:0.6rem;color:#aaa;margin-top:3px;">${(iss.desc||'').replace(/</g,'&lt;')}</div>
             </div>
-            <div style="padding-top:18px;flex-shrink:0;">
+            <div style="padding-top:16px;flex-shrink:0;">
               <button class="btn-batch" onclick="applyBatchRow(this)">全換</button>
             </div>
           </div>`;
@@ -1552,8 +1568,9 @@ function runStep6WithAI() {
     }
   }
 
-  // 顯示 c3batch
-  autoDetectAndRenderAI();
+  // AI 模式不需要自動偵測英文重複詞（AI 已處理專有名詞）
+  const tagListAI = document.getElementById('autoTagListAI');
+  if (tagListAI) tagListAI.innerHTML = '';
   ['c1','c4','c4ai','c3batch','c6','c7'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.classList.toggle('show', id === 'c3batch');
