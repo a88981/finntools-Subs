@@ -1376,7 +1376,8 @@ function buildPrompt(lines) {
    - time 填該錯誤寫法第一次出現的時間戳
    - desc 說明這是什麼詞、為什麼建議替換
    - 若某詞只出現一種寫法但你不確定是否正確，也可回報，original 和 suggestion 填一樣的詞，讓使用者確認
-7. 「他」/「它」用錯：「他」指人，「它」指物品、店家、品牌、食物等。遇到用「他」但語境是指物/店/品牌的，type 用「他→它」；遇到用「它」但語境是指人的，type 用「它→他」。只回報確定用錯的，不確定的不要回報。original 填整行原文，suggestion 填整行修正後文字。
+7. 字幕中出現的人名（真實人物、節目來賓、被提及的第三者）：若能從上下文判斷這是一個人名（例如「大千他去了葡萄牙」），且該名字出現多次，回報一筆 type="批次替換"，original 填目前字幕中的寫法，suggestion 填同樣的詞（讓使用者確認是否正確），desc 說明這是人名及出現次數。若有不同寫法，每種各回一筆。
+8. 「他」/「它」用錯：「他」指人，「它」指物品、店家、品牌、食物等。遇到用「他」但語境是指物/店/品牌的，type 用「他→它」；遇到用「它」但語境是指人的，type 用「它→他」。只回報確定用錯的，不確定的不要回報。original 填整行原文，suggestion 填整行修正後文字。
 8. 英中混用中，英文詞有自然的中文說法，且在這句話的語境下說話者不太可能會說英文的（例：「他想要control這件事」→「他想要控制這件事」）。type 用「英翻中」，original 填整行原文，suggestion 填整行修正後的文字，desc 說明建議翻譯的理由。不要改專有名詞、品牌、APP名稱、外來語（如 OK、bye、cafe、WiFi、NG、BGM）。判斷標準是：說這句話的人，在日常中文對話裡會不會說這個英文？若會，不要回報。
 
 口語詞哈哈嗯欸啊不算錯誤。沒有問題就回傳 {"issues":[]}
@@ -1527,19 +1528,21 @@ function runStep6WithAI() {
         row.setAttribute('data-batch-row','1');
         row.setAttribute('data-batch-word', searchWord);
         row.innerHTML = `
-          <div style="font-size:0.62rem;color:#7a9e9b;margin-bottom:8px;">${(iss.desc||'').replace(/</g,'&lt;')}</div>
-          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-            <div style="flex:1;min-width:80px;">
+          <div style="display:flex;align-items:flex-start;gap:10px;flex-wrap:wrap;">
+            <div style="flex:1;min-width:100px;">
               <div style="font-size:0.6rem;color:#c07020;font-weight:700;margin-bottom:3px;">搜尋（換掉的詞）</div>
               <input class="batch-from-input" value="${searchWord.replace(/</g,'&lt;')}" placeholder="填入要換掉的詞" style="width:100%;background:rgba(255,255,255,0.9);border:1.5px solid rgba(210,130,40,0.4);border-radius:8px;padding:6px 10px;font-size:0.78rem;color:#2a5550;font-weight:700;outline:none;font-family:inherit;" oninput="updateBatchWord(this)">
               <div style="font-size:0.6rem;color:#7dc8c0;margin-top:3px;">${searchWord ? `全文共 ${count} 處` : '請填入要搜尋的詞'}</div>
             </div>
-            <div style="font-size:1rem;color:#bbb;flex-shrink:0;">→</div>
-            <div style="flex:1;min-width:80px;">
+            <div style="font-size:1rem;color:#bbb;flex-shrink:0;padding-top:18px;">→</div>
+            <div style="flex:1;min-width:100px;">
               <div style="font-size:0.6rem;color:#4aada5;font-weight:700;margin-bottom:3px;">取代為</div>
               <input class="batch-to-input" value="${replaceWord.replace(/</g,'&lt;')}" placeholder="填入替換後的詞" style="width:100%;background:rgba(255,255,255,0.9);border:1.5px solid rgba(110,196,188,0.3);border-radius:8px;padding:6px 10px;font-size:0.78rem;color:#2a5550;font-weight:700;outline:none;font-family:inherit;">
+              <div style="font-size:0.6rem;color:#aaa;margin-top:3px;">${(iss.desc||'').replace(/</g,'&lt;')}</div>
             </div>
-            <button class="btn-batch" onclick="applyBatchRow(this)">全換</button>
+            <div style="padding-top:18px;flex-shrink:0;">
+              <button class="btn-batch" onclick="applyBatchRow(this)">全換</button>
+            </div>
           </div>`;
         list.appendChild(row);
       });
