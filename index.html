@@ -1426,6 +1426,23 @@ function skipAIAndContinue() {
 }
 
 
+function applyBatchRow(btn) {
+  const row = btn.closest('[data-batch-row]');
+  const fromInput = row ? row.querySelector('.batch-from-input') : null;
+  const toInput = row ? row.querySelector('.batch-to-input') : null;
+  const from = fromInput ? fromInput.value.trim() : '';
+  const to = toInput ? toInput.value.trim() : '';
+  if (!from) { alert('請填入要搜尋的詞'); return; }
+  if (!to) { alert('請填入替換後的詞'); return; }
+  let count = 0;
+  blocks.forEach(b => {
+    if (b.text.includes(from)) { b.text = b.text.split(from).join(to); count++; }
+  });
+  btn.textContent = `✓ 已換${count}處`;
+  btn.classList.add('applied');
+  if (row) row.style.opacity = '0.5';
+}
+
 function updateBatchWord(input) {
   const row = input.closest('[data-batch-row]');
   if (row) row.setAttribute('data-batch-word', input.value.trim());
@@ -1497,28 +1514,32 @@ function runStep6WithAI() {
       if (emptyEl) emptyEl.style.display = 'none';
       batchIssues.forEach(iss => {
         const allText = blocks.map(b=>b.text).join('\n');
-        // 決定左側搜尋詞：original 短就直接用，長句就留空讓使用者填
-        const searchWord = (iss.original||'').length <= 12 ? (iss.original||'') : '';
-        const replaceWord = (iss.suggestion||'').length <= 12 ? (iss.suggestion||searchWord) : searchWord;
-        const count = searchWord ? allText.split(searchWord).length - 1 : 0;
+        const orig = (iss.original||'').trim();
+        const sugg = (iss.suggestion||'').trim();
+        // 判斷 original 是否是真正的詞：在全文出現 >=2 次，或 suggestion 跟它不同（代表 AI 有給修正建議）
+        const origCount = orig ? allText.split(orig).length - 1 : 0;
+        const isWordLike = orig.length <= 10 && origCount >= 1;
+        const searchWord = isWordLike ? orig : '';
+        const replaceWord = sugg.length <= 10 ? sugg : '';
+        const count = searchWord ? origCount : 0;
         const row = document.createElement('div');
         row.style.cssText = 'background:rgba(255,248,210,0.85);border:1.5px solid rgba(210,180,60,0.25);border-radius:12px;padding:12px 16px;';
         row.setAttribute('data-batch-row','1');
         row.setAttribute('data-batch-word', searchWord);
         row.innerHTML = `
-          <div style="font-size:0.62rem;color:#999;margin-bottom:8px;">${(iss.desc||'').replace(/</g,'&lt;')}</div>
+          <div style="font-size:0.62rem;color:#7a9e9b;margin-bottom:8px;">${(iss.desc||'').replace(/</g,'&lt;')}</div>
           <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
             <div style="flex:1;min-width:80px;">
-              <div style="font-size:0.6rem;color:#7dc8c0;margin-bottom:3px;">搜尋（要換掉的詞）</div>
-              <input class="batch-from-input" value="${searchWord.replace(/</g,'&lt;')}" placeholder="輸入要搜尋的詞" style="width:100%;background:rgba(255,255,255,0.9);border:1.5px solid rgba(210,130,40,0.35);border-radius:8px;padding:6px 10px;font-size:0.75rem;color:#2a5550;font-weight:600;outline:none;font-family:inherit;" oninput="updateBatchWord(this)">
-              ${searchWord ? `<div style="font-size:0.6rem;color:#7dc8c0;margin-top:3px;">全文共 ${count} 處</div>` : '<div style="font-size:0.6rem;color:#e8934a;margin-top:3px;">請輸入要搜尋的詞</div>'}
+              <div style="font-size:0.6rem;color:#c07020;font-weight:700;margin-bottom:3px;">搜尋（換掉的詞）</div>
+              <input class="batch-from-input" value="${searchWord.replace(/</g,'&lt;')}" placeholder="填入要換掉的詞" style="width:100%;background:rgba(255,255,255,0.9);border:1.5px solid rgba(210,130,40,0.4);border-radius:8px;padding:6px 10px;font-size:0.78rem;color:#2a5550;font-weight:700;outline:none;font-family:inherit;" oninput="updateBatchWord(this)">
+              <div style="font-size:0.6rem;color:#7dc8c0;margin-top:3px;">${searchWord ? `全文共 ${count} 處` : '請填入要搜尋的詞'}</div>
             </div>
-            <div style="font-size:0.9rem;color:#aaa;flex-shrink:0;">→</div>
+            <div style="font-size:1rem;color:#bbb;flex-shrink:0;">→</div>
             <div style="flex:1;min-width:80px;">
-              <div style="font-size:0.6rem;color:#7dc8c0;margin-bottom:3px;">取代為</div>
-              <input class="batch-to-input" value="${replaceWord.replace(/</g,'&lt;')}" placeholder="輸入替換後的詞" style="width:100%;background:rgba(255,255,255,0.9);border:1.5px solid rgba(110,196,188,0.3);border-radius:8px;padding:6px 10px;font-size:0.75rem;color:#2a5550;font-weight:600;outline:none;font-family:inherit;">
+              <div style="font-size:0.6rem;color:#4aada5;font-weight:700;margin-bottom:3px;">取代為</div>
+              <input class="batch-to-input" value="${replaceWord.replace(/</g,'&lt;')}" placeholder="填入替換後的詞" style="width:100%;background:rgba(255,255,255,0.9);border:1.5px solid rgba(110,196,188,0.3);border-radius:8px;padding:6px 10px;font-size:0.78rem;color:#2a5550;font-weight:700;outline:none;font-family:inherit;">
             </div>
-            <button class="btn-batch" onclick="batchReplaceAI(this.closest('[data-batch-row]').getAttribute('data-batch-word'), this)">全換</button>
+            <button class="btn-batch" onclick="applyBatchRow(this)">全換</button>
           </div>`;
         list.appendChild(row);
       });
@@ -1557,14 +1578,14 @@ function runStep6WithAI() {
 }
 
 function goToIssueStep() {
-  // 套用步驟三所有批次替換列
+  // 套用步驟三所有批次替換列（未點全換的）
   document.querySelectorAll('#c3batch [data-batch-row]').forEach(row => {
-    const word = row.getAttribute('data-batch-word');
+    if (row.style.opacity === '0.5') return; // 已手動全換過的跳過
+    const fromInput = row.querySelector('.batch-from-input');
     const toInput = row.querySelector('.batch-to-input');
-    if (word && word.trim() && toInput) {
-      const to = toInput.value.trim();
-      if (to && to !== word) blocks.forEach(b => { b.text = b.text.split(word).join(to); });
-    }
+    const from = fromInput ? fromInput.value.trim() : row.getAttribute('data-batch-word');
+    const to = toInput ? toInput.value.trim() : '';
+    if (from && to && from !== to) blocks.forEach(b => { b.text = b.text.split(from).join(to); });
   });
 
   runStep6();
