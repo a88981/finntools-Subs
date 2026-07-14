@@ -199,7 +199,7 @@ textarea.paste-area::placeholder { color: #98d0ca; }
       <div class="stat"><span class="v" id="st-seg">—</span><span class="k">總段數</span></div>
       <div class="stat"><span class="v" id="st-fix">—</span><span class="k">分鐘數</span></div>
 
-      <div class="stat warn-stat"><span class="v" id="st-iss">—</span><span class="k">待確認</span></div>
+      <div class="stat warn-stat"><span class="v" id="st-iss">—</span><span class="k" id="st-iss-label">待確認</span></div>
     </div>
   </div>
 
@@ -456,6 +456,7 @@ const TERMS = {
 
 
 let raw = '', fileName = '', blocks = [], finalContent = '';
+let _fixCount = 0;
 let suspects = [];
 
 // ============================================================
@@ -478,6 +479,12 @@ function toast(msg) {
   t.style.opacity = '1';
   clearTimeout(t._timer);
   t._timer = setTimeout(() => { t.style.opacity = '0'; }, 2500);
+}
+
+function setDoneStats(count) {
+  document.getElementById('st-iss').textContent = count;
+  const label = document.getElementById('st-iss-label');
+  if (label) label.textContent = '已修正';
 }
 
 function goStep(n) {
@@ -519,6 +526,10 @@ function goStep(n) {
     const c7el = document.getElementById('c7');
     if (c7el) c7el.style.display = 'block';
   }
+  if (n === 99) {
+    const stp1 = document.getElementById('stp1');
+    if (stp1) { stp1.classList.remove('active','warn'); stp1.classList.add('done'); }
+  }
   if (n > 2) {
     document.getElementById('statsBox').style.display = 'block';
   } else if (n === 1) {
@@ -530,7 +541,14 @@ function goStep(n) {
     const stp = document.getElementById('stp' + i);
     const show = i <= totalSteps;
     if (line) line.style.display = show ? '' : 'none';
-    if (stp) stp.style.display = show ? '' : 'none';
+    if (stp) {
+      stp.style.display = show ? '' : 'none';
+      // n===99 時確保顯示的步驟都是 done
+      if (n === 99 && show) {
+        stp.classList.remove('active','warn');
+        stp.classList.add('done');
+      }
+    }
   });
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
@@ -754,10 +772,10 @@ function runStep4Quick() {
   const minsMatch = lastTs.match(/(\d+):(\d+):(\d+)/);
   const totalMins = minsMatch ? (parseInt(minsMatch[1])*60 + parseInt(minsMatch[2])) + '分' : '—';
   document.getElementById('st-fix').textContent = totalMins;
-  document.getElementById('st-iss').textContent = '—';
   buildFinal();
+  setDoneStats(fixes);
   document.getElementById('doneMsg').textContent = '快速模式完成！';
-goStep(99);
+  goStep(99);
   document.getElementById('c7').style.display = 'block';
   document.getElementById('statsBox').style.display = 'block';
   window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1756,6 +1774,7 @@ function applyAIQuickAndDownload() {
   } catch(e) { console.error('summary error:', e); }
 
   document.getElementById('doneMsg').textContent = `AI 快速模式完成！共套用 ${validIssues.length} 處修正`;
+  setDoneStats(validIssues.length);
   ['c1','c4','c4ai','c3batch','c6','singleModeBlock','nounScanBlockStep'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.style.display = 'none';
@@ -2491,9 +2510,16 @@ function buildFinal() {
 }
 
 function showDownload() {
+  // 計算修正行數：比較原始 raw 和修改後的 blocks
+  const origLines = (raw || '').split('\n').filter(l => l.trim() && !/^\d+$/.test(l.trim()) && !l.includes('-->'));
+  let fixCount = _fixCount;
+  if (fixCount === 0) {
+    const newLines = blocks.map(b => b.text.split('\n')).flat().filter(l => l.trim());
+    fixCount = origLines.filter((l, i) => newLines[i] && newLines[i] !== l).length;
+  }
   buildFinal();
+  setDoneStats(fixCount);
   document.getElementById('doneMsg').textContent = `共 ${blocks.length} 段，處理完成！`;
-  // 直接顯示完成卡片
   ['c1','c4','c4ai','c6'].forEach(id => { const el=document.getElementById(id); if(el) el.style.display='none'; });
   document.getElementById('c7').style.display = 'block';
   window.scrollTo({ top: 0, behavior: 'smooth' });
