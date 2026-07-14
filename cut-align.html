@@ -273,7 +273,6 @@ function processFile(file, type) {
       xmlContent = e.target.result;
     } else {
       srtContent = e.target.result;
-      srtFilename = file.name.replace(/\.srt$/i, '') + '_對齊剪輯點.srt';
     }
     checkReady();
   };
@@ -407,10 +406,14 @@ function runAlign() {
 
 function downloadSrt() {
   if (!outputSrt) return;
+  const now = new Date();
+  const date = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}`;
+  const time = `${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}`;
+  const filename = `${date}_${time}_字幕對齊剪輯點.srt`;
   const blob = new Blob([outputSrt], { type: 'text/plain;charset=utf-8' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = srtFilename;
+  a.download = filename;
   a.click();
   document.getElementById('stp4').className = 'stp done';
 }
