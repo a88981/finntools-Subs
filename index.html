@@ -1421,9 +1421,12 @@ function runStep6WithAI() {
   const aiIssues = window._pendingAIIssues || [];
   const allText = blocks.map(b=>b.text).join('\n');
   const isBatch = i => {
-    if (i.type !== '批次替換' && i.type !== '人名錯誤') return false;
-    const count = allText.split(i.original).length - 1;
-    return count >= 2; // 出現 >=2 次才放步驟三
+    if (i.type === '批次替換') return true; // 批次替換一律進步驟三
+    if (i.type === '人名錯誤') {
+      const count = allText.split(i.original).length - 1;
+      return count >= 2;
+    }
+    return false;
   };
   const batchIssues = aiIssues.filter(isBatch);
   // 收集步驟三所有批次詞的 original 和 suggestion，步驟四濾掉重疊的
@@ -1431,6 +1434,7 @@ function runStep6WithAI() {
   const batchSuggestions = new Set(batchIssues.map(i => (i.suggestion||'').toLowerCase()));
   window._otherAIIssues = aiIssues.filter(i => {
     if (isBatch(i)) return false;
+    if (i.type === '批次替換') return false; // 批次替換一律只在步驟三
     const orig = (i.original||'').toLowerCase();
     const sugg = (i.suggestion||'').toLowerCase();
     // 如果這筆的 original 或 suggestion 已在步驟三出現，跳過
