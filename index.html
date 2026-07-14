@@ -1368,7 +1368,7 @@ function buildPrompt(lines) {
 3. 漏字（語意不完整）
 4. 人名／地名／品牌疑似打錯，或同一個人名品牌在不同段有不同寫法（例如「Kiki」和「kikei」）
 5. 只有??或???需回聽
-6. 重複出現的名詞（人名、店名、APP名、商品名、品牌等），不管拼法是否一致，只要是專有名詞都要列出，讓使用者確認是否正確。此類一律用 type="批次替換"，original 填目前字幕中的寫法，suggestion 填建議的正確寫法（若不確定則填與 original 相同），time 填第一次出現的時間戳，desc 說明這是什麼詞以及你的判斷理由。
+6. 重複出現的名詞（人名、店名、APP名、商品名、品牌等），不管拼法是否一致，只要是專有名詞都要列出，讓使用者確認是否正確。此類一律用 type="批次替換"，original 只填那個詞本身（例如「大千」，不是整行句子），suggestion 填建議的正確寫法（若不確定則填與 original 相同），time 填第一次出現的時間戳，desc 說明這是什麼詞以及你的判斷理由。若同一個詞有多種寫法（例如「大千」和「大錢」），每種寫法各回傳一筆，original 分別填那個寫法本身。
 7. 「他」/「它」用錯：「他」指人，「它」指物品、店家、品牌、食物等。遇到用「他」但語境是指物/店/品牌的，type 用「他→它」；遇到用「它」但語境是指人的，type 用「它→他」。只回報確定用錯的，不確定的不要回報。original 填整行原文，suggestion 填整行修正後文字。
 8. 英中混用中，英文詞有自然的中文說法，且在這句話的語境下說話者不太可能會說英文的（例：「他想要control這件事」→「他想要控制這件事」）。type 用「英翻中」，original 填整行原文，suggestion 填整行修正後的文字，desc 說明建議翻譯的理由。不要改專有名詞、品牌、APP名稱、外來語（如 OK、bye、cafe、WiFi、NG、BGM）。判斷標準是：說這句話的人，在日常中文對話裡會不會說這個英文？若會，不要回報。
 
@@ -1459,6 +1459,7 @@ function runStep6WithAI() {
         const safeFrom = (iss.original||'').replace(/'/g,"\\'").replace(/</g,'&lt;');
         const safeSugg = (iss.suggestion||iss.original||'').replace(/</g,'&lt;');
         row.setAttribute('data-batch-row','1');
+        row.setAttribute('data-batch-word', iss.original||'');
         row.innerHTML = `
           <div style="display:flex;align-items:flex-start;gap:10px;flex-wrap:wrap;">
             <div style="flex:1;min-width:100px;">
@@ -1512,6 +1513,16 @@ function runStep6WithAI() {
 }
 
 function goToIssueStep() {
+  // 套用步驟三所有批次替換列
+  document.querySelectorAll('#c3batch [data-batch-row]').forEach(row => {
+    const word = row.getAttribute('data-batch-word');
+    const input = row.querySelector('.batch-to-input');
+    if (word && input) {
+      const to = input.value.trim();
+      if (to && to !== word) blocks.forEach(b => { b.text = b.text.split(word).join(to); });
+    }
+  });
+
   runStep6();
   const otherIssues = window._otherAIIssues || [];
 
