@@ -1537,10 +1537,10 @@ function runStep6WithAI() {
         // 優先用 wrongWord（AI 專門填的錯誤詞），其次試 original（短詞才用）
         const origCount = orig ? allText.split(orig).length - 1 : 0;
         const wrongCount = wrong ? allText.split(wrong).length - 1 : 0;
-        const searchWord = wrong && wrong.length <= 10 ? wrong :
+        const searchWord = wrong && wrong.length <= 20 ? wrong :
                           (orig.length <= 8 && origCount >= 1 ? orig : '');
         const count = searchWord ? allText.split(searchWord).length - 1 : 0;
-        const replaceWord = sugg.length <= 10 ? sugg : '';
+        const replaceWord = sugg.length <= 20 ? sugg : '';
         // 同一個 searchWord 只顯示一次
         const dedupeKey = (searchWord || orig).toLowerCase();
         if (dedupeKey && seenSearchWords.has(dedupeKey)) return;
@@ -1555,12 +1555,13 @@ function runStep6WithAI() {
             <div style="flex:1;min-width:100px;">
               <div style="font-size:0.6rem;color:#c07020;font-weight:700;margin-bottom:3px;">搜尋（換掉的詞）</div>
               <input class="batch-from-input" value="${searchWord.replace(/</g,'&lt;')}" placeholder="填入要換掉的詞" style="width:100%;background:rgba(255,255,255,0.9);border:1.5px solid rgba(210,130,40,0.4);border-radius:8px;padding:6px 10px;font-size:0.78rem;color:#2a5550;font-weight:700;outline:none;font-family:inherit;" oninput="updateBatchWord(this)">
-              <div style="font-size:0.6rem;color:#7dc8c0;margin-top:3px;">${searchWord ? `全文共 ${count} 處` : '請填入要搜尋的詞'}</div>
+              <div style="font-size:0.6rem;color:#7dc8c0;margin-top:3px;min-height:14px;">${searchWord ? `全文共 ${count} 處` : '請填入要搜尋的詞'}</div>
             </div>
             <div style="font-size:1rem;color:#bbb;flex-shrink:0;padding-top:16px;">→</div>
             <div style="flex:1;min-width:100px;">
               <div style="font-size:0.6rem;color:#4aada5;font-weight:700;margin-bottom:3px;">取代為</div>
               <input class="batch-to-input" value="${replaceWord.replace(/</g,'&lt;')}" placeholder="填入替換後的詞" style="width:100%;background:rgba(255,255,255,0.9);border:1.5px solid rgba(110,196,188,0.3);border-radius:8px;padding:6px 10px;font-size:0.78rem;color:#2a5550;font-weight:700;outline:none;font-family:inherit;">
+              <div style="font-size:0.6rem;color:transparent;margin-top:3px;min-height:14px;">　</div>
             </div>
             <div style="padding-top:16px;flex-shrink:0;">
               <button class="btn-batch" onclick="applyBatchRow(this)">全換</button>
