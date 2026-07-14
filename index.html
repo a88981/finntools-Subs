@@ -346,7 +346,7 @@ const TERMS = {
   '理论':'理論','影响':'影響','希腊':'希臘','明显':'明顯',
   '周围':'周圍','夸张':'誇張','组织':'組織','对不对':'對不對',
   '然后':'然後','超级':'超級','攻击':'攻擊','之后':'之後',
-  '哎':'欸','诶':'欸','哈嘍':'哈囉','拜拜':'掰掰',
+  '哎':'欸','诶':'欸','哈嘍':'哈囉','拜拜':'掰掰','嘍':'囉',
   '以后':'以後','什么':'什麼','怎么':'怎麼','那么':'那麼',
 };
 
@@ -1373,8 +1373,9 @@ function buildPrompt(lines) {
      · 地名/景點：前後有「去」「到」「在」「參觀」「附近」「這裡是」等
      · 品牌/店名：前後有「買」「吃」「喝」「用」「這家」「那個牌子」等
    - 找出全片出現的專有名詞，包含只出現一種寫法但你判斷可能有誤的
+   - 特別注意人名：只要從上下文能判斷出是人名（例如「大千他要去葡萄牙」、「跟大千一起」），哪怕只出現一次也要回報，讓使用者確認名字是否正確
    - 若有不同寫法（例如「高地」和「高第」、「大千」和「大錢」），每種錯誤寫法各回一筆
-   - 若只出現一種寫法但出現 2 次以上，也回一筆讓使用者確認
+   - 若只出現一種寫法，也回一筆讓使用者確認
    - 一律用 type="批次替換"
    - original 只填那個詞本身（例如「高地」），絕對不能填整行句子
    - wrongWord 填字幕中出現的錯誤寫法本身（例如「高地」），絕對不能填整行句子
@@ -1527,6 +1528,7 @@ function runStep6WithAI() {
     if (batchIssues.length > 0) {
       const emptyEl = document.getElementById('batchEmptyNew');
       if (emptyEl) emptyEl.style.display = 'none';
+      const seenSearchWords = new Set();
       batchIssues.forEach(iss => {
         const allText = blocks.map(b=>b.text).join('\n');
         const orig = (iss.original||'').trim();
@@ -1539,6 +1541,10 @@ function runStep6WithAI() {
                           (orig.length <= 8 && origCount >= 1 ? orig : '');
         const count = searchWord ? allText.split(searchWord).length - 1 : 0;
         const replaceWord = sugg.length <= 10 ? sugg : '';
+        // 同一個 searchWord 只顯示一次
+        const dedupeKey = (searchWord || orig).toLowerCase();
+        if (dedupeKey && seenSearchWords.has(dedupeKey)) return;
+        if (dedupeKey) seenSearchWords.add(dedupeKey);
         const row = document.createElement('div');
         row.style.cssText = 'background:rgba(255,248,210,0.85);border:1.5px solid rgba(210,180,60,0.25);border-radius:12px;padding:12px 16px;';
         row.setAttribute('data-batch-row','1');
