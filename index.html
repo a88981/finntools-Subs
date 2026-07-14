@@ -147,24 +147,24 @@ textarea.paste-area::placeholder { color: #98d0ca; }
   <div class="card" id="c1" style="display:block;">
     <div class="card-title">步驟一</div>
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin-bottom:16px;">
-      <div id="modeQuick" onclick="selectMode('quick')" style="background:rgba(255,255,255,0.88);border:2px solid rgba(110,196,188,0.2);border-radius:12px;padding:14px 16px;cursor:pointer;transition:all 0.2s;">
-        <div style="display:flex;align-items:center;" onclick="event.stopPropagation()">
-          <span style="font-size:0.88rem;font-weight:800;color:#2a5550;" onclick="selectMode('quick')">⚡ 快速模式</span>
+      <div id="modeFull" onclick="selectMode('full')" style="background:rgba(110,196,188,0.12);border:2px solid #6ec4bc;border-radius:12px;padding:14px 16px;cursor:pointer;transition:all 0.2s;">
+        <div style="display:flex;align-items:center;">
+          <span style="font-size:0.88rem;font-weight:800;color:#2a5550;">🔍 基本模式</span>
         </div>
       </div>
-      <div id="modeFull" onclick="selectMode('full')" style="background:rgba(110,196,188,0.12);border:2px solid #6ec4bc;border-radius:12px;padding:14px 16px;cursor:pointer;transition:all 0.2s;">
-        <div style="display:flex;align-items:center;" onclick="event.stopPropagation()">
-          <span style="font-size:0.88rem;font-weight:800;color:#2a5550;" onclick="selectMode('full')">🔍 基本模式</span>
+      <div id="modeQuick" onclick="selectMode('quick')" style="background:rgba(255,255,255,0.88);border:2px solid rgba(110,196,188,0.2);border-radius:12px;padding:14px 16px;cursor:pointer;transition:all 0.2s;">
+        <div style="display:flex;align-items:center;">
+          <span style="font-size:0.88rem;font-weight:800;color:#2a5550;">⚡ 快速模式</span>
         </div>
       </div>
       <div id="modeAI" onclick="selectMode('ai')" style="background:rgba(255,255,255,0.88);border:2px solid rgba(110,196,188,0.2);border-radius:12px;padding:14px 16px;cursor:pointer;transition:all 0.2s;">
-        <div style="display:flex;align-items:center;" onclick="event.stopPropagation()">
-          <span style="font-size:0.88rem;font-weight:800;color:#2a5550;" onclick="selectMode('ai')">🤖 完整模式 <span style="font-size:0.68rem;font-weight:700;color:#e8a020;letter-spacing:0.02em;">推薦✨</span></span>
+        <div style="display:flex;align-items:center;">
+          <span style="font-size:0.88rem;font-weight:800;color:#2a5550;">🤖 完整模式 <span style="font-size:0.68rem;font-weight:700;color:#e8a020;letter-spacing:0.02em;">推薦✨</span></span>
         </div>
       </div>
       <div id="modeAIQuick" onclick="selectMode('aiquick')" style="background:rgba(255,255,255,0.88);border:2px solid rgba(110,196,188,0.2);border-radius:12px;padding:14px 16px;cursor:pointer;transition:all 0.2s;">
-        <div style="display:flex;align-items:center;" onclick="event.stopPropagation()">
-          <span style="font-size:0.88rem;font-weight:800;color:#2a5550;" onclick="selectMode('aiquick')">🚀 全AI 模式 <span style="font-size:0.68rem;font-weight:700;color:#e8a020;letter-spacing:0.02em;">推薦✨</span></span>
+        <div style="display:flex;align-items:center;">
+          <span style="font-size:0.88rem;font-weight:800;color:#2a5550;">🚀 全AI 模式 <span style="font-size:0.68rem;font-weight:700;color:#e8a020;letter-spacing:0.02em;">推薦✨</span></span>
         </div>
       </div>
     </div>
@@ -488,8 +488,17 @@ function setDoneStats(count) {
 }
 
 function goStep(n) {
+  // 先設步驟顯示
   const totalStepsMap = { quick: 2, full: 4, ai: 5, aiquick: 3 };
   const totalSteps = totalStepsMap[currentMode] || 3;
+  [2,3,4,5].forEach(i => {
+    const line = document.getElementById('stpLine' + i);
+    const stp = document.getElementById('stp' + i);
+    const show = i <= totalSteps;
+    if (line) line.style.display = show ? '' : 'none';
+    if (stp) stp.style.display = show ? '' : 'none';
+  });
+  // 再設 done/active（確保元素已顯示）
   [1,2,3,4,5].forEach(i => {
     const stp = document.getElementById('stp'+i);
     if (!stp) return;
@@ -535,21 +544,6 @@ function goStep(n) {
   } else if (n === 1) {
     document.getElementById('statsBox').style.display = 'none';
   }
-  // 步驟線和步驟顯示
-  [2,3,4,5].forEach(i => {
-    const line = document.getElementById('stpLine' + i);
-    const stp = document.getElementById('stp' + i);
-    const show = i <= totalSteps;
-    if (line) line.style.display = show ? '' : 'none';
-    if (stp) {
-      stp.style.display = show ? '' : 'none';
-      // n===99 時確保顯示的步驟都是 done
-      if (n === 99 && show) {
-        stp.classList.remove('active','warn');
-        stp.classList.add('done');
-      }
-    }
-  });
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -773,7 +767,7 @@ function runStep4Quick() {
   const totalMins = minsMatch ? (parseInt(minsMatch[1])*60 + parseInt(minsMatch[2])) + '分' : '—';
   document.getElementById('st-fix').textContent = totalMins;
   buildFinal();
-  setDoneStats(fixes);
+  setDoneStats('—');
   document.getElementById('doneMsg').textContent = '快速模式完成！';
   goStep(99);
   document.getElementById('c7').style.display = 'block';
@@ -1773,15 +1767,9 @@ function applyAIQuickAndDownload() {
   }
   } catch(e) { console.error('summary error:', e); }
 
-  document.getElementById('doneMsg').textContent = `AI 快速模式完成！共套用 ${validIssues.length} 處修正`;
+  document.getElementById('doneMsg').textContent = `AI 全模式完成！共套用 ${validIssues.length} 處修正`;
   setDoneStats(validIssues.length);
-  ['c1','c4','c4ai','c3batch','c6','singleModeBlock','nounScanBlockStep'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.style.display = 'none';
-  });
-  document.getElementById('c7').style.display = 'block';
-  document.getElementById('statsBox').style.display = 'block';
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+  goStep(99);
 }
 
 function applyAIReplyAndContinue() {
@@ -2520,9 +2508,7 @@ function showDownload() {
   buildFinal();
   setDoneStats(fixCount);
   document.getElementById('doneMsg').textContent = `共 ${blocks.length} 段，處理完成！`;
-  ['c1','c4','c4ai','c6'].forEach(id => { const el=document.getElementById(id); if(el) el.style.display='none'; });
-  document.getElementById('c7').style.display = 'block';
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+  goStep(99);
 }
 
 function download() {
