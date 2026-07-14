@@ -278,7 +278,7 @@ textarea.paste-area::placeholder { color: #98d0ca; }
         </div>
         <div style="padding:0 14px 12px;position:relative;">
           <textarea id="aiPromptNounStep" readonly style="background:rgba(255,255,255,0.9);border:1.5px solid rgba(200,175,80,0.3);border-radius:10px;color:#2a4060;font-size:0.68rem;line-height:1.7;min-height:100px;outline:none;padding:12px 14px;resize:vertical;width:100%;font-family:inherit;font-weight:600;"></textarea>
-          <button onclick="copyNounPromptStep(this)" style="position:absolute;top:8px;right:22px;background:#6ec4bc;border:none;border-radius:100px;color:white;cursor:pointer;font-family:inherit;font-size:0.65rem;font-weight:800;padding:5px 14px;">複製並前往</button>
+          <button onclick="event.stopPropagation();copyNounPromptOnly(this)" style="position:absolute;top:8px;right:22px;background:#6ec4bc;border:none;border-radius:100px;color:white;cursor:pointer;font-family:inherit;font-size:0.65rem;font-weight:800;padding:5px 14px;">複製 Prompt</button>
         </div>
         <div style="padding:10px 14px 6px;border-top:1px solid rgba(200,175,80,0.2);">
           <div style="font-size:0.72rem;font-weight:800;color:#3a9088;">④ 把人名景點的回覆貼在這裡</div>
@@ -2108,6 +2108,15 @@ ${lines}`;
   if (ta) ta.value = nounPrompt;
 }
 
+function copyNounPromptOnly(btn) {
+  const ta = document.getElementById('aiPromptNounStep');
+  const text = ta ? ta.value : '';
+  if (!text) { toast('請先點「產生 AI Prompt」'); return; }
+  btn.textContent = '✓ 已複製';
+  btn.style.background = '#4aada5';
+  try { navigator.clipboard.writeText(text); } catch(e) { if(ta) { ta.select(); document.execCommand('copy'); } }
+}
+
 function copyNounPromptStep(btn) {
   const ta = document.getElementById('aiPromptNounStep');
   const text = ta ? ta.value : '';
@@ -2205,34 +2214,19 @@ function copyAndOpenClaudeStep2(btn) {
   setTimeout(() => window.open('https://claude.ai', '_blank'), 300);
 }
 function copyAndOpenClaudeTwo(btn) {
-  const text = document.getElementById('aiPromptTextTwo').value;
-  navigator.clipboard.writeText(text).then(() => {
-    btn.textContent = '✓ 已複製，開啟中…';
-    btn.style.background = '#4aada5';
-    setTimeout(() => window.open('https://claude.ai', '_blank'), 300);
-  }).catch(() => {
-    document.getElementById('aiPromptTextTwo').select();
-    document.execCommand('copy');
-    btn.textContent = '✓ 已複製，開啟中…';
-    setTimeout(() => window.open('https://claude.ai', '_blank'), 300);
-  });
+  const ta = document.getElementById('aiPromptTextTwo'); const text = ta ? ta.value : '';
+  btn.textContent = '✓ 已複製，開啟中…';
+  btn.style.background = '#4aada5';
+  try { navigator.clipboard.writeText(text); } catch(e) { try { const el = document.querySelector('[id]'); if(el) el.focus(); } catch(e2) {} }
+  setTimeout(() => window.open('https://claude.ai', '_blank'), 300);
 }
-
 function copyAndOpenClaude(btn) {
   const text = document.getElementById('aiPromptText').value;
-  navigator.clipboard.writeText(text).then(() => {
-    btn.textContent = '✓ 已複製，開啟中…';
-    btn.style.background = '#4aada5';
-    setTimeout(() => window.open('https://claude.ai', '_blank'), 300);
-  }).catch(() => {
-    document.getElementById('aiPromptText').select();
-    document.execCommand('copy');
-    btn.textContent = '✓ 已複製，開啟中…';
-    btn.style.background = '#4aada5';
-    setTimeout(() => window.open('https://claude.ai', '_blank'), 300);
-  });
+  btn.textContent = '✓ 已複製，開啟中…';
+  btn.style.background = '#4aada5';
+  try { navigator.clipboard.writeText(text); } catch(e) { try { const el = document.querySelector('[id]'); if(el) el.focus(); } catch(e2) {} }
+  setTimeout(() => window.open('https://claude.ai', '_blank'), 300);
 }
-
 function copyPrompt(btn) {
   const text = document.getElementById('aiPromptText').value;
   navigator.clipboard.writeText(text).then(() => {
