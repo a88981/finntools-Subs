@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>剪輯點對齊</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: linear-gradient(135deg,#e8f8f5 0%,#f5fbf8 40%,#fdfbee 80%,#fffde8 100%);
+  background-attachment: fixed;
+  color: #2a5550;
+  font-family: 'Microsoft JhengHei','PingFang TC',sans-serif;
+  min-height: 100vh;
+  padding: 32px 20px 80px;
+  display: flex; flex-direction: column; align-items: center;
+}
+
+header { text-align: center; margin-bottom: 16px; }
+header h1 { font-size: 1.5rem; font-weight: 800; color: #2a5550; letter-spacing: 0.04em; margin-bottom: 6px; }
+header p { font-size: 0.75rem; color: #5ab5ac; font-weight: 700; letter-spacing: 0.08em; }
+
+.wrap { width: 100%; max-width: 820px; display: flex; flex-direction: column; gap: 16px; margin: 0 auto; }
+
+/* Steps */
+.steps { display: flex; align-items: center; gap: 0; margin-bottom: 4px; justify-content: center; width: 100%; }
+.stp { display: flex; align-items: center; gap: 6px; flex: 0 0 auto; }
+.stp-n { width: 26px; height: 26px; border-radius: 50%; background: rgba(255,255,255,0.8); border: 2px solid rgba(110,196,188,0.35); font-size: 0.68rem; font-weight: 800; display: flex; align-items: center; justify-content: center; color: #8dd0c8; flex-shrink: 0; transition: all 0.3s; }
+.stp.active .stp-n { background: #6ec4bc; border-color: #6ec4bc; color: white; box-shadow: 0 2px 8px rgba(110,196,188,0.35); }
+.stp.done .stp-n { background: #6ec4bc; border-color: #6ec4bc; color: white; }
+.stp-l { font-size: 0.62rem; color: #8dd0c8; white-space: nowrap; font-weight: 700; }
+.stp.active .stp-l { color: #4aada5; }
+.stp.done .stp-l { color: #4aada5; }
+.stp-line { flex: 1; height: 2px; background: rgba(110,196,188,0.2); margin: 0 4px; border-radius: 2px; min-width: 20px; }
+
+/* Cards */
+.card { background: rgba(255,255,255,0.88); border: 1.5px solid rgba(110,196,188,0.2); border-radius: 16px; padding: 22px 24px; box-shadow: 0 3px 20px rgba(110,196,188,0.1); }
+.card-title { font-size: 0.72rem; font-weight: 800; color: #4aada5; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 16px; }
+.card-title::before { content: '✦ '; }
+
+.info-box { background: rgba(232,248,245,0.65); border: 1.5px solid rgba(110,196,188,0.15); border-radius: 12px; padding: 14px 16px; font-size: 0.78rem; line-height: 2; color: #3a7872; font-weight: 600; margin-bottom: 12px; }
+.info-box ol, .info-box ul { padding-left: 18px; }
+.info-box strong { color: #2a5550; }
+
+.tip { display: flex; align-items: flex-start; gap: 8px; background: rgba(255,248,210,0.7); border: 1.5px solid rgba(210,180,60,0.2); border-radius: 10px; padding: 10px 14px; font-size: 0.73rem; color: #8a6a10; font-weight: 600; margin-bottom: 10px; line-height: 1.7; }
+.tip strong { color: #6a4a00; }
+
+/* Upload */
+.upload-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+
+.upload-zone { border: 2px dashed rgba(110,196,188,0.4); border-radius: 14px; padding: 28px 16px; text-align: center; cursor: pointer; transition: all 0.2s; position: relative; background: rgba(232,248,245,0.3); }
+.upload-zone:hover, .upload-zone.dragover { border-color: #6ec4bc; background: rgba(110,196,188,0.08); }
+.upload-zone.loaded { border-style: solid; border-color: #6ec4bc; background: rgba(110,196,188,0.06); }
+.upload-zone input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+.upload-icon { font-size: 28px; margin-bottom: 8px; }
+.upload-label { font-size: 0.75rem; font-weight: 700; color: #5ab5ac; margin-bottom: 4px; }
+.upload-zone.loaded .upload-label { color: #3a9088; }
+.upload-hint { font-size: 0.65rem; color: #98d0ca; font-weight: 600; }
+.upload-zone.loaded .upload-hint { display: none; }
+.upload-filename { font-size: 0.65rem; color: #4aada5; margin-top: 4px; word-break: break-all; display: none; font-weight: 700; }
+.upload-zone.loaded .upload-filename { display: block; }
+
+/* FPS row */
+.setting-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+.setting-label { font-size: 0.75rem; font-weight: 700; color: #3a7872; flex-shrink: 0; min-width: 68px; }
+
+.fps-options { display: flex; gap: 6px; flex-wrap: wrap; }
+.fps-btn { background: rgba(255,255,255,0.8); border: 1.5px solid rgba(110,196,188,0.3); border-radius: 100px; color: #5ab5ac; cursor: pointer; font-family: inherit; font-size: 0.7rem; font-weight: 700; padding: 5px 13px; transition: all 0.2s; }
+.fps-btn:hover { border-color: #6ec4bc; color: #4aada5; background: white; }
+.fps-btn.active { background: #6ec4bc; border-color: #6ec4bc; color: white; box-shadow: 0 2px 8px rgba(110,196,188,0.3); }
+
+.num-input { background: rgba(255,255,255,0.9); border: 1.5px solid rgba(110,196,188,0.25); border-radius: 8px; color: #2a5550; font-size: 0.75rem; padding: 5px 10px; outline: none; font-family: inherit; font-weight: 600; width: 72px; text-align: center; transition: border-color 0.2s; }
+.num-input:focus { border-color: #6ec4bc; box-shadow: 0 0 0 3px rgba(110,196,188,0.12); }
+.setting-unit { font-size: 0.68rem; color: #98d0ca; font-weight: 600; }
+
+/* Buttons */
+.btn { background: #6ec4bc; border: none; border-radius: 100px; color: white; cursor: pointer; font-family: inherit; font-size: 0.78rem; font-weight: 800; letter-spacing: 0.04em; padding: 11px 22px; transition: all 0.2s; box-shadow: 0 3px 12px rgba(110,196,188,0.3); }
+.btn:hover { background: #5ab5ac; transform: translateY(-1px); box-shadow: 0 5px 16px rgba(110,196,188,0.4); }
+.btn:disabled { opacity: 0.35; cursor: not-allowed; transform: none; box-shadow: none; }
+.btn-run { width: 100%; margin-top: 8px; font-size: 0.82rem; padding: 13px; border-radius: 12px; }
+.btn-dl { background: #6ec4bc; border: none; border-radius: 100px; color: white; cursor: pointer; font-family: inherit; font-size: 0.75rem; font-weight: 800; padding: 9px 20px; transition: all 0.2s; box-shadow: 0 3px 10px rgba(110,196,188,0.25); }
+.btn-dl:hover { background: #5ab5ac; transform: translateY(-1px); }
+
+.divider { height: 1.5px; background: rgba(110,196,188,0.15); margin: 16px 0; border-radius: 2px; }
+
+/* Stats */
+.stat-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; margin-bottom: 16px; }
+.stat { background: rgba(255,255,255,0.88); border: 1.5px solid rgba(110,196,188,0.25); border-radius: 12px; padding: 12px 10px; text-align: center; }
+.stat .v { font-size: 1.5rem; font-weight: 800; color: #4aada5; display: block; }
+.stat .k { font-size: 0.6rem; color: #7dc8c0; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; margin-top: 4px; }
+
+/* Result */
+.result-box { display: none; }
+.result-box.show { display: block; }
+.result-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; flex-wrap: wrap; gap: 10px; }
+.result-title { font-size: 0.72rem; font-weight: 800; color: #4aada5; letter-spacing: 0.12em; text-transform: uppercase; }
+.result-title::before { content: '✦ '; }
+
+.diff-list { display: flex; flex-direction: column; gap: 8px; max-height: 360px; overflow-y: auto; }
+.diff-list::-webkit-scrollbar { width: 4px; }
+.diff-list::-webkit-scrollbar-track { background: transparent; }
+.diff-list::-webkit-scrollbar-thumb { background: rgba(110,196,188,0.3); border-radius: 4px; }
+
+.diff-item { display: grid; grid-template-columns: 40px 1fr; gap: 10px; align-items: start; background: rgba(232,248,245,0.5); border: 1.5px solid rgba(110,196,188,0.15); border-radius: 12px; padding: 10px 14px; }
+.diff-idx { font-size: 0.65rem; color: #4aada5; font-weight: 800; padding-top: 2px; text-align: right; }
+.diff-text { font-size: 0.73rem; color: #2a5550; font-weight: 600; margin-bottom: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.diff-tc { display: flex; flex-wrap: wrap; gap: 8px; }
+.tc-change { font-size: 0.65rem; font-weight: 700; display: flex; align-items: center; gap: 4px; }
+.tc-old { color: #98d0ca; text-decoration: line-through; }
+.tc-arrow { color: #c8d8d5; }
+.tc-new { color: #4aada5; }
+.tc-delta { font-size: 0.6rem; color: #a8c8c4; }
+
+.error-msg { background: rgba(212,90,90,0.08); border: 1.5px solid rgba(212,90,90,0.25); border-radius: 10px; padding: 12px 16px; color: #c04040; font-size: 0.75rem; font-weight: 600; margin-top: 10px; display: none; }
+.error-msg.show { display: block; }
+
+.notice { background: rgba(255,255,255,0.7); border: 1.5px solid rgba(110,196,188,0.2); border-radius: 12px; padding: 10px 16px; font-size: 0.72rem; color: #5a8a85; line-height: 1.8; text-align: center; font-weight: 600; margin-bottom: 4px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>剪輯點對齊</h1>
+  <p>SRT 時間碼吸附至 Premiere Pro 剪輯點</p>
+</header>
+
+<div class="notice">⚠ 本工具為<strong>輔助工具</strong>，對齊後仍建議人工確認關鍵字幕位置。</div>
+
+<div class="wrap">
+
+  <!-- Step bar -->
+  <div class="steps">
+    <div class="stp active" id="stp1"><div class="stp-n">1</div><div class="stp-l">導出 XML</div></div>
+    <div class="stp-line"></div>
+    <div class="stp" id="stp2"><div class="stp-n">2</div><div class="stp-l">上傳檔案</div></div>
+    <div class="stp-line"></div>
+    <div class="stp" id="stp3"><div class="stp-n">3</div><div class="stp-l">執行對齊</div></div>
+    <div class="stp-line"></div>
+    <div class="stp" id="stp4"><div class="stp-n">4</div><div class="stp-l">下載 SRT</div></div>
+  </div>
+
+  <!-- Step 1: 說明 -->
+  <div class="card">
+    <div class="card-title">步驟一：從 Premiere Pro 導出 XML</div>
+    <div class="info-box">
+      <strong>導出步驟：</strong>
+      <ol>
+        <li>確認要對齊的序列是當前活躍序列</li>
+        <li>選單：<strong>File → Export → Final Cut Pro XML</strong></li>
+        <li>存成 <strong>.xml</strong> 檔案</li>
+      </ol>
+    </div>
+    <div class="tip">⚠️ &nbsp;<span><strong>不是 EDL</strong>，請選 Final Cut Pro XML。EDL 不會記錄剃刀切開的剪輯點，只有 XML 才完整。</span></div>
+    <div class="tip">🎬 &nbsp;<span>導出前確認序列幀率（Sequence Settings 查看），下一步選對才準確。</span></div>
+  </div>
+
+  <!-- Step 2: 上傳 -->
+  <div class="card">
+    <div class="card-title">步驟二：上傳檔案與設定</div>
+
+    <div class="upload-grid">
+      <div class="upload-zone" id="zone-xml" ondragover="dragOver(event,'xml')" ondragleave="dragLeave('xml')" ondrop="dropFile(event,'xml')">
+        <input type="file" accept=".xml" onchange="loadFile(event,'xml')">
+        <div class="upload-icon">📋</div>
+        <div class="upload-label">PR XML 剪輯序列</div>
+        <div class="upload-hint">.xml</div>
+        <div class="upload-filename" id="xml-name"></div>
+      </div>
+      <div class="upload-zone" id="zone-srt" ondragover="dragOver(event,'srt')" ondragleave="dragLeave('srt')" ondrop="dropFile(event,'srt')">
+        <input type="file" accept=".srt" onchange="loadFile(event,'srt')">
+        <div class="upload-icon">📝</div>
+        <div class="upload-label">字幕 SRT</div>
+        <div class="upload-hint">.srt</div>
+        <div class="upload-filename" id="srt-name"></div>
+      </div>
+    </div>
+
+    <div class="setting-row">
+      <span class="setting-label">序列幀率</span>
+      <div class="fps-options">
+        <button class="fps-btn" onclick="setFpsBtn(this,24)">24</button>
+        <button class="fps-btn" onclick="setFpsBtn(this,25)">25</button>
+        <button class="fps-btn" onclick="setFpsBtn(this,29.97)">29.97</button>
+        <button class="fps-btn" onclick="setFpsBtn(this,30)">30</button>
+        <button class="fps-btn active" onclick="setFpsBtn(this,59.94)">59.94</button>
+        <button class="fps-btn" onclick="setFpsBtn(this,60)">60</button>
+      </div>
+      <input type="number" class="num-input" id="fps-custom" placeholder="自訂" min="1" max="240" step="0.001" oninput="setFpsCustom(this)">
+      <span class="setting-unit">fps</span>
+    </div>
+
+    <div class="setting-row">
+      <span class="setting-label">吸附容差</span>
+      <input type="number" class="num-input" id="threshold" value="500" min="50" max="2000" step="50">
+      <span class="setting-unit">ms　超過此範圍不吸附</span>
+    </div>
+
+    <button class="btn btn-run" id="run-btn" onclick="runAlign()" disabled>執行對齊</button>
+    <div class="error-msg" id="error-msg"></div>
+  </div>
+
+  <!-- Step 3+4: 結果 -->
+  <div class="result-box" id="result-box">
+    <div class="card" style="text-align:center;">
+      <div class="card-title" style="text-align:left;">完成！</div>
+
+      <div class="stat-row" style="margin-bottom:20px;">
+        <div class="stat"><span class="v" id="stat-cuts">—</span><span class="k">剪輯點</span></div>
+        <div class="stat"><span class="v" id="stat-subs">—</span><span class="k">字幕條數</span></div>
+        <div class="stat"><span class="v" id="stat-snapped">—</span><span class="k">已吸附</span></div>
+        <div class="stat"><span class="v" id="stat-merged">—</span><span class="k">已合併</span></div>
+      </div>
+
+      <div style="font-size:2.5rem;margin-bottom:10px;">✅</div>
+      <div style="font-size:0.85rem;font-weight:800;color:#4aada5;margin-bottom:20px;">對齊完成！</div>
+
+      <div style="display:flex;gap:10px;justify-content:center;">
+        <button class="btn" style="background:rgba(255,255,255,0.8);border:1.5px solid rgba(110,196,188,0.3);color:#5ab5ac;box-shadow:none;" onclick="resetTool()">↺ 重新開始</button>
+        <button class="btn" onclick="downloadSrt()">⬇ 下載修正後 SRT</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+let xmlContent = null;
+let srtContent = null;
+let srtFilename = '字幕_對齊剪輯點.srt';
+let selectedFps = 59.94;
+let outputSrt = null;
+
+function setFpsBtn(btn, fps) {
+  selectedFps = fps;
+  document.querySelectorAll('.fps-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('fps-custom').value = '';
+}
+
+function setFpsCustom(input) {
+  const val = parseFloat(input.value);
+  if (val > 0) {
+    selectedFps = val;
+    document.querySelectorAll('.fps-btn').forEach(b => b.classList.remove('active'));
+  }
+}
+
+function dragOver(e, type) {
+  e.preventDefault();
+  document.getElementById('zone-' + type).classList.add('dragover');
+}
+function dragLeave(type) {
+  document.getElementById('zone-' + type).classList.remove('dragover');
+}
+function dropFile(e, type) {
+  e.preventDefault();
+  dragLeave(type);
+  const file = e.dataTransfer.files[0];
+  if (file) processFile(file, type);
+}
+function loadFile(e, type) {
+  const file = e.target.files[0];
+  if (file) processFile(file, type);
+}
+function processFile(file, type) {
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const zone = document.getElementById('zone-' + type);
+    const nameEl = document.getElementById(type + '-name');
+    nameEl.textContent = file.name;
+    zone.classList.add('loaded');
+    if (type === 'xml') {
+      xmlContent = e.target.result;
+    } else {
+      srtContent = e.target.result;
+      srtFilename = file.name.replace(/\.srt$/i, '') + '_對齊剪輯點.srt';
+    }
+    checkReady();
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
+function checkReady() {
+  document.getElementById('run-btn').disabled = !(xmlContent && srtContent);
+  if (xmlContent || srtContent) {
+    document.getElementById('stp1').className = 'stp done';
+    document.getElementById('stp2').className = 'stp active';
+  }
+  if (xmlContent && srtContent) {
+    document.getElementById('stp2').className = 'stp done';
+    document.getElementById('stp3').className = 'stp active';
+  }
+}
+
+function parseXmlCuts(content, fps) {
+  const trackMatch = content.match(/<track[^>]*>([\s\S]*?)<\/track>/);
+  if (!trackMatch) throw new Error('找不到 <track> 區塊，請確認是 Final Cut Pro XML 格式');
+  const trackContent = trackMatch[1];
+  const cuts = new Set();
+  const clipRe = /<clipitem[^>]*>([\s\S]*?)<\/clipitem>/g;
+  let clip, count = 0;
+  while ((clip = clipRe.exec(trackContent)) !== null) {
+    const body = clip[1];
+    const sMatch = body.match(/^\s*<start>(\d+)<\/start>/m);
+    const eMatch = body.match(/^\s*<end>(\d+)<\/end>/m);
+    if (sMatch && eMatch) {
+      cuts.add(Math.round(parseInt(sMatch[1]) * 1000 / fps));
+      cuts.add(Math.round(parseInt(eMatch[1]) * 1000 / fps));
+      count++;
+    }
+  }
+  if (count === 0) throw new Error('XML 內沒有找到 clipitem，請確認序列不是空的');
+  return Array.from(cuts).sort((a, b) => a - b);
+}
+
+function parseSrt(content) {
+  const blocks = content.trim().split(/\n\n+/);
+  const entries = [];
+  for (const block of blocks) {
+    const lines = block.trim().split('\n');
+    if (lines.length < 2) continue;
+    const m = lines[1].trim().match(/(\d{2}:\d{2}:\d{2},\d{3})\s+-->\s+(\d{2}:\d{2}:\d{2},\d{3})/);
+    if (!m) continue;
+    entries.push({ idx: lines[0].trim(), start: srtToMs(m[1]), end: srtToMs(m[2]), text: lines.slice(2).join('\n') });
+  }
+  return entries;
+}
+
+function srtToMs(ts) {
+  const [h, m, rest] = ts.split(':');
+  const [s, ms] = rest.split(',');
+  return parseInt(h)*3600000 + parseInt(m)*60000 + parseInt(s)*1000 + parseInt(ms);
+}
+
+function msToSrt(ms) {
+  ms = Math.max(0, ms);
+  const h = Math.floor(ms/3600000); ms %= 3600000;
+  const m = Math.floor(ms/60000); ms %= 60000;
+  const s = Math.floor(ms/1000); ms %= 1000;
+  return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')},${String(ms).padStart(3,'0')}`;
+}
+
+function findNearest(val, cuts, threshold) {
+  let nearest = cuts[0], dist = Math.abs(cuts[0] - val);
+  for (const c of cuts) {
+    const d = Math.abs(c - val);
+    if (d < dist) { dist = d; nearest = c; }
+  }
+  return dist <= threshold ? nearest : null;
+}
+
+function runAlign() {
+  const errorEl = document.getElementById('error-msg');
+  errorEl.classList.remove('show');
+  try {
+    const fps = selectedFps === 59.94 ? 60*(1000/1001) :
+                selectedFps === 29.97 ? 30*(1000/1001) : selectedFps;
+    const threshold = parseInt(document.getElementById('threshold').value) || 500;
+    const cuts = parseXmlCuts(xmlContent, fps);
+    const entries = parseSrt(srtContent);
+    if (entries.length === 0) throw new Error('SRT 解析失敗，請確認檔案格式');
+
+    let snapped = 0;
+    for (const e of entries) {
+      const ns = findNearest(e.start, cuts, threshold);
+      const ne = findNearest(e.end, cuts, threshold);
+      if (ns !== null && ns !== e.start) { e.start = ns; snapped++; }
+      if (ne !== null && ne !== e.end)   { e.end   = ne; snapped++; }
+    }
+
+    // 合併極短字幕（< 200ms）到下一條
+    const MERGE_THRESHOLD = 200;
+    let merged = 0;
+    const finalEntries = [];
+    let i = 0;
+    while (i < entries.length) {
+      const e = entries[i];
+      if ((e.end - e.start) < MERGE_THRESHOLD && i + 1 < entries.length) {
+        const next = entries[i+1];
+        next.text = e.text + ' ' + next.text;
+        next.start = e.start;
+        merged++; i++;
+      } else {
+        finalEntries.push(e); i++;
+      }
+    }
+
+    outputSrt = finalEntries.map((e, i) =>
+      `${i+1}\n${msToSrt(e.start)} --> ${msToSrt(e.end)}\n${e.text}`
+    ).join('\n\n') + '\n';
+
+    document.getElementById('stat-cuts').textContent = cuts.length;
+    document.getElementById('stat-subs').textContent = finalEntries.length;
+    document.getElementById('stat-snapped').textContent = snapped;
+    document.getElementById('stat-merged').textContent = merged;
+
+    document.getElementById('result-box').classList.add('show');
+    document.getElementById('stp3').className = 'stp done';
+    document.getElementById('stp4').className = 'stp active';
+    document.getElementById('result-box').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+  } catch(err) {
+    errorEl.textContent = '⚠ ' + err.message;
+    errorEl.classList.add('show');
+  }
+}
+
+function downloadSrt() {
+  if (!outputSrt) return;
+  const blob = new Blob([outputSrt], { type: 'text/plain;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = srtFilename;
+  a.click();
+  document.getElementById('stp4').className = 'stp done';
+}
+
+function resetTool() {
+  xmlContent = null; srtContent = null; outputSrt = null;
+  srtFilename = '字幕_對齊剪輯點.srt';
+  document.getElementById('xml-name').textContent = '';
+  document.getElementById('srt-name').textContent = '';
+  document.getElementById('zone-xml').classList.remove('loaded');
+  document.getElementById('zone-srt').classList.remove('loaded');
+  document.getElementById('run-btn').disabled = true;
+  document.getElementById('result-box').classList.remove('show');
+  document.getElementById('error-msg').classList.remove('show');
+  document.querySelectorAll('.stp').forEach((s,i) => s.className = i===0 ? 'stp active' : 'stp');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+</script>
+</body>
+</html>
