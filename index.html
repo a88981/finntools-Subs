@@ -297,42 +297,58 @@ textarea.paste-area::placeholder { color: #98d0ca; }
   </div>
   <!-- STEP 4: 人名品牌確認（完整模式） -->
   <div class="card" id="c4">
-    <div class="card-title">步驟二 — 字詞批次替換</div>
-    <div class="info-box" style="margin-bottom:14px;font-size:0.72rem;line-height:1.8;">
-      工具已自動找出重複的英文詞，點詞彙標籤可展開替換欄位，不需要的直接略過。<br>中文品牌名、人名等可在下方手動輸入搜尋，按 Enter 新增。
+    <div class="card-title">步驟二 — 字詞確認＆糾察結果</div>
+
+    <!-- 快速批次替換框（主要入口） -->
+    <div style="background:rgba(255,248,210,0.6);border:1.5px solid rgba(210,180,60,0.25);border-radius:12px;padding:12px 14px;margin-bottom:14px;">
+      <div style="font-size:0.72rem;font-weight:700;color:#8a6010;margin-bottom:8px;">💡 發現全文相同的錯字？在這裡一鍵批次替換</div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <input id="quickBatchFrom2" type="text" placeholder="搜尋詞" style="flex:1;background:rgba(255,255,255,0.9);border:1.5px solid rgba(210,180,60,0.3);border-radius:8px;padding:7px 12px;font-size:0.75rem;color:#2a5550;outline:none;font-family:inherit;" onkeydown="if(event.key==='Enter')document.getElementById('quickBatchTo2').focus()">
+        <span style="color:#c0a020;font-weight:800;flex-shrink:0;">→</span>
+        <input id="quickBatchTo2" type="text" placeholder="替換為" style="flex:1;background:rgba(255,255,255,0.9);border:1.5px solid rgba(210,180,60,0.3);border-radius:8px;padding:7px 12px;font-size:0.75rem;color:#2a5550;outline:none;font-family:inherit;" onkeydown="if(event.key==='Enter')applyQuickBatch2()">
+        <button onclick="applyQuickBatch2()" class="btn-batch" style="flex-shrink:0;">全換</button>
+      </div>
+      <div id="quickBatchMsg2" style="font-size:0.65rem;color:#7dc8c0;margin-top:5px;min-height:14px;"></div>
     </div>
+
+    <!-- 自動偵測標籤 -->
     <div id="autoTagList" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;"></div>
-    <div style="display:flex;gap:8px;margin-bottom:10px;align-items:center;">
-      <input id="searchWordInput" type="text" placeholder="輸入品牌名、人名，按 Enter 新增" style="flex:1;background:rgba(255,255,255,0.9);border:1.5px solid rgba(110,196,188,0.35);border-radius:100px;padding:8px 16px;font-size:0.78rem;color:#2a5550;outline:none;font-family:inherit;" onkeydown="if(event.key==='Enter')addSearchWord()">
-      <button class="btn-ghost" onclick="addSearchWord()" style="font-size:0.7rem;padding:7px 16px;color:#4aada5;border-color:rgba(110,196,188,0.4);white-space:nowrap;">搜尋</button>
-    </div>
-    <div id="fullBatchList" style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px;"></div>
+    <div id="fullBatchList" style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px;"></div>
+
+    <!-- 糾察結果 -->
+    <div class="divider"></div>
+    <div id="aiStatus4" style="display:none;font-size:0.73rem;font-weight:600;padding:10px 14px;border-radius:10px;margin-bottom:10px;background:rgba(255,248,210,0.9);border:1.5px solid rgba(210,180,60,0.35);color:#8a6010;"></div>
+    <div class="issue-list" id="issueList4"></div>
+    <div id="noIssueSection4" style="display:none;padding:12px 0;text-align:center;font-size:0.78rem;color:#7dc8c0;">✨ 未偵測到可疑處</div>
+
+    <div class="divider"></div>
     <div class="row" style="margin-top:14px;justify-content:center;gap:12px;">
       <button class="btn-ghost" onclick="location.reload()">↺ 重新開始</button>
-      <button class="btn" onclick="applyStep4AndContinue()">確認完成，繼續 →</button>
+      <button class="btn" onclick="applyStep4AndDownload()">完成，下載 SRT →</button>
     </div>
   </div>
 
-  <!-- STEP 4: 詞庫修正 + 重複詞偵測 -->
   <!-- STEP 3: 批次替換確認（AI模式）-->
   <div class="card" id="c3batch">
     <div class="card-title">步驟三 — 批次替換確認</div>
     <div class="info-box" style="margin-bottom:14px;font-size:0.72rem;line-height:1.8;">
       以下是 AI 偵測到的專有名詞（APP名/店名/人名等）。<br>
-      確認後修改替換詞，不需要的直接跳過，完成後點「確認完成，繼續」。<br>出現一次的詞會在下一步驟個別確認。<br>下方搜尋欄可手動新增中文詞彙。
+      確認後修改替換詞，不需要的直接跳過，完成後點「確認完成，繼續」。<br>
+      出現一次的詞會在下一步驟個別確認。<br>
+      下方搜尋欄可手動新增中文詞彙。
     </div>
-    <div id="autoTagListAI" style="display:none;flex-wrap:wrap;gap:6px;margin-bottom:12px;"></div>
+
+    <!-- 搜尋欄 -->
     <div style="display:flex;gap:8px;margin-bottom:10px;align-items:center;">
       <input id="searchWordInputAI" type="text" placeholder="可手動輸入中文品牌名、人名，按 Enter 新增後會顯示全文次數與替換欄位。" style="flex:1;background:rgba(255,255,255,0.9);border:1.5px solid rgba(110,196,188,0.35);border-radius:100px;padding:8px 16px;font-size:0.78rem;color:#2a5550;outline:none;font-family:inherit;" onkeydown="if(event.key==='Enter')addSearchWordAI()">
       <button class="btn-ghost" onclick="addSearchWordAI()" style="font-size:0.7rem;padding:7px 16px;color:#4aada5;border-color:rgba(110,196,188,0.4);white-space:nowrap;">搜尋</button>
     </div>
+
     <div id="fullBatchListAI" style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px;"></div>
     <div id="batchListNew" style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px;"></div>
     <div id="batchEmptyNew" style="display:none;font-size:0.72rem;color:#a0c8c4;padding:8px 0;">AI 未偵測到需確認的專有名詞</div>
     <div id="manualBatchRowsNew" style="display:flex;flex-direction:column;gap:6px;margin-top:8px;margin-bottom:8px;"></div>
-    <div class="row" style="justify-content:flex-start;margin-bottom:14px;">
-      <button class="btn-ghost" onclick="addManualBatchRowNew()" style="font-size:0.7rem;padding:6px 14px;">＋ 手動新增</button>
-    </div>
+
     <div class="divider"></div>
     <div class="row" style="justify-content:center;gap:12px;">
       <button class="btn-ghost" onclick="location.reload()">↺ 重新開始</button>
@@ -400,6 +416,19 @@ textarea.paste-area::placeholder { color: #98d0ca; }
 
 
     <div id="aiStatus" style="display:none;font-size:0.73rem;font-weight:600;padding:10px 14px;border-radius:10px;margin-bottom:10px;"></div>
+
+    <!-- 快速批次替換 -->
+    <div style="background:rgba(255,248,210,0.6);border:1.5px solid rgba(210,180,60,0.25);border-radius:12px;padding:12px 14px;margin-bottom:12px;">
+      <div style="font-size:0.72rem;font-weight:700;color:#8a6010;margin-bottom:8px;">💡 發現全文相同的錯字？在這裡一鍵批次替換</div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <input id="quickBatchFrom" type="text" placeholder="搜尋詞" style="flex:1;background:rgba(255,255,255,0.9);border:1.5px solid rgba(210,180,60,0.3);border-radius:8px;padding:7px 12px;font-size:0.75rem;color:#2a5550;outline:none;font-family:inherit;" onkeydown="if(event.key==='Enter')document.getElementById('quickBatchTo').focus()">
+        <span style="color:#c0a020;font-weight:800;flex-shrink:0;">→</span>
+        <input id="quickBatchTo" type="text" placeholder="替換為" style="flex:1;background:rgba(255,255,255,0.9);border:1.5px solid rgba(210,180,60,0.3);border-radius:8px;padding:7px 12px;font-size:0.75rem;color:#2a5550;outline:none;font-family:inherit;" onkeydown="if(event.key==='Enter')applyQuickBatch()">
+        <button onclick="applyQuickBatch()" class="btn-batch" style="flex-shrink:0;">全換</button>
+      </div>
+      <div id="quickBatchMsg" style="font-size:0.65rem;color:#7dc8c0;margin-top:5px;min-height:14px;"></div>
+    </div>
+
     <div class="log-box" id="log6"></div>
     <div class="issue-list" id="issueList"></div>
 
@@ -481,6 +510,101 @@ function toast(msg) {
   t._timer = setTimeout(() => { t.style.opacity = '0'; }, 2500);
 }
 
+function applyQuickBatch3() {
+  const from = document.getElementById('quickBatchFrom3').value.trim();
+  const to = document.getElementById('quickBatchTo3').value.trim();
+  const msg = document.getElementById('quickBatchMsg3');
+  if (!from) { if(msg) msg.textContent = '請填入要搜尋的詞'; return; }
+  if (!to) { if(msg) msg.textContent = '請填入替換後的詞'; return; }
+  let count = 0;
+  blocks.forEach(b => {
+    if (b.text.includes(from)) { b.text = b.text.split(from).join(to); count++; }
+  });
+  if (count === 0) { if(msg) msg.textContent = `找不到「${from}」`; return; }
+  if (msg) msg.textContent = `✓ 已替換 ${count} 段`;
+  document.getElementById('quickBatchFrom3').value = '';
+  document.getElementById('quickBatchTo3').value = '';
+}
+
+function applyQuickBatch2() {
+  const from = document.getElementById('quickBatchFrom2').value.trim();
+  const to = document.getElementById('quickBatchTo2').value.trim();
+  const msg = document.getElementById('quickBatchMsg2');
+  if (!from) { if(msg) msg.textContent = '請填入要搜尋的詞'; return; }
+  if (!to) { if(msg) msg.textContent = '請填入替換後的詞'; return; }
+  let count = 0;
+  blocks.forEach(b => {
+    if (b.text.includes(from)) { b.text = b.text.split(from).join(to); count++; }
+  });
+  if (count === 0) { if(msg) msg.textContent = `找不到「${from}」`; return; }
+  if (msg) msg.textContent = `✓ 已替換 ${count} 段`;
+  document.getElementById('quickBatchFrom2').value = '';
+  document.getElementById('quickBatchTo2').value = '';
+  // 更新 issueList4 裡含該詞的 row
+  document.querySelectorAll('#issueList4 .issue-row').forEach(row => {
+    const textEl = row.querySelector('.issue-text');
+    const text = textEl?.textContent || '';
+    if (!text.includes(from)) return;
+    // 更新 input 框內容
+    const input = row.querySelector('input.issue-edit, input[id^="edit"]');
+    if (input) input.value = input.value.split(from).join(to);
+    // 按鈕變已批次替換
+    const applyBtn = row.querySelector('.btn-sm:last-child, button[onclick*="applyIssue"]');
+    if (applyBtn) {
+      applyBtn.textContent = '✓ 已批次替換';
+      applyBtn.style.background = 'rgba(110,196,188,0.2)';
+      applyBtn.style.color = '#3a9088';
+      // 手動改 input 後恢復套用修改
+      if (input) input.addEventListener('input', function onInput() {
+        applyBtn.textContent = '套用修改';
+        applyBtn.style.background = '';
+        applyBtn.style.color = '';
+        input.removeEventListener('input', onInput);
+      }, { once: true });
+    }
+  });
+}
+
+function applyQuickBatch() {
+  const from = document.getElementById('quickBatchFrom').value.trim();
+  const to = document.getElementById('quickBatchTo').value.trim();
+  const msg = document.getElementById('quickBatchMsg');
+  if (!from) { if(msg) msg.textContent = '請填入要搜尋的詞'; return; }
+  if (!to) { if(msg) msg.textContent = '請填入替換後的詞'; return; }
+  let count = 0;
+  blocks.forEach(b => {
+    if (b.text.includes(from)) {
+      b.text = b.text.split(from).join(to);
+      count++;
+    }
+  });
+  if (count === 0) {
+    if (msg) msg.textContent = `找不到「${from}」`;
+    return;
+  }
+  if (msg) msg.textContent = `✓ 已替換 ${count} 段`;
+  document.getElementById('quickBatchFrom').value = '';
+  document.getElementById('quickBatchTo').value = '';
+  // 更新 issueList 裡含該詞的 row
+  document.querySelectorAll('#issueList .issue-row').forEach(row => {
+    const text = row.querySelector('.issue-text')?.textContent || '';
+    if (!text.includes(from)) return;
+    const input = row.querySelector('input.issue-edit, input[id^="edit"]');
+    if (input) input.value = input.value.split(from).join(to);
+    const applyBtn = row.querySelector('button[onclick*="applyIssue"], button[onclick*="applyAI"]');
+    if (applyBtn) {
+      applyBtn.textContent = '✓ 已批次替換';
+      applyBtn.style.background = 'rgba(110,196,188,0.2)';
+      applyBtn.style.color = '#3a9088';
+      if (input) input.addEventListener('input', function onInput() {
+        applyBtn.textContent = '套用修改';
+        applyBtn.style.background = '';
+        applyBtn.style.color = '';
+      }, { once: true });
+    }
+  });
+}
+
 function setDoneStats(count) {
   document.getElementById('st-iss').textContent = count;
   const label = document.getElementById('st-iss-label');
@@ -489,7 +613,7 @@ function setDoneStats(count) {
 
 function goStep(n) {
   // 先設步驟顯示
-  const totalStepsMap = { quick: 2, full: 4, ai: 5, aiquick: 3 };
+  const totalStepsMap = { quick: 2, full: 3, ai: 5, aiquick: 3 };
   const totalSteps = totalStepsMap[currentMode] || 3;
   [2,3,4,5].forEach(i => {
     const line = document.getElementById('stpLine' + i);
@@ -592,10 +716,10 @@ function runSilentScanThenFull() {
   runStep3Silent();
   runTermsSilent();
   goStep(2);
-  // 強制確認 c4 顯示
   const c4 = document.getElementById('c4');
   if (c4) c4.style.display = 'block';
   autoDetectAndRender();
+  runStep6ForC4();
 }
 
 function runSilentScanThenAI() {
@@ -659,7 +783,7 @@ function handlePaste() {
   // 更新步驟條依模式
   const stepsConfig = {
     quick:   { steps: ['快速模式', '完成下載'], hide: [3,4,5] },
-    full:    { steps: ['基本模式', '字詞批次替換', '糾察結果', '完成下載'], hide: [5] },
+    full:    { steps: ['基本模式', '字詞確認＆糾察', '完成下載'], hide: [4,5] },
     ai:      { steps: ['完整模式', 'AI Prompt', '批次替換確認', '糾察結果', '完成下載'], hide: [] },
     aiquick: { steps: ['全AI模式', 'AI Prompt', '完成下載'], hide: [4,5] },
   };
@@ -963,7 +1087,7 @@ function appendBatchRowAI(word, suggestion) {
   const row = document.createElement('div');
   row.setAttribute('data-batch-row','1');
   row.setAttribute('data-batch-word', word);
-  row.style.cssText = 'background:rgba(255,255,255,0.88);border:1.5px solid rgba(110,196,188,0.2);border-radius:12px;padding:12px 16px;';
+  row.style.cssText = 'background:rgba(255,252,230,0.8);border:1.5px solid rgba(200,175,80,0.3);border-radius:12px;padding:12px 16px;';
   const safeSugg = sugg.replace(/\x3c/g,'&lt;');
   row.innerHTML = `
     <div style="display:flex;align-items:flex-start;gap:10px;flex-wrap:wrap;">
@@ -1049,6 +1173,7 @@ function appendBatchRow(word, suggestion, tagEl) {
       </div>
       <div style="font-size:0.75rem;color:#aaa;">→</div>
       <input class="batch-to-input" value="${safeSugg}" style="flex:2;min-width:140px;background:rgba(255,255,255,0.9);border:1.5px solid rgba(110,196,188,0.25);border-radius:8px;padding:6px 10px;font-size:0.75rem;color:#2a5550;font-weight:600;outline:none;font-family:inherit;">
+      <button class="btn-batch" onclick="applyBatchRow(this)">全換</button>
     </div>`;
   list.appendChild(row);
 }
@@ -1060,9 +1185,12 @@ function renderFullBatchList(items) {
   tagList.innerHTML = '';
   list.innerHTML = '';
   if (!items || items.length === 0) {
-    tagList.innerHTML = '<div style="font-size:0.78rem;color:#7a9e9b;padding:4px 0;">未偵測到重複出現的英文詞</div>';
+    tagList.style.display = 'none';
+    list.style.display = 'none';
     return;
   }
+  tagList.style.display = 'flex';
+  list.style.display = 'flex';
   items.forEach(item => {
     const word = typeof item === 'string' ? item : item.word;
     const suggestion = typeof item === 'string' ? word : (item.suggestion || word);
@@ -1300,6 +1428,48 @@ function detectNames55() {
 
 // STEP 6: 自動掃描
 // ============================================================
+function runStep6ForC4() {
+  // 暫時把 issueList4 當作 issueList 來渲染
+  const orig = document.getElementById('issueList');
+  const target = document.getElementById('issueList4');
+  const origStatus = document.getElementById('aiStatus');
+  const targetStatus = document.getElementById('aiStatus4');
+  const origNoIssue = document.getElementById('noIssueSection');
+  const targetNoIssue = document.getElementById('noIssueSection4');
+  if (!target) return;
+  // 暫時交換 id
+  if (orig) orig.id = '_issueList_bak';
+  target.id = 'issueList';
+  if (origStatus) origStatus.id = '_aiStatus_bak';
+  if (targetStatus) targetStatus.id = 'aiStatus';
+  if (origNoIssue) origNoIssue.id = '_noIssueSection_bak';
+  if (targetNoIssue) targetNoIssue.id = 'noIssueSection';
+  // 跑掃描
+  runStep6();
+  // 還原 id
+  target.id = 'issueList4';
+  if (orig) orig.id = 'issueList';
+  if (origStatus) origStatus.id = 'aiStatus';
+  if (targetStatus) targetStatus.id = 'aiStatus4';
+  if (origNoIssue) origNoIssue.id = 'noIssueSection';
+  if (targetNoIssue) targetNoIssue.id = 'noIssueSection4';
+}
+
+function applyStep4AndDownload() {
+  // 套用批次替換列
+  document.querySelectorAll('[data-batch-row]').forEach(row => {
+    if (row.style.opacity === '0.5') return;
+    const word = row.getAttribute('data-batch-word');
+    const input = row.querySelector('.batch-to-input');
+    if (word && input) {
+      const to = input.value.trim();
+      if (to) blocks.forEach(b => { b.text = b.text.split(word).join(to); });
+    }
+  });
+  _fixCount = 0;
+  showDownload();
+}
+
 function runStep6() {
   // 標題依模式調整
   const title = document.getElementById('c6Title');
@@ -2118,7 +2288,9 @@ function copyNounPromptOnly(btn) {
   if (!text) { toast('請先點「產生 AI Prompt」'); return; }
   btn.textContent = '✓ 已複製';
   btn.style.background = '#4aada5';
-  try { navigator.clipboard.writeText(text); } catch(e) { if(ta) { ta.select(); document.execCommand('copy'); } }
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).catch(() => { if(ta) { ta.select(); document.execCommand('copy'); } });
+  } else if (ta) { ta.select(); document.execCommand('copy'); }
 }
 
 function copyNounPromptStep(btn) {
@@ -2127,7 +2299,9 @@ function copyNounPromptStep(btn) {
   if (!text) { toast('請先點「產生 AI Prompt」'); return; }
   btn.textContent = '✓ 已複製，開啟中…';
   btn.style.background = '#4aada5';
-  try { navigator.clipboard.writeText(text); } catch(e) { ta.select(); document.execCommand('copy'); }
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).catch(() => { if(ta) { ta.select(); document.execCommand('copy'); } });
+  } else if (ta) { ta.select(); document.execCommand('copy'); }
   setTimeout(() => window.open('https://claude.ai', '_blank'), 300);
 }
 
@@ -2206,33 +2380,46 @@ function applyNounReply() {
 function copyAndOpenClaudeSingle(btn) {
   const ta = document.getElementById('aiPromptTextSingle');
   const text = ta ? ta.value : '';
-  if (!text) { toast('請先點「產生 AI Prompt」'); return; }
   btn.textContent = '✓ 已複製，開啟中…';
   btn.style.background = '#4aada5';
-  try { navigator.clipboard.writeText(text); } catch(e) { if(ta) { ta.select(); document.execCommand('copy'); } }
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).catch(() => { if(ta) { ta.select(); document.execCommand('copy'); } });
+  } else if (ta) { ta.select(); document.execCommand('copy'); }
   setTimeout(() => window.open('https://claude.ai', '_blank'), 300);
 }
 function copyAndOpenClaudeStep2(btn) {
   const ta = document.getElementById('aiPromptTextStep2');
   const text = ta ? ta.value : '';
-  if (!text) { toast('請先點「產生 AI Prompt」'); return; }
   btn.textContent = '✓ 已複製，開啟中…';
   btn.style.background = '#4aada5';
-  try { navigator.clipboard.writeText(text); } catch(e) { if(ta) { ta.select(); document.execCommand('copy'); } }
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).catch(() => { if(ta) { ta.select(); document.execCommand('copy'); } });
+  } else if (ta) { ta.select(); document.execCommand('copy'); }
   setTimeout(() => window.open('https://claude.ai', '_blank'), 300);
 }
 function copyAndOpenClaudeTwo(btn) {
   const ta = document.getElementById('aiPromptTextTwo'); const text = ta ? ta.value : '';
   btn.textContent = '✓ 已複製，開啟中…';
   btn.style.background = '#4aada5';
-  try { navigator.clipboard.writeText(text); } catch(e) { try { const el = document.querySelector('[id]'); if(el) el.focus(); } catch(e2) {} }
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).catch(() => { if(ta) { ta.select(); document.execCommand('copy'); } });
+  } else if (ta) { ta.select(); document.execCommand('copy'); }
   setTimeout(() => window.open('https://claude.ai', '_blank'), 300);
 }
+
 function copyAndOpenClaude(btn) {
-  const text = document.getElementById('aiPromptText').value;
+  const ta = document.getElementById('aiPromptText');
+  const text = ta ? ta.value : '';
   btn.textContent = '✓ 已複製，開啟中…';
   btn.style.background = '#4aada5';
-  try { navigator.clipboard.writeText(text); } catch(e) { try { const el = document.querySelector('[id]'); if(el) el.focus(); } catch(e2) {} }
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).catch(() => {
+      if (ta) { ta.select(); document.execCommand('copy'); }
+    });
+  } else if (ta) {
+    ta.select();
+    document.execCommand('copy');
+  }
   setTimeout(() => window.open('https://claude.ai', '_blank'), 300);
 }
 function copyPrompt(btn) {
