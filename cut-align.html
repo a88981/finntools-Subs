@@ -115,18 +115,65 @@ header p { font-size: 0.75rem; color: #5ab5ac; font-weight: 700; letter-spacing:
 .error-msg.show { display: block; }
 
 .notice { background: rgba(255,255,255,0.7); border: 1.5px solid rgba(110,196,188,0.2); border-radius: 12px; padding: 10px 16px; font-size: 0.72rem; color: #5a8a85; line-height: 1.8; text-align: center; font-weight: 600; margin-bottom: 4px; }
+
+/* Mode tabs */
+.mode-tabs { display: inline-flex; gap: 6px; background: rgba(255,255,255,0.75); border: 1.5px solid rgba(110,196,188,0.2); border-radius: 100px; padding: 5px; margin: 0 auto 16px; }
+.mode-tab { background: transparent; border: none; border-radius: 100px; color: #8dd0c8; cursor: pointer; font-family: inherit; font-size: 0.76rem; font-weight: 800; letter-spacing: 0.05em; padding: 9px 24px; transition: all 0.2s; }
+.mode-tab:hover { color: #4aada5; }
+.mode-tab.active { background: #6ec4bc; color: white; box-shadow: 0 2px 8px rgba(110,196,188,0.3); }
+
+/* Segmentation */
+.seg-single { margin-bottom: 14px; }
+
+.ta { width: 100%; min-height: 110px; background: rgba(255,255,255,0.9); border: 1.5px solid rgba(110,196,188,0.25); border-radius: 12px; padding: 12px 14px; font-family: 'SF Mono','Consolas','Menlo',monospace; font-size: 0.7rem; line-height: 1.7; color: #2a5550; resize: vertical; outline: none; transition: border-color 0.2s; }
+.ta:focus { border-color: #6ec4bc; box-shadow: 0 0 0 3px rgba(110,196,188,0.12); }
+.ta::placeholder { color: #a8d4ce; }
+
+.btn-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.btn-sm { background: rgba(255,255,255,0.85); border: 1.5px solid rgba(110,196,188,0.35); border-radius: 100px; color: #4aada5; cursor: pointer; font-family: inherit; font-size: 0.72rem; font-weight: 800; padding: 8px 18px; transition: all 0.2s; }
+.btn-sm:hover { background: white; border-color: #6ec4bc; transform: translateY(-1px); }
+.btn-sm:disabled { opacity: 0.35; cursor: not-allowed; transform: none; }
+.hint-inline { font-size: 0.66rem; color: #8dd0c8; font-weight: 700; }
+
+.seg-list { display: flex; flex-direction: column; gap: 8px; max-height: 460px; overflow-y: auto; padding-right: 4px; }
+.seg-list::-webkit-scrollbar { width: 4px; }
+.seg-list::-webkit-scrollbar-track { background: transparent; }
+.seg-list::-webkit-scrollbar-thumb { background: rgba(110,196,188,0.3); border-radius: 4px; }
+
+.seg-item { display: grid; grid-template-columns: 22px 1fr; gap: 10px; align-items: start; background: rgba(232,248,245,0.5); border: 1.5px solid rgba(110,196,188,0.15); border-radius: 12px; padding: 11px 14px; text-align: left; }
+.seg-item.off { opacity: 0.42; background: rgba(240,240,240,0.4); }
+.seg-item input[type="checkbox"] { width: 15px; height: 15px; accent-color: #6ec4bc; cursor: pointer; margin-top: 3px; }
+.seg-head { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 7px; }
+.badge { font-size: 0.6rem; font-weight: 800; padding: 3px 9px; border-radius: 100px; letter-spacing: 0.04em; }
+.badge.merge { background: rgba(110,196,188,0.2); color: #3a9088; }
+.badge.split { background: rgba(240,200,90,0.25); color: #8a6a10; }
+.badge.adjust { background: rgba(140,180,235,0.22); color: #3a6a9a; }
+.badge.src { background: rgba(255,255,255,0.9); color: #7dc8c0; border: 1px solid rgba(110,196,188,0.25); }
+.badge.warn { background: rgba(212,90,90,0.1); color: #c04040; }
+.seg-line { font-size: 0.73rem; line-height: 1.65; display: flex; gap: 6px; align-items: baseline; }
+.seg-line.b { color: #a0c4c0; font-weight: 600; }
+.seg-line.a { color: #2a5550; font-weight: 700; }
+.seg-tm { font-size: 0.58rem; color: #a8c8c4; font-weight: 700; font-family: 'SF Mono','Consolas',monospace; flex-shrink: 0; }
+.seg-arrow { font-size: 0.62rem; color: #c8d8d5; margin: 3px 0; }
+.seg-reason { font-size: 0.65rem; color: #7dc8c0; font-weight: 600; margin-top: 6px; line-height: 1.6; }
 </style>
 </head>
 <body>
 
 <header>
-  <h1>剪輯點對齊</h1>
-  <p>SRT 時間碼吸附至 Premiere Pro 剪輯點</p>
+  <h1 id="head-title">剪輯點對齊</h1>
+  <p id="head-sub">SRT 時間碼吸附至 Premiere Pro 剪輯點</p>
 </header>
 
-<div class="notice">⚠ 本工具為<strong>輔助工具</strong>，對齊後仍建議人工確認關鍵字幕位置。</div>
+<div class="mode-tabs">
+  <button class="mode-tab active" id="tab-align" onclick="switchMode('align')">剪輯點對齊</button>
+  <button class="mode-tab" id="tab-seg" onclick="switchMode('seg')">精準分段</button>
+</div>
 
-<div class="wrap">
+<div class="notice" id="notice-align">⚠ 本工具為<strong>輔助工具</strong>，對齊後仍建議人工確認關鍵字幕位置。</div>
+<div class="notice" id="notice-seg" style="display:none;">⚠ AI 只負責<strong>重新斷句</strong>，不改字。套用前請逐條確認，文字有變動的項目會被標紅。</div>
+
+<div class="wrap" id="mode-align">
 
   <!-- Step bar -->
   <div class="steps">
@@ -223,6 +270,89 @@ header p { font-size: 0.75rem; color: #5ab5ac; font-weight: 700; letter-spacing:
 
 </div>
 
+<!-- ═══ 精準分段 ═══ -->
+<div class="wrap" id="mode-seg" style="display:none;">
+
+  <div class="steps">
+    <div class="stp active" id="sstp1"><div class="stp-n">1</div><div class="stp-l">上傳 SRT</div></div>
+    <div class="stp-line"></div>
+    <div class="stp" id="sstp2"><div class="stp-n">2</div><div class="stp-l">複製提示詞</div></div>
+    <div class="stp-line"></div>
+    <div class="stp" id="sstp3"><div class="stp-n">3</div><div class="stp-l">貼回 JSON</div></div>
+    <div class="stp-line"></div>
+    <div class="stp" id="sstp4"><div class="stp-n">4</div><div class="stp-l">確認下載</div></div>
+  </div>
+
+  <!-- Step 1 -->
+  <div class="card">
+    <div class="card-title">步驟一：載入字幕</div>
+    <div class="upload-zone seg-single" id="zone-seg" ondragover="dragOver(event,'seg')" ondragleave="dragLeave('seg')" ondrop="dropFile(event,'seg')">
+      <input type="file" accept=".srt" onchange="loadFile(event,'seg')">
+      <div class="upload-icon">📝</div>
+      <div class="upload-label">要重新斷句的字幕 SRT</div>
+      <div class="upload-hint">.srt</div>
+      <div class="upload-filename" id="seg-name"></div>
+    </div>
+    <div class="btn-row">
+      <button class="btn-sm" id="seg-import-btn" onclick="importAligned()" disabled>↳ 帶入剛才對齊好的結果</button>
+      <span class="hint-inline" id="seg-count"></span>
+    </div>
+    <div class="error-msg" id="seg-error1"></div>
+  </div>
+
+  <!-- Step 2 -->
+  <div class="card" id="seg-card-prompt" style="display:none;">
+    <div class="card-title">步驟二：複製提示詞丟給 AI</div>
+    <div class="tip">💬 &nbsp;<span>整份送就好。回傳的 JSON 只包含「有調整的行」，沒被提到的行原樣保留，所以 AI 漏行不會弄壞字幕。<strong>若 AI 中途停了</strong>，貼回結果後這裡會多一顆補送按鈕。</span></div>
+    <div class="btn-row">
+      <button class="btn-sm" id="copy-btn" onclick="copyPrompt()">📋 複製提示詞</button>
+      <button class="btn-sm" id="resume-btn" style="display:none;" onclick="copyPrompt(true)"></button>
+    </div>
+    <div class="hint-inline" id="copy-hint" style="display:block;margin-top:8px;"></div>
+  </div>
+
+  <!-- Step 3 -->
+  <div class="card" id="seg-card-paste" style="display:none;">
+    <div class="card-title">步驟三：把 AI 回傳的 JSON 貼回來</div>
+    <textarea class="ta" id="json-input" placeholder='{"segments":[ ... ]}　　補送的結果也貼這裡，會自動累加'></textarea>
+    <div class="btn-row" style="margin-top:10px;">
+      <button class="btn-sm" onclick="ingestJson()">＋ 加入這批結果</button>
+      <button class="btn-sm" onclick="clearSegResults()">✕ 清空全部結果</button>
+      <span class="hint-inline" id="ingest-hint"></span>
+    </div>
+    <div class="error-msg" id="seg-error"></div>
+  </div>
+
+  <!-- Step 4 -->
+  <div class="result-box" id="seg-result">
+    <div class="card">
+      <div class="card-title">步驟四：確認每一條調整</div>
+
+      <div class="stat-row">
+        <div class="stat"><span class="v" id="sstat-src">—</span><span class="k">原始行數</span></div>
+        <div class="stat"><span class="v" id="sstat-out">—</span><span class="k">調整後行數</span></div>
+        <div class="stat"><span class="v" id="sstat-apply">—</span><span class="k">套用中</span></div>
+        <div class="stat"><span class="v" id="sstat-warn">—</span><span class="k">需注意</span></div>
+      </div>
+
+      <div class="btn-row" style="margin-bottom:12px;">
+        <button class="btn-sm" onclick="toggleAllSeg(true)">全部勾選</button>
+        <button class="btn-sm" onclick="toggleAllSeg(false)">全部取消</button>
+        <span class="hint-inline">取消勾選的項目會保留原始斷句</span>
+      </div>
+
+      <div class="seg-list" id="seg-list"></div>
+
+      <div class="divider"></div>
+      <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
+        <button class="btn" style="background:rgba(255,255,255,0.8);border:1.5px solid rgba(110,196,188,0.3);color:#5ab5ac;box-shadow:none;" onclick="resetSeg()">↺ 重新開始</button>
+        <button class="btn" onclick="downloadSegSrt()">⬇ 下載分段後 SRT</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
 <script>
 let xmlContent = null;
 let srtContent = null;
@@ -271,10 +401,13 @@ function processFile(file, type) {
     zone.classList.add('loaded');
     if (type === 'xml') {
       xmlContent = e.target.result;
+      checkReady();
+    } else if (type === 'seg') {
+      loadSegSource(e.target.result);
     } else {
       srtContent = e.target.result;
+      checkReady();
     }
-    checkReady();
   };
   reader.readAsText(file, 'UTF-8');
 }
@@ -393,6 +526,7 @@ function runAlign() {
     document.getElementById('stat-snapped').textContent = snapped;
     document.getElementById('stat-merged').textContent = merged;
 
+    document.getElementById('seg-import-btn').disabled = false;
     document.getElementById('result-box').classList.add('show');
     document.getElementById('stp3').className = 'stp done';
     document.getElementById('stp4').className = 'stp active';
@@ -428,7 +562,497 @@ function resetTool() {
   document.getElementById('run-btn').disabled = true;
   document.getElementById('result-box').classList.remove('show');
   document.getElementById('error-msg').classList.remove('show');
-  document.querySelectorAll('.stp').forEach((s,i) => s.className = i===0 ? 'stp active' : 'stp');
+  document.querySelectorAll('#mode-align .stp').forEach((s,i) => s.className = i===0 ? 'stp active' : 'stp');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+/* ══════════════ 精準分段 ══════════════ */
+
+const MIN_SEG_MS = 1000;   // 拆分後每行至少停留 1 秒
+
+const SEG_PROMPT = `你是繁體中文字幕斷句優化員。請把以下字幕重新斷句，讓每一行都符合語意邏輯與閱讀節奏。
+━━ 核心原則 ━━
+· 只調整「斷句位置」與「行的合併／拆分」，絕對不修改任何文字內容
+· 若原文有錯字、漏字，保持原樣，不要順手改掉
+· 語意完整 > 字數平均 > 時間平均
+━━ 斷句規則 ━━
+1. 每行長度
+   · 理想 10-16 字，上限 20 字
+   · 超過 20 字必須拆分
+   · 少於 5 字且語意不完整，優先與相鄰行合併
+2. 絕對不可斷開的位置（斷在這裡要修正）
+   · 詞語中間：「阿拉／斯加」「商務／艙」「國家公／園」
+   · 專有名詞中間：人名、地名、品牌名、店名
+   · 數字與量詞之間：「15／個小時」「三／個多小時」
+   · 動詞與其賓語黏得極緊時：「搭／飛機」「爬／冰川」
+   · 否定詞與動詞：「不／知道」「沒有／去過」
+   · 「的、了、嗎、吧、啊」等虛詞不可單獨開頭或落單成行
+3. 建議的斷句位置（優先在這裡斷）
+   · 主語 ｜ 謂語 之間（長句時）
+   · 動詞片語結束處
+   · 連接詞之前：「然後」「但是」「所以」「因為」「而且」「如果」
+   · 介詞片語之前：「在～」「跟～」「對～」「從～」
+   · 語氣停頓處：「對啊」「就是」「你看」之後
+   · 一個完整子句結束處
+4. 需要合併的情況
+   · 同一句話被切成兩行以上，且合併後不超過 20 字
+   · 前行以虛詞或連接詞結尾（「然後」「因為」「就是」單獨一行）
+   · 單字或兩字的碎片行，且與前後屬同一句
+   ⚠ 例外：不同說話者的話絕對不可合併
+5. 需要拆分的情況
+   · 超過 20 字
+   · 一行內包含兩個以上完整子句
+   · 一行內出現說話者切換（一問一答被塞在同一行）
+6. 時間軸處理
+   · 合併：取第一行的開始時間，作為新行的時間
+   · 拆分：依照字數比例分配時間，新行的時間需落在原行區間內
+   · 拆分後每行至少停留 1 秒；若不足 1 秒，改為不拆分
+   · 時間戳格式維持與原字幕一致
+━━ 不要調整的情況 ━━
+· 原斷句已經合理 → 不回報，不要說「無需更改」
+· 純語氣詞獨立成行（「哈哈哈」「嗯」「欸」）→ 保留原樣
+· 英文對話行 → 依英文子句斷，規則同上，長度上限 60 字元
+━━ 輸出格式 ━━
+只回傳 JSON，不要任何其他文字：
+{"segments":[
+  {
+    "action":"合併|拆分|調整斷點",
+    "sourceNum":[原始行號陣列],
+    "before":[{"time":"時間戳","text":"原文"}],
+    "after":[{"time":"時間戳","text":"調整後文字"}],
+    "reason":"一句話說明，例如「『阿拉』與『斯加』為同一專有名詞不可斷開」"
+  }
+]}
+沒有需要調整的地方就回傳 {"segments":[]}
+字幕：
+（格式為：[行號] 起始時間 --> 結束時間，換行後為該行文字；sourceNum 請填 [] 內的行號）
+{{SUBS}}`;
+
+let segEntries = [];      // 原始行 {n,start,end,text}
+let segResults = [];      // 已解析的調整項
+let segResumeFrom = 0;    // 補送起點（最後一條調整所在行）
+let segOutputSrt = null;
+
+function switchMode(m) {
+  const isSeg = m === 'seg';
+  document.getElementById('mode-align').style.display = isSeg ? 'none' : 'flex';
+  document.getElementById('mode-seg').style.display = isSeg ? 'flex' : 'none';
+  document.getElementById('notice-align').style.display = isSeg ? 'none' : 'block';
+  document.getElementById('notice-seg').style.display = isSeg ? 'block' : 'none';
+  document.getElementById('tab-align').classList.toggle('active', !isSeg);
+  document.getElementById('tab-seg').classList.toggle('active', isSeg);
+  document.getElementById('head-title').textContent = isSeg ? '精準分段' : '剪輯點對齊';
+  document.getElementById('head-sub').textContent = isSeg
+    ? '交給 AI 重新斷句，逐條確認後輸出'
+    : 'SRT 時間碼吸附至 Premiere Pro 剪輯點';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function loadSegSource(text) {
+  const err1 = document.getElementById('seg-error1');
+  err1.classList.remove('show');
+  const entries = parseSrt(text);
+  if (entries.length === 0) {
+    err1.textContent = '⚠ SRT 解析失敗，請確認檔案格式（每段需有序號、時間碼、文字）';
+    err1.classList.add('show');
+    return;
+  }
+  segEntries = entries.map((e, i) => ({ n: i+1, start: e.start, end: e.end, text: e.text }));
+  segResults = []; segResumeFrom = 0; segOutputSrt = null;
+  document.getElementById('seg-count').textContent = `已載入 ${segEntries.length} 行字幕`;
+  document.getElementById('copy-btn').textContent = `📋 複製提示詞（整份 ${segEntries.length} 行）`;
+  document.getElementById('resume-btn').style.display = 'none';
+  document.getElementById('seg-card-prompt').style.display = 'block';
+  document.getElementById('seg-card-paste').style.display = 'block';
+  document.getElementById('seg-result').classList.remove('show');
+  document.getElementById('seg-error').classList.remove('show');
+  document.getElementById('copy-hint').textContent = '';
+  document.getElementById('ingest-hint').textContent = '';
+  document.getElementById('sstp1').className = 'stp done';
+  document.getElementById('sstp2').className = 'stp active';
+}
+
+function importAligned() {
+  if (!outputSrt) return;
+  const zone = document.getElementById('zone-seg');
+  zone.classList.add('loaded');
+  document.getElementById('seg-name').textContent = '（來自剪輯點對齊的結果）';
+  loadSegSource(outputSrt);
+}
+
+function copyPrompt(resume) {
+  const src = resume ? segEntries.filter(e => e.n > segResumeFrom) : segEntries;
+  if (src.length === 0) return;
+  const rows = src
+    .map(e => `[${e.n}] ${msToSrt(e.start)} --> ${msToSrt(e.end)}\n${e.text}`)
+    .join('\n\n');
+  const payload = SEG_PROMPT.replace('{{SUBS}}', rows);
+  copyText(payload, () => {
+    document.getElementById('copy-hint').textContent =
+      `已複製第 ${src[0].n}–${src[src.length-1].n} 行（含提示詞）`;
+    document.getElementById('sstp2').className = 'stp done';
+    document.getElementById('sstp3').className = 'stp active';
+  });
+}
+
+function copyText(text, onOk) {
+  const fallback = () => {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    let ok = false;
+    try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+    document.body.removeChild(ta);
+    if (ok) onOk();
+    else document.getElementById('copy-hint').textContent = '瀏覽器擋住了複製，請改用 Chrome 或 Edge 開啟這個檔案';
+  };
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(text).then(onOk).catch(fallback);
+  } else {
+    fallback();
+  }
+}
+
+function segError(msg) {
+  const el = document.getElementById('seg-error');
+  el.textContent = '⚠ ' + msg;
+  el.classList.add('show');
+}
+
+function extractJson(raw) {
+  let t = raw.trim().replace(/^```(?:json)?/i, '').replace(/```$/, '').trim();
+  const s = t.indexOf('{'), e = t.lastIndexOf('}');
+  const s2 = t.indexOf('['), e2 = t.lastIndexOf(']');
+  if (s !== -1 && e > s) {
+    try { return { list: normalizeList(JSON.parse(t.slice(s, e+1))), salvaged: false }; } catch (err) {}
+  }
+  if (s2 !== -1 && e2 > s2) {
+    try { return { list: normalizeList(JSON.parse(t.slice(s2, e2+1))), salvaged: false }; } catch (err) {}
+  }
+  const objs = salvageSegments(t);
+  if (objs.length > 0) return { list: objs, salvaged: true };
+  throw new Error('讀不出 JSON，請確認貼上的內容包含 AI 回傳的那段');
+}
+
+function normalizeList(data) {
+  const list = Array.isArray(data) ? data : (data && data.segments);
+  if (!Array.isArray(list)) throw new Error('找不到 segments 陣列');
+  return list;
+}
+
+// JSON 被截斷（AI 輸出長度用完）時，逐個撈出完整的物件，丟掉最後那個殘缺的
+function salvageSegments(t) {
+  const key = t.indexOf('"segments"');
+  let from = key >= 0 ? t.indexOf('[', key) : t.indexOf('[');
+  if (from < 0) from = 0;
+  const objs = [];
+  let depth = 0, start = -1, inStr = false, esc = false;
+  for (let p = from; p < t.length; p++) {
+    const c = t[p];
+    if (inStr) {
+      if (esc) esc = false;
+      else if (c === '\\') esc = true;
+      else if (c === '"') inStr = false;
+      continue;
+    }
+    if (c === '"') { inStr = true; continue; }
+    if (c === '{') { if (depth === 0) start = p; depth++; }
+    else if (c === '}') {
+      depth--;
+      if (depth === 0 && start >= 0) {
+        try { const o = JSON.parse(t.slice(start, p + 1)); if (o && o.sourceNum != null) objs.push(o); } catch (err) {}
+        start = -1;
+      }
+    }
+  }
+  return objs;
+}
+
+function toMsLoose(ts) {
+  const m = ts.match(/(?:(\d{1,2}):)?(\d{1,2}):(\d{2})[,.](\d{1,3})/);
+  if (!m) return null;
+  const h = parseInt(m[1] || '0'), mi = parseInt(m[2]), s = parseInt(m[3]);
+  const ms = parseInt((m[4] + '00').slice(0, 3));
+  return h*3600000 + mi*60000 + s*1000 + ms;
+}
+
+function parseTimeField(t) {
+  if (t == null) return null;
+  const all = String(t).match(/(?:\d{1,2}:)?\d{1,2}:\d{2}[,.]\d{1,3}/g);
+  if (!all || all.length === 0) return null;
+  return { start: toMsLoose(all[0]), end: all[1] != null ? toMsLoose(all[1]) : null };
+}
+
+function proportional(texts, spanStart, spanEnd) {
+  const lens = texts.map(t => Math.max(1, t.replace(/\s/g, '').length));
+  const total = lens.reduce((a, b) => a + b, 0);
+  const span = spanEnd - spanStart;
+  const out = []; let cur = spanStart;
+  for (let i = 0; i < texts.length; i++) {
+    const end = (i === texts.length - 1) ? spanEnd : cur + Math.round(span * lens[i] / total);
+    out.push({ start: cur, end: end });
+    cur = end;
+  }
+  return out;
+}
+
+function resolveAfterTimes(after, spanStart, spanEnd) {
+  const texts = after.map(a => String(a.text == null ? '' : a.text));
+  const n = texts.length;
+  if (n === 1) return [{ start: spanStart, end: spanEnd }];
+
+  let times = after.map(a => parseTimeField(a.time));
+  let ok = times.every(t => t && t.start != null);
+  let out = [];
+  if (ok) {
+    for (let i = 0; i < n; i++) {
+      let s = times[i].start;
+      let e = times[i].end != null ? times[i].end
+            : (i + 1 < n && times[i+1].start != null ? times[i+1].start : spanEnd);
+      out.push({ start: s, end: e });
+    }
+    out[0].start = spanStart;
+    out[n-1].end = spanEnd;
+    for (let i = 0; i < n; i++) {
+      out[i].start = Math.min(Math.max(out[i].start, spanStart), spanEnd);
+      out[i].end   = Math.min(Math.max(out[i].end,   spanStart), spanEnd);
+      if (i > 0 && out[i].start < out[i-1].end) out[i].start = out[i-1].end;
+      if (out[i].end <= out[i].start) ok = false;
+    }
+  }
+  return ok ? out : proportional(texts, spanStart, spanEnd);
+}
+
+function normText(s) { return String(s == null ? '' : s).replace(/\s+/g, ''); }
+
+function buildSegRecord(seg) {
+  let nums = seg.sourceNum;
+  if (nums == null) return null;
+  if (!Array.isArray(nums)) nums = [nums];
+  nums = nums.map(x => parseInt(x)).filter(x => !isNaN(x));
+  if (nums.length === 0) return null;
+  nums = Array.from(new Set(nums)).sort((a, b) => a - b);
+
+  const src = nums.map(n => segEntries.find(e => e.n === n)).filter(Boolean);
+  if (src.length !== nums.length) return null;   // 行號對不上就整條丟掉
+
+  let after = seg.after;
+  if (!Array.isArray(after)) return null;
+  after = after.filter(a => a && normText(a.text).length > 0);
+  if (after.length === 0) return null;
+
+  const spanStart = Math.min.apply(null, src.map(e => e.start));
+  const spanEnd   = Math.max.apply(null, src.map(e => e.end));
+  const times = resolveAfterTimes(after, spanStart, spanEnd);
+
+  const warnings = [];
+  const beforeJoined = normText(src.map(e => e.text).join(''));
+  const afterJoined  = normText(after.map(a => a.text).join(''));
+  if (beforeJoined !== afterJoined) warnings.push('文字內容有變動');
+
+  const gaps = nums.some((v, i) => i > 0 && v !== nums[i-1] + 1);
+  if (gaps) warnings.push('來源行號不連續');
+
+  const tooShort = times.some(t => (t.end - t.start) < MIN_SEG_MS);
+  if (tooShort && after.length > src.length) warnings.push('拆分後有行不足 1 秒');
+
+  let action = seg.action || '';
+  if (!/合併|拆分|調整/.test(action)) {
+    action = after.length < src.length ? '合併' : after.length > src.length ? '拆分' : '調整斷點';
+  }
+
+  return {
+    action: action,
+    nums: nums,
+    before: src.map(e => ({ start: e.start, end: e.end, text: e.text })),
+    after: after.map((a, i) => ({ start: times[i].start, end: times[i].end, text: String(a.text).trim() })),
+    reason: seg.reason ? String(seg.reason) : '',
+    warnings: warnings,
+    enabled: warnings.length === 0
+  };
+}
+
+function ingestJson() {
+  const el = document.getElementById('seg-error');
+  el.classList.remove('show');
+  if (segEntries.length === 0) { segError('請先載入 SRT'); return; }
+  const raw = document.getElementById('json-input').value;
+  if (!raw.trim()) { segError('貼上區是空的'); return; }
+
+  let parsed;
+  try { parsed = extractJson(raw); } catch (err) { segError(err.message); return; }
+  const list = parsed.list;
+
+  let added = 0, dropped = 0;
+  for (const seg of list) {
+    const rec = buildSegRecord(seg);
+    if (!rec) { dropped++; continue; }
+    const key = rec.nums.join(',');
+    const at = segResults.findIndex(r => r.nums.join(',') === key);
+    if (at >= 0) segResults[at] = rec; else segResults.push(rec);
+    added++;
+  }
+  segResults.sort((a, b) => a.nums[0] - b.nums[0]);
+  document.getElementById('json-input').value = '';
+
+  let msg = `這批加入 ${added} 條`;
+  if (dropped) msg += `，略過 ${dropped} 條（行號對不上或缺 after）`;
+  if (parsed.salvaged) msg += `　※ JSON 不完整，已撈出能用的部分，AI 可能輸出到一半被截斷`;
+  msg += `　目前共 ${segResults.length} 條`;
+  document.getElementById('ingest-hint').textContent = msg;
+  updateResumeBtn();
+  document.getElementById('ingest-hint').innerHTML += coverageNote();
+
+  renderSegList();
+  document.getElementById('sstp3').className = 'stp done';
+  document.getElementById('sstp4').className = 'stp active';
+}
+
+function coverageNote() {
+  if (segResults.length === 0 || segEntries.length === 0) return '';
+  const total = segEntries.length;
+  const pct = Math.round(segResumeFrom / total * 100);
+  let s = `<br>調整分佈：最後一條落在第 ${segResumeFrom} 行 ／ 全片 ${total} 行（${pct}%）`;
+  if (pct < 75) s += ` <span style="color:#c04040;font-weight:800;">後面 ${total - segResumeFrom} 行一條都沒有，可能是 AI 中途停了，回上面按補送按鈕</span>`;
+  return s;
+}
+
+function updateResumeBtn() {
+  const lastRec = segResults[segResults.length - 1];
+  segResumeFrom = lastRec ? lastRec.nums[lastRec.nums.length - 1] : 0;
+  const btn = document.getElementById('resume-btn');
+  const left = segEntries.length - segResumeFrom;
+  if (segResults.length > 0 && left > 0) {
+    btn.textContent = `↻ 補送第 ${segResumeFrom + 1} 行起（還有 ${left} 行）`;
+    btn.style.display = 'inline-block';
+  } else {
+    btn.style.display = 'none';
+  }
+}
+
+function clearSegResults() {
+  segResults = []; segResumeFrom = 0;
+  document.getElementById('ingest-hint').textContent = '已清空，原始字幕沒有動到';
+  updateResumeBtn();
+  renderSegList();
+}
+
+function toggleSeg(i, checked) {
+  segResults[i].enabled = checked;
+  renderSegList();
+}
+
+function toggleAllSeg(v) {
+  segResults.forEach(r => r.enabled = v);
+  renderSegList();
+}
+
+function renderSegList() {
+  const box = document.getElementById('seg-result');
+  const list = document.getElementById('seg-list');
+  if (segResults.length === 0) {
+    box.classList.remove('show');
+    return;
+  }
+  box.classList.add('show');
+  list.innerHTML = '';
+
+  segResults.forEach((r, i) => {
+    const item = document.createElement('div');
+    item.className = 'seg-item' + (r.enabled ? '' : ' off');
+
+    const cb = document.createElement('input');
+    cb.type = 'checkbox'; cb.checked = r.enabled;
+    cb.onchange = () => toggleSeg(i, cb.checked);
+    item.appendChild(cb);
+
+    const body = document.createElement('div');
+    const cls = r.action.indexOf('合併') >= 0 ? 'merge' : r.action.indexOf('拆分') >= 0 ? 'split' : 'adjust';
+    let html = `<div class="seg-head"><span class="badge ${cls}">${r.action}</span>` +
+               `<span class="badge src">第 ${r.nums.join('、')} 行</span>` +
+               r.warnings.map(w => `<span class="badge warn">${w}</span>`).join('') + `</div>`;
+    html += r.before.map(b =>
+      `<div class="seg-line b"><span class="seg-tm">${msToSrt(b.start).slice(0,8)}</span><span>${esc(b.text)}</span></div>`).join('');
+    html += `<div class="seg-arrow">↓</div>`;
+    html += r.after.map(a =>
+      `<div class="seg-line a"><span class="seg-tm">${msToSrt(a.start).slice(0,8)}</span><span>${esc(a.text)}</span></div>`).join('');
+    if (r.reason) html += `<div class="seg-reason">${esc(r.reason)}</div>`;
+    body.innerHTML = html;
+    item.appendChild(body);
+    list.appendChild(item);
+  });
+
+  const built = buildSegOutput();
+  document.getElementById('sstat-src').textContent = segEntries.length;
+  document.getElementById('sstat-out').textContent = built.count;
+  document.getElementById('sstat-apply').textContent = built.applied;
+  document.getElementById('sstat-warn').textContent = segResults.filter(r => r.warnings.length > 0).length;
+}
+
+function esc(s) {
+  return String(s).replace(/[&<>]/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;' }[c])).replace(/\n/g, ' ⏎ ');
+}
+
+function buildSegOutput() {
+  const used = new Set();
+  const byFirst = new Map();
+  let applied = 0;
+  for (const r of segResults) {
+    if (!r.enabled) continue;
+    if (r.nums.some(n => used.has(n))) continue;   // 兩條調整搶同一行，只採用第一條
+    r.nums.forEach(n => used.add(n));
+    byFirst.set(r.nums[0], r);
+    applied++;
+  }
+
+  const out = [];
+  for (const e of segEntries) {
+    const r = byFirst.get(e.n);
+    if (r) {
+      r.after.forEach(a => out.push({ start: a.start, end: a.end, text: a.text }));
+    } else if (!used.has(e.n)) {
+      out.push({ start: e.start, end: e.end, text: e.text });
+    }
+  }
+  out.sort((a, b) => a.start - b.start);
+
+  const srt = out.map((e, i) =>
+    `${i+1}\n${msToSrt(e.start)} --> ${msToSrt(e.end)}\n${e.text}`
+  ).join('\n\n') + '\n';
+
+  segOutputSrt = srt;
+  return { count: out.length, applied: applied };
+}
+
+function downloadSegSrt() {
+  buildSegOutput();
+  if (!segOutputSrt) return;
+  const now = new Date();
+  const date = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}`;
+  const time = `${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}`;
+  const blob = new Blob([segOutputSrt], { type: 'text/plain;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `${date}_${time}_字幕精準分段.srt`;
+  a.click();
+  document.getElementById('sstp4').className = 'stp done';
+}
+
+function resetSeg() {
+  segEntries = []; segResults = []; segResumeFrom = 0; segOutputSrt = null;
+  document.getElementById('resume-btn').style.display = 'none';
+  document.getElementById('seg-name').textContent = '';
+  document.getElementById('zone-seg').classList.remove('loaded');
+  document.getElementById('seg-count').textContent = '';
+  document.getElementById('copy-hint').textContent = '';
+  document.getElementById('ingest-hint').textContent = '';
+  document.getElementById('json-input').value = '';
+  document.getElementById('seg-card-prompt').style.display = 'none';
+  document.getElementById('seg-card-paste').style.display = 'none';
+  document.getElementById('seg-result').classList.remove('show');
+  document.getElementById('seg-error').classList.remove('show');
+  document.querySelectorAll('#mode-seg .stp').forEach((s,i) => s.className = i===0 ? 'stp active' : 'stp');
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 </script>
