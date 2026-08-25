@@ -133,6 +133,7 @@ header p { font-size: 0.75rem; color: #5ab5ac; font-weight: 700; letter-spacing:
 .btn-sm { background: rgba(255,255,255,0.85); border: 1.5px solid rgba(110,196,188,0.35); border-radius: 100px; color: #4aada5; cursor: pointer; font-family: inherit; font-size: 0.72rem; font-weight: 800; padding: 8px 18px; transition: all 0.2s; }
 .btn-sm:hover { background: white; border-color: #6ec4bc; transform: translateY(-1px); }
 .btn-sm:disabled { opacity: 0.35; cursor: not-allowed; transform: none; }
+.btn-sm.active { background: #6ec4bc; border-color: #6ec4bc; color: white; box-shadow: 0 2px 8px rgba(110,196,188,0.3); }
 .hint-inline { font-size: 0.66rem; color: #8dd0c8; font-weight: 700; }
 
 .seg-list { display: flex; flex-direction: column; gap: 8px; max-height: 460px; overflow-y: auto; padding-right: 4px; }
@@ -151,11 +152,38 @@ header p { font-size: 0.75rem; color: #5ab5ac; font-weight: 700; letter-spacing:
 .badge.src { background: rgba(255,255,255,0.9); color: #7dc8c0; border: 1px solid rgba(110,196,188,0.25); }
 .badge.warn { background: rgba(212,90,90,0.1); color: #c04040; }
 .seg-line { font-size: 0.73rem; line-height: 1.65; display: flex; gap: 6px; align-items: baseline; }
+.ainput { flex: 1; min-width: 0; background: rgba(255,255,255,0.75); border: none; border-bottom: 1.5px solid rgba(110,196,188,0.35); border-radius: 4px 4px 0 0; color: #2a5550; font-family: inherit; font-size: 0.75rem; font-weight: 700; padding: 3px 6px; outline: none; transition: all 0.15s; }
+.ainput:hover { background: white; border-bottom-color: #6ec4bc; }
+.ainput:focus { background: white; border-bottom-color: #6ec4bc; box-shadow: 0 2px 8px rgba(110,196,188,0.18); }
+.alen { font-size: 0.58rem; font-weight: 800; color: #b8d8d4; flex-shrink: 0; min-width: 16px; text-align: right; }
+.alen.over { color: #c04040; }
 .seg-line.b { color: #a0c4c0; font-weight: 600; }
 .seg-line.a { color: #2a5550; font-weight: 700; }
 .seg-tm { font-size: 0.58rem; color: #a8c8c4; font-weight: 700; font-family: 'SF Mono','Consolas',monospace; flex-shrink: 0; }
 .seg-arrow { font-size: 0.62rem; color: #c8d8d5; margin: 3px 0; }
 .seg-reason { font-size: 0.65rem; color: #7dc8c0; font-weight: 600; margin-top: 6px; line-height: 1.6; }
+
+/* Manual tweak */
+.manual-list { display: flex; flex-direction: column; gap: 5px; max-height: 520px; overflow-y: auto; padding-right: 4px; }
+.manual-list::-webkit-scrollbar { width: 4px; }
+.manual-list::-webkit-scrollbar-track { background: transparent; }
+.manual-list::-webkit-scrollbar-thumb { background: rgba(110,196,188,0.3); border-radius: 4px; }
+.mrow { display: grid; grid-template-columns: 30px 118px 1fr 30px auto; gap: 8px; align-items: center; background: rgba(255,255,255,0.75); border: 1.5px solid rgba(110,196,188,0.16); border-radius: 10px; padding: 6px 10px; }
+.mrow.flagged { border-color: rgba(230,170,60,0.5); background: rgba(255,248,210,0.5); }
+.mnum { font-size: 0.62rem; color: #a8c8c4; font-weight: 800; text-align: right; }
+.mtm { font-size: 0.58rem; color: #a8c8c4; font-weight: 700; font-family: 'SF Mono','Consolas',monospace; white-space: nowrap; }
+.minput { background: transparent; border: none; border-bottom: 1.5px solid rgba(110,196,188,0.2); color: #2a5550; font-family: inherit; font-size: 0.78rem; font-weight: 600; padding: 4px 2px; outline: none; width: 100%; }
+.minput:focus { border-bottom-color: #6ec4bc; background: rgba(232,248,245,0.5); }
+.mlen { font-size: 0.6rem; font-weight: 800; color: #b8d8d4; text-align: center; }
+.mlen.over { color: #c04040; }
+.mbtn { background: rgba(255,255,255,0.9); border: 1.5px solid rgba(110,196,188,0.3); border-radius: 8px; color: #5ab5ac; cursor: pointer; font-family: inherit; font-size: 0.62rem; font-weight: 800; padding: 4px 8px; transition: all 0.15s; }
+.mbtn:hover { background: #6ec4bc; border-color: #6ec4bc; color: white; }
+.mbtn:disabled { opacity: 0.25; cursor: not-allowed; }
+.mbtns { display: flex; gap: 4px; }
+@media (max-width: 620px) {
+  .mrow { grid-template-columns: 26px 1fr auto; }
+  .mtm, .mlen { grid-column: 1 / -1; text-align: left; }
+}
 </style>
 </head>
 <body>
@@ -171,7 +199,7 @@ header p { font-size: 0.75rem; color: #5ab5ac; font-weight: 700; letter-spacing:
 </div>
 
 <div class="notice" id="notice-align">⚠ 本工具為<strong>輔助工具</strong>，對齊後仍建議人工確認關鍵字幕位置。</div>
-<div class="notice" id="notice-seg" style="display:none;">⚠ AI 只負責<strong>重新斷句</strong>，不改字。套用前請逐條確認，文字有變動的項目會被標紅。</div>
+<div class="notice" id="notice-seg" style="display:none;">⚠ AI 只負責<strong>重新斷句</strong>，不改字。調整項預設全部勾選，文字被動過的會標紅並寫出改了哪個字。</div>
 
 <div class="wrap" id="mode-align">
 
@@ -295,6 +323,7 @@ header p { font-size: 0.75rem; color: #5ab5ac; font-weight: 700; letter-spacing:
     </div>
     <div class="btn-row">
       <button class="btn-sm" id="seg-import-btn" onclick="importAligned()" disabled>↳ 帶入剛才對齊好的結果</button>
+      <button class="btn-sm" id="manual-only-btn" style="display:none;" onclick="startManual()">✎ 不用 AI，直接手動微調</button>
       <span class="hint-inline" id="seg-count"></span>
     </div>
     <div class="error-msg" id="seg-error1"></div>
@@ -335,19 +364,41 @@ header p { font-size: 0.75rem; color: #5ab5ac; font-weight: 700; letter-spacing:
         <div class="stat"><span class="v" id="sstat-warn">—</span><span class="k">需注意</span></div>
       </div>
 
+      <div class="tip">✎ &nbsp;<span>下半部（調整後）的每一行都可以<strong>直接改字</strong>，右邊會即時算字數。<strong>沒有自動勾選的</strong>都是因為 AI 動到了文字或時間，紅色標籤會寫出改了哪個字（例如「裡→里」），確認 OK 再自己勾。</span></div>
       <div class="btn-row" style="margin-bottom:12px;">
+        <button class="btn-sm" id="sfilter-all" onclick="setSegFilter('all')">全部</button>
+        <button class="btn-sm" id="sfilter-flag" onclick="setSegFilter('flag')">只看要注意的</button>
         <button class="btn-sm" onclick="toggleAllSeg(true)">全部勾選</button>
         <button class="btn-sm" onclick="toggleAllSeg(false)">全部取消</button>
-        <span class="hint-inline">取消勾選的項目會保留原始斷句</span>
+        <button class="btn-sm" onclick="uncheckFlagged()">取消有警告的</button>
       </div>
+      <div class="hint-inline" style="display:block;margin-bottom:10px;" id="seg-filter-hint"></div>
 
       <div class="seg-list" id="seg-list"></div>
 
       <div class="divider"></div>
       <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
         <button class="btn" style="background:rgba(255,255,255,0.8);border:1.5px solid rgba(110,196,188,0.3);color:#5ab5ac;box-shadow:none;" onclick="resetSeg()">↺ 重新開始</button>
+        <button class="btn" style="background:rgba(255,255,255,0.8);border:1.5px solid rgba(110,196,188,0.3);color:#5ab5ac;box-shadow:none;" onclick="startManual()">✎ 手動微調</button>
         <button class="btn" onclick="downloadSegSrt()">⬇ 下載分段後 SRT</button>
       </div>
+    </div>
+  </div>
+
+  <!-- Step 5 -->
+  <div class="card" id="seg-card-manual" style="display:none;">
+    <div class="card-title">步驟五：手動微調</div>
+    <div class="tip">✎ &nbsp;<span>直接改字、合併、拆分都可以。<strong>拆分</strong>是在游標位置切開，時間依字數分配；<strong>合併</strong>是併進上一行。改完直接下載。</span></div>
+    <div class="btn-row" style="margin-bottom:12px;">
+      <button class="btn-sm" id="mfilter-all" onclick="setManualFilter('all')">全部</button>
+      <button class="btn-sm" id="mfilter-flag" onclick="setManualFilter('flag')">只看要注意的</button>
+      <button class="btn-sm" onclick="startManual()">↺ 以勾選結果重建</button>
+      <span class="hint-inline" id="manual-hint"></span>
+    </div>
+    <div class="manual-list" id="manual-list"></div>
+    <div class="divider"></div>
+    <div style="text-align:center;">
+      <button class="btn" onclick="downloadSegSrt()">⬇ 下載分段後 SRT</button>
     </div>
   </div>
 
@@ -677,9 +728,12 @@ function loadSegSource(text) {
   }
   segEntries = entries.map((e, i) => ({ n: i+1, start: e.start, end: e.end, text: e.text }));
   segResults = []; segResumeFrom = 0; segOutputSrt = null;
+  segManual = null; segManualStale = false;
+  document.getElementById('seg-card-manual').style.display = 'none';
   document.getElementById('seg-count').textContent = `已載入 ${segEntries.length} 行字幕`;
   document.getElementById('copy-btn').textContent = `📋 複製提示詞（整份 ${segEntries.length} 行）`;
   document.getElementById('resume-btn').style.display = 'none';
+  document.getElementById('manual-only-btn').style.display = 'inline-block';
   document.getElementById('seg-card-prompt').style.display = 'block';
   document.getElementById('seg-card-paste').style.display = 'block';
   document.getElementById('seg-result').classList.remove('show');
@@ -844,6 +898,20 @@ function resolveAfterTimes(after, spanStart, spanEnd) {
 
 function normText(s) { return String(s == null ? '' : s).replace(/\s+/g, ''); }
 
+// 找出改動的字，顯示成「裡→里」
+function textDiffNote(beforeStr, afterStr) {
+  const b = normText(beforeStr), a = normText(afterStr);
+  if (b === a) return '';
+  let p = 0;
+  while (p < b.length && p < a.length && b[p] === a[p]) p++;
+  let s = 0;
+  while (s < b.length - p && s < a.length - p && b[b.length-1-s] === a[a.length-1-s]) s++;
+  const cut = t => t.length > 10 ? t.slice(0, 10) + '…' : t;
+  const bm = cut(b.slice(p, b.length - s)) || '（無）';
+  const am = cut(a.slice(p, a.length - s)) || '（刪掉）';
+  return `${bm}→${am}`;
+}
+
 function buildSegRecord(seg) {
   let nums = seg.sourceNum;
   if (nums == null) return null;
@@ -867,7 +935,7 @@ function buildSegRecord(seg) {
   const warnings = [];
   const beforeJoined = normText(src.map(e => e.text).join(''));
   const afterJoined  = normText(after.map(a => a.text).join(''));
-  if (beforeJoined !== afterJoined) warnings.push('文字內容有變動');
+  if (beforeJoined !== afterJoined) warnings.push('文字有變動：' + textDiffNote(beforeJoined, afterJoined));
 
   const gaps = nums.some((v, i) => i > 0 && v !== nums[i-1] + 1);
   if (gaps) warnings.push('來源行號不連續');
@@ -887,7 +955,7 @@ function buildSegRecord(seg) {
     after: after.map((a, i) => ({ start: times[i].start, end: times[i].end, text: String(a.text).trim() })),
     reason: seg.reason ? String(seg.reason) : '',
     warnings: warnings,
-    enabled: warnings.length === 0
+    enabled: true
   };
 }
 
@@ -956,13 +1024,31 @@ function clearSegResults() {
   renderSegList();
 }
 
-function toggleSeg(i, checked) {
-  segResults[i].enabled = checked;
+function toggleAllSeg(v) {
+  segResults.forEach(r => r.enabled = v);
   renderSegList();
 }
 
-function toggleAllSeg(v) {
-  segResults.forEach(r => r.enabled = v);
+function segHeadHtml(r) {
+  const cls = r.action.indexOf('合併') >= 0 ? 'merge' : r.action.indexOf('拆分') >= 0 ? 'split' : 'adjust';
+  return `<span class="badge ${cls}">${r.action}</span>` +
+         `<span class="badge src">第 ${r.nums.join('、')} 行</span>` +
+         r.warnings.map(w => `<span class="badge warn">${w}</span>`).join('');
+}
+
+function recheckWarnings(r) {
+  const keep = r.warnings.filter(w => w.indexOf('文字有變動') !== 0);
+  const bStr = r.before.map(b => b.text).join('');
+  const aStr = r.after.map(a => a.text).join('');
+  r.warnings = normText(bStr) === normText(aStr) ? keep : keep.concat(['文字有變動：' + textDiffNote(bStr, aStr)]);
+}
+
+let segFilter = 'all';
+
+function setSegFilter(f) { segFilter = f; renderSegList(); }
+
+function uncheckFlagged() {
+  segResults.forEach(r => { if (r.warnings.length > 0) r.enabled = false; });
   renderSegList();
 }
 
@@ -974,38 +1060,77 @@ function renderSegList() {
     return;
   }
   box.classList.add('show');
-  list.innerHTML = '';
+  const keep = list.scrollTop;
 
-  segResults.forEach((r, i) => {
-    const item = document.createElement('div');
-    item.className = 'seg-item' + (r.enabled ? '' : ' off');
-
-    const cb = document.createElement('input');
-    cb.type = 'checkbox'; cb.checked = r.enabled;
-    cb.onchange = () => toggleSeg(i, cb.checked);
-    item.appendChild(cb);
-
-    const body = document.createElement('div');
-    const cls = r.action.indexOf('合併') >= 0 ? 'merge' : r.action.indexOf('拆分') >= 0 ? 'split' : 'adjust';
-    let html = `<div class="seg-head"><span class="badge ${cls}">${r.action}</span>` +
-               `<span class="badge src">第 ${r.nums.join('、')} 行</span>` +
-               r.warnings.map(w => `<span class="badge warn">${w}</span>`).join('') + `</div>`;
+  list.innerHTML = segResults.map((r, i) => {
+    if (segFilter === 'flag' && r.warnings.length === 0) return '';
+    let html = `<div class="seg-item${r.enabled ? '' : ' off'}" data-i="${i}">`;
+    html += `<input type="checkbox" data-act="toggle"${r.enabled ? ' checked' : ''}>`;
+    html += `<div><div class="seg-head">${segHeadHtml(r)}</div>`;
     html += r.before.map(b =>
       `<div class="seg-line b"><span class="seg-tm">${msToSrt(b.start).slice(0,8)}</span><span>${esc(b.text)}</span></div>`).join('');
     html += `<div class="seg-arrow">↓</div>`;
-    html += r.after.map(a =>
-      `<div class="seg-line a"><span class="seg-tm">${msToSrt(a.start).slice(0,8)}</span><span>${esc(a.text)}</span></div>`).join('');
+    html += r.after.map((a, j) =>
+      `<div class="seg-line a"><span class="seg-tm">${msToSrt(a.start).slice(0,8)}</span>` +
+      `<input class="ainput" type="text" data-j="${j}" value="${attr(a.text)}">` +
+      `<span class="alen${normText(a.text).length > 20 ? ' over' : ''}">${normText(a.text).length}</span></div>`).join('');
     if (r.reason) html += `<div class="seg-reason">${esc(r.reason)}</div>`;
-    body.innerHTML = html;
-    item.appendChild(body);
-    list.appendChild(item);
-  });
+    return html + `</div></div>`;
+  }).join('');
+  list.scrollTop = keep;
+  bindSegList();
+  refreshSegStats();
 
+  const flagged = segResults.filter(r => r.warnings.length > 0).length;
+  document.getElementById('sfilter-all').classList.toggle('active', segFilter === 'all');
+  document.getElementById('sfilter-flag').classList.toggle('active', segFilter === 'flag');
+  document.getElementById('seg-filter-hint').textContent = flagged === 0
+    ? '全部都勾好了，沒有需要注意的項目'
+    : `已全部勾選；其中 ${flagged} 條有警告（文字被改或停留不足 1 秒），確認過再決定要不要留`;
+}
+
+function refreshSegStats() {
   const built = buildSegOutput();
+  if (segManual) { segManualStale = true; renderManual(); }
   document.getElementById('sstat-src').textContent = segEntries.length;
   document.getElementById('sstat-out').textContent = built.count;
   document.getElementById('sstat-apply').textContent = built.applied;
   document.getElementById('sstat-warn').textContent = segResults.filter(r => r.warnings.length > 0).length;
+}
+
+let segListBound = false;
+function bindSegList() {
+  if (segListBound) return;
+  segListBound = true;
+  const list = document.getElementById('seg-list');
+
+  list.addEventListener('input', e => {
+    if (!e.target.classList.contains('ainput')) return;
+    const item = e.target.closest('.seg-item');
+    const r = segResults[parseInt(item.dataset.i)];
+    const j = parseInt(e.target.dataset.j);
+    r.after[j].text = e.target.value;
+    const len = normText(e.target.value).length;
+    const lenEl = e.target.parentElement.querySelector('.alen');
+    lenEl.textContent = len;
+    lenEl.classList.toggle('over', len > 20);
+    recheckWarnings(r);
+    item.querySelector('.seg-head').innerHTML = segHeadHtml(r);
+    refreshSegStats();
+  });
+
+  list.addEventListener('change', e => {
+    if (e.target.dataset.act !== 'toggle') return;
+    const item = e.target.closest('.seg-item');
+    const i = parseInt(item.dataset.i);
+    segResults[i].enabled = e.target.checked;
+    item.classList.toggle('off', !e.target.checked);
+    refreshSegStats();
+  });
+}
+
+function attr(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
 }
 
 function esc(s) {
@@ -1028,7 +1153,7 @@ function buildSegOutput() {
   for (const e of segEntries) {
     const r = byFirst.get(e.n);
     if (r) {
-      r.after.forEach(a => out.push({ start: a.start, end: a.end, text: a.text }));
+      r.after.forEach(a => { if (normText(a.text)) out.push({ start: a.start, end: a.end, text: a.text.trim() }); });
     } else if (!used.has(e.n)) {
       out.push({ start: e.start, end: e.end, text: e.text });
     }
@@ -1040,11 +1165,133 @@ function buildSegOutput() {
   ).join('\n\n') + '\n';
 
   segOutputSrt = srt;
-  return { count: out.length, applied: applied };
+  return { count: out.length, applied: applied, lines: out };
+}
+
+/* ── 手動微調 ── */
+
+let segManual = null;          // [{start,end,text}]，非 null 時下載以這份為準
+let segManualFilter = 'all';
+let segManualStale = false;
+let mCaret = { i: -1, pos: 0 };
+let mBound = false;
+
+function startManual() {
+  const built = buildSegOutput();
+  segManual = built.lines.map(l => ({ start: l.start, end: l.end, text: l.text }));
+  segManualStale = false;
+  document.getElementById('seg-card-manual').style.display = 'block';
+  renderManual();
+  document.getElementById('seg-card-manual').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function setManualFilter(f) { segManualFilter = f; renderManual(); }
+
+function mFlagged(l) {
+  return l.text.replace(/\s/g, '').length > 20 || (l.end - l.start) < MIN_SEG_MS;
+}
+
+function renderManual() {
+  if (!segManual) return;
+  const box = document.getElementById('manual-list');
+  const keep = box.scrollTop;
+  const rows = [];
+  segManual.forEach((l, i) => {
+    if (segManualFilter === 'flag' && !mFlagged(l)) return;
+    const len = l.text.replace(/\s/g, '').length;
+    rows.push(
+      `<div class="mrow${mFlagged(l) ? ' flagged' : ''}" data-i="${i}">` +
+      `<span class="mnum">${i+1}</span>` +
+      `<span class="mtm">${msToSrt(l.start).slice(3,12)}→${msToSrt(l.end).slice(3,12)}</span>` +
+      `<input class="minput" type="text" value="${l.text.replace(/"/g,'&quot;').replace(/</g,'&lt;')}">` +
+      `<span class="mlen${len > 20 ? ' over' : ''}">${len}</span>` +
+      `<span class="mbtns">` +
+        `<button class="mbtn" data-act="merge"${i === 0 ? ' disabled' : ''}>⇧併上行</button>` +
+        `<button class="mbtn" data-act="split">✂拆分</button>` +
+      `</span></div>`
+    );
+  });
+  box.innerHTML = rows.join('');
+  box.scrollTop = keep;
+
+  const flagged = segManual.filter(mFlagged).length;
+  document.getElementById('mfilter-all').classList.toggle('active', segManualFilter === 'all');
+  document.getElementById('mfilter-flag').classList.toggle('active', segManualFilter === 'flag');
+  document.getElementById('manual-hint').innerHTML =
+    `共 ${segManual.length} 行，${flagged} 行要注意（超過 20 字或不足 1 秒）` +
+    (segManualStale ? ` <span style="color:#c04040;font-weight:800;">上方勾選有變動，下方還是舊的</span>` : '');
+
+  if (!mBound) {
+    mBound = true;
+    box.addEventListener('input', e => {
+      const row = e.target.closest && e.target.closest('.mrow');
+      if (!row || !e.target.classList.contains('minput')) return;
+      const i = parseInt(row.dataset.i);
+      segManual[i].text = e.target.value;
+      mCaret = { i: i, pos: e.target.selectionStart };
+      const len = e.target.value.replace(/\s/g, '').length;
+      const lenEl = row.querySelector('.mlen');
+      lenEl.textContent = len;
+      lenEl.classList.toggle('over', len > 20);
+      row.classList.toggle('flagged', mFlagged(segManual[i]));
+    });
+    ['keyup', 'click', 'focus'].forEach(ev => {
+      box.addEventListener(ev, e => {
+        if (!e.target.classList || !e.target.classList.contains('minput')) return;
+        const row = e.target.closest('.mrow');
+        mCaret = { i: parseInt(row.dataset.i), pos: e.target.selectionStart };
+      }, true);
+    });
+    box.addEventListener('click', e => {
+      const btn = e.target.closest && e.target.closest('.mbtn');
+      if (!btn) return;
+      const i = parseInt(btn.closest('.mrow').dataset.i);
+      if (btn.dataset.act === 'merge') manualMerge(i);
+      else manualSplit(i);
+    });
+  }
+}
+
+function manualMerge(i) {
+  if (i <= 0) return;
+  const a = segManual[i-1], b = segManual[i];
+  const glue = /[A-Za-z0-9]$/.test(a.text.trim()) && /^[A-Za-z0-9]/.test(b.text.trim()) ? ' ' : '';
+  a.text = a.text.trim() + glue + b.text.trim();
+  a.end = b.end;
+  segManual.splice(i, 1);
+  renderManual();
+}
+
+function manualSplit(i) {
+  const l = segManual[i];
+  let pos = (mCaret.i === i) ? mCaret.pos : 0;
+  if (!pos || pos <= 0 || pos >= l.text.length) {
+    document.getElementById('manual-hint').innerHTML =
+      `<span style="color:#c04040;font-weight:800;">先把游標點在要切開的位置，再按拆分</span>`;
+    return;
+  }
+  const left = l.text.slice(0, pos).trim();
+  const right = l.text.slice(pos).trim();
+  if (!left || !right) return;
+  const lw = Math.max(1, left.replace(/\s/g,'').length);
+  const rw = Math.max(1, right.replace(/\s/g,'').length);
+  const mid = l.start + Math.round((l.end - l.start) * lw / (lw + rw));
+  segManual.splice(i, 1,
+    { start: l.start, end: mid, text: left },
+    { start: mid, end: l.end, text: right }
+  );
+  mCaret = { i: -1, pos: 0 };
+  renderManual();
 }
 
 function downloadSegSrt() {
-  buildSegOutput();
+  if (segManual) {
+    segOutputSrt = segManual.map((e, i) =>
+      `${i+1}\n${msToSrt(e.start)} --> ${msToSrt(e.end)}\n${e.text}`
+    ).join('\n\n') + '\n';
+  } else {
+    buildSegOutput();
+  }
   if (!segOutputSrt) return;
   const now = new Date();
   const date = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}`;
@@ -1059,7 +1306,10 @@ function downloadSegSrt() {
 
 function resetSeg() {
   segEntries = []; segResults = []; segResumeFrom = 0; segOutputSrt = null;
+  segManual = null; segManualStale = false; segManualFilter = 'all';
+  document.getElementById('manual-only-btn').style.display = 'none';
   document.getElementById('resume-btn').style.display = 'none';
+  document.getElementById('seg-card-manual').style.display = 'none';
   document.getElementById('seg-name').textContent = '';
   document.getElementById('zone-seg').classList.remove('loaded');
   document.getElementById('seg-count').textContent = '';
