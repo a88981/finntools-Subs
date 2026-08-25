@@ -151,8 +151,8 @@ header p { font-size: 0.75rem; color: #5ab5ac; font-weight: 700; letter-spacing:
 .badge.adjust { background: rgba(140,180,235,0.22); color: #3a6a9a; }
 .badge.src { background: rgba(255,255,255,0.9); color: #7dc8c0; border: 1px solid rgba(110,196,188,0.25); }
 .badge.warn { background: rgba(212,90,90,0.1); color: #c04040; }
-.seg-line { font-size: 0.73rem; line-height: 1.65; display: flex; gap: 6px; align-items: baseline; }
-.ainput { flex: 1; min-width: 0; background: rgba(255,255,255,0.75); border: none; border-bottom: 1.5px solid rgba(110,196,188,0.35); border-radius: 4px 4px 0 0; color: #2a5550; font-family: inherit; font-size: 0.75rem; font-weight: 700; padding: 3px 6px; outline: none; transition: all 0.15s; }
+.seg-line { font-size: 0.73rem; line-height: 1.65; display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-bottom: 3px; }
+.ainput { flex: 1 1 200px; min-width: 140px; background: rgba(255,255,255,0.75); border: none; border-bottom: 1.5px solid rgba(110,196,188,0.35); border-radius: 4px 4px 0 0; color: #2a5550; font-family: inherit; font-size: 0.75rem; font-weight: 700; padding: 3px 6px; outline: none; transition: all 0.15s; }
 .ainput:hover { background: white; border-bottom-color: #6ec4bc; }
 .ainput:focus { background: white; border-bottom-color: #6ec4bc; box-shadow: 0 2px 8px rgba(110,196,188,0.18); }
 .alen { font-size: 0.58rem; font-weight: 800; color: #b8d8d4; flex-shrink: 0; min-width: 16px; text-align: right; }
@@ -188,7 +188,9 @@ header p { font-size: 0.75rem; color: #5ab5ac; font-weight: 700; letter-spacing:
 }
 
 /* Timeline strip */
-.vp-tlwrap { padding: 6px 12px 8px; border-top: 1.5px solid rgba(110,196,188,0.12); }
+.vp-tlwrap { padding: 8px 12px 10px; border-top: 1.5px solid rgba(110,196,188,0.12); }
+.vp-tltitle { font-size: 0.6rem; font-weight: 800; color: #4aada5; letter-spacing: 0.1em; margin-bottom: 5px; }
+.vp-tltitle span { color: #e0913f; letter-spacing: 0; }
 #vp-tl { width: 100%; height: 66px; display: block; cursor: crosshair; border-radius: 8px; }
 .vp-tlbar { display: flex; align-items: center; gap: 10px; margin-top: 6px; flex-wrap: wrap; font-size: 0.6rem; font-weight: 700; color: #7dc8c0; }
 .vp-legend i { display: inline-block; width: 9px; height: 9px; border-radius: 2px; vertical-align: -1px; margin-right: 3px; }
@@ -343,6 +345,7 @@ header p { font-size: 0.75rem; color: #5ab5ac; font-weight: 700; letter-spacing:
       <button class="vp-x" onclick="closeVideo()">✕</button>
     </div>
     <div class="vp-tlwrap">
+      <div class="vp-tltitle">時間軸　<span id="vp-cutcount"></span></div>
       <canvas id="vp-tl" height="66"></canvas>
       <div class="vp-tlbar">
         <span class="vp-legend"><i class="lg-cut"></i>剪輯點　<i class="lg-line"></i>這一句　<i class="lg-head"></i>播放位置</span>
@@ -392,11 +395,14 @@ header p { font-size: 0.75rem; color: #5ab5ac; font-weight: 700; letter-spacing:
       <button class="btn-sm" style="position:relative;overflow:hidden;">🎬 對著影片校對
         <input type="file" accept="video/*" onchange="loadVideoFile(event)" style="position:absolute;inset:0;opacity:0;cursor:pointer;">
       </button>
-      <button class="btn-sm" style="position:relative;overflow:hidden;">📋 帶入 PR XML 剪輯點
+      <button class="btn-sm" style="position:relative;overflow:hidden;" title="時間軸上會畫出剪輯點，拆分時自動吸附">📋 帶入 PR XML 剪輯點
         <input type="file" accept=".xml" onchange="loadCutsFile(event)" style="position:absolute;inset:0;opacity:0;cursor:pointer;">
       </button>
     </div>
-    <div class="btn-row" style="margin-top:8px;">
+    <div class="hint-inline" style="display:block;margin-top:8px;line-height:1.7;">
+      XML 的用途：時間軸上把<span style="color:#e0913f;font-weight:800;">剪輯點畫成橘線</span>，拆分時自動吸附過去，斷句才不會落在鏡頭中間。影片和 XML 都只在本機讀取。
+    </div>
+    <div class="btn-row" style="margin-top:6px;">
       <label class="hint-inline" id="snap-wrap" style="display:none;cursor:pointer;">
         <input type="checkbox" id="snap-chk" checked onchange="snapOnSplit = this.checked;" style="accent-color:#6ec4bc;vertical-align:-2px;">
         <span id="snap-label"></span>
@@ -1075,6 +1081,12 @@ function ingestJson() {
   renderSegList();
   document.getElementById('sstp3').className = 'stp done';
   document.getElementById('sstp4').className = 'stp active';
+  const box = document.getElementById('seg-result');
+  if (box.classList.contains('show')) { try { box.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (err) {} }
+  else {
+    document.getElementById('ingest-hint').innerHTML +=
+      '<br><span style="color:#c04040;font-weight:800;">這批沒有任何一條可用，通常是行號對不上：確認貼回的是同一份字幕的結果</span>';
+  }
 }
 
 function coverageNote() {
@@ -1410,6 +1422,8 @@ function showSnapToggle() {
   wrap.style.display = 'inline-block';
   document.getElementById('snap-label').textContent =
     `拆分時吸附剪輯點（已帶入 ${alignCuts.length} 個，容差 ${SNAP_TOL}ms）`;
+  document.getElementById('vp-cutcount').textContent =
+    `橘線＝${alignCuts.length} 個剪輯點`;
 }
 
 // 把新的拆分點吸到最近的剪輯點；太靠近頭尾就不吸
@@ -1485,6 +1499,7 @@ function playRange(start, end, text, ref) {
 let vpActive = null;      // 目前選中的那一句
 let tlMark = null;        // 在時間軸上點的切點（字幕時間，ms）
 let tlLines = [];         // 畫面上要畫的字幕行
+let tlRetry = 0;
 
 function vpOffset() { return parseInt(document.getElementById('vp-offset').value) || 0; }
 
@@ -1510,9 +1525,21 @@ function tlWindow() {
 }
 
 function drawTimeline() {
+  try { drawTimelineInner(); } catch (err) { /* 時間軸畫不出來也不影響編輯 */ }
+}
+
+function drawTimelineInner() {
   const c = document.getElementById('vp-tl');
   if (!c || !c.getContext) return;
-  const wCss = c.clientWidth || 600, hCss = 66;
+  const wCss = c.clientWidth, hCss = 66;
+  if (!wCss || wCss < 40) {                    // 面板剛顯示時寬度還是 0，補畫幾次就放棄
+    if (tlRetry < 30) {
+      tlRetry++;
+      requestAnimationFrame(drawTimeline);
+    }
+    return;
+  }
+  tlRetry = 0;
   const dpr = window.devicePixelRatio || 1;
   c.width = wCss * dpr; c.height = hCss * dpr;
   const g = c.getContext('2d');
