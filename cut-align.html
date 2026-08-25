@@ -163,6 +163,22 @@ header p { font-size: 0.75rem; color: #5ab5ac; font-weight: 700; letter-spacing:
 .seg-arrow { font-size: 0.62rem; color: #c8d8d5; margin: 3px 0; }
 .seg-reason { font-size: 0.65rem; color: #7dc8c0; font-weight: 600; margin-top: 6px; line-height: 1.6; }
 
+/* Floating video preview */
+.vplayer { position: fixed; right: 18px; bottom: 18px; width: 340px; background: rgba(255,255,255,0.97); border: 1.5px solid rgba(110,196,188,0.35); border-radius: 14px; box-shadow: 0 8px 32px rgba(42,85,80,0.18); z-index: 90; overflow: hidden; display: none; }
+.vplayer.show { display: block; }
+.vp-bar { display: flex; align-items: center; gap: 8px; padding: 7px 10px; background: rgba(232,248,245,0.8); border-bottom: 1.5px solid rgba(110,196,188,0.2); }
+.vp-name { font-size: 0.62rem; font-weight: 800; color: #3a7872; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.vp-x { background: none; border: none; color: #7dc8c0; cursor: pointer; font-size: 0.72rem; font-weight: 800; padding: 2px 5px; border-radius: 6px; }
+.vp-x:hover { background: rgba(110,196,188,0.15); color: #3a9088; }
+.vplayer video { width: 100%; display: block; background: #000; }
+.vplayer.mini video { display: none; }
+.vp-foot { display: flex; align-items: center; gap: 6px; padding: 7px 10px; font-size: 0.62rem; color: #5a8a85; font-weight: 700; flex-wrap: wrap; }
+.vp-foot input { width: 62px; background: rgba(255,255,255,0.9); border: 1.5px solid rgba(110,196,188,0.25); border-radius: 6px; padding: 3px 6px; font-family: inherit; font-size: 0.62rem; text-align: center; color: #2a5550; outline: none; }
+.vp-cap { font-size: 0.68rem; color: #2a5550; font-weight: 700; padding: 0 10px 8px; line-height: 1.5; }
+@media (max-width: 620px) {
+  .vplayer { right: 8px; left: 8px; width: auto; bottom: 8px; }
+}
+
 /* Manual tweak */
 .manual-list { display: flex; flex-direction: column; gap: 5px; max-height: 520px; overflow-y: auto; padding-right: 4px; }
 .manual-list::-webkit-scrollbar { width: 4px; }
@@ -199,7 +215,7 @@ header p { font-size: 0.75rem; color: #5ab5ac; font-weight: 700; letter-spacing:
 </div>
 
 <div class="notice" id="notice-align">⚠ 本工具為<strong>輔助工具</strong>，對齊後仍建議人工確認關鍵字幕位置。</div>
-<div class="notice" id="notice-seg" style="display:none;">⚠ AI 只負責<strong>重新斷句</strong>，不改字。調整項預設全部勾選，文字被動過的會標紅並寫出改了哪個字。</div>
+<div class="notice" id="notice-seg" style="display:none;">⚠ AI 只負責<strong>重新斷句</strong>，不改字。調整項預設全部勾選，文字被動過的會標紅並寫出改了哪個字。可載入影片對著校對，影片只在瀏覽器本機播放，不會上傳。</div>
 
 <div class="wrap" id="mode-align">
 
@@ -324,6 +340,18 @@ header p { font-size: 0.75rem; color: #5ab5ac; font-weight: 700; letter-spacing:
     <div class="btn-row">
       <button class="btn-sm" id="seg-import-btn" onclick="importAligned()" disabled>↳ 帶入剛才對齊好的結果</button>
       <button class="btn-sm" id="manual-only-btn" style="display:none;" onclick="startManual()">✎ 不用 AI，直接手動編輯</button>
+      <button class="btn-sm" style="position:relative;overflow:hidden;">🎬 對著影片校對
+        <input type="file" accept="video/*" onchange="loadVideoFile(event)" style="position:absolute;inset:0;opacity:0;cursor:pointer;">
+      </button>
+      <button class="btn-sm" style="position:relative;overflow:hidden;">📋 帶入 PR XML 剪輯點
+        <input type="file" accept=".xml" onchange="loadCutsFile(event)" style="position:absolute;inset:0;opacity:0;cursor:pointer;">
+      </button>
+    </div>
+    <div class="btn-row" style="margin-top:8px;">
+      <label class="hint-inline" id="snap-wrap" style="display:none;cursor:pointer;">
+        <input type="checkbox" id="snap-chk" checked onchange="snapOnSplit = this.checked;" style="accent-color:#6ec4bc;vertical-align:-2px;">
+        <span id="snap-label"></span>
+      </label>
       <span class="hint-inline" id="seg-count"></span>
     </div>
     <div class="error-msg" id="seg-error1"></div>
@@ -402,6 +430,21 @@ header p { font-size: 0.75rem; color: #5ab5ac; font-weight: 700; letter-spacing:
     </div>
   </div>
 
+</div>
+
+<div class="vplayer" id="vplayer">
+  <div class="vp-bar">
+    <span class="vp-name" id="vp-name">影片</span>
+    <button class="vp-x" onclick="toggleMini()" id="vp-mini">▾ 收合</button>
+    <button class="vp-x" onclick="closeVideo()">✕</button>
+  </div>
+  <video id="vp-video" controls preload="metadata"></video>
+  <div class="vp-cap" id="vp-cap"></div>
+  <div class="vp-foot">
+    <span>時間偏移</span>
+    <input type="number" id="vp-offset" value="0" step="100">
+    <span>ms（字幕比影片早就填負數）</span>
+  </div>
 </div>
 
 <script>
@@ -540,6 +583,7 @@ function runAlign() {
                 selectedFps === 29.97 ? 30*(1000/1001) : selectedFps;
     const threshold = parseInt(document.getElementById('threshold').value) || 500;
     const cuts = parseXmlCuts(xmlContent, fps);
+    alignCuts = cuts;
     const entries = parseSrt(srtContent);
     if (entries.length === 0) throw new Error('SRT 解析失敗，請確認檔案格式');
 
@@ -734,6 +778,10 @@ function loadSegSource(text) {
   document.getElementById('copy-btn').textContent = `📋 複製提示詞（整份 ${segEntries.length} 行）`;
   document.getElementById('resume-btn').style.display = 'none';
   document.getElementById('manual-only-btn').style.display = 'inline-block';
+  if (alignCuts.length === 0 && xmlContent) {
+    try { alignCuts = parseXmlCuts(xmlContent, effFps()); } catch (err) { alignCuts = []; }
+  }
+  showSnapToggle();
   document.getElementById('seg-card-prompt').style.display = 'block';
   document.getElementById('seg-card-paste').style.display = 'block';
   document.getElementById('seg-result').classList.remove('show');
@@ -1061,7 +1109,7 @@ function segSplitLine(i, j) {
   const left = a.text.slice(0, pos).trim(), right = a.text.slice(pos).trim();
   if (!left || !right) return;
   const lw = Math.max(1, normText(left).length), rw = Math.max(1, normText(right).length);
-  const mid = a.start + Math.round((a.end - a.start) * lw / (lw + rw));
+  const mid = snapCut(a.start + Math.round((a.end - a.start) * lw / (lw + rw)), a.start, a.end);
   r.after.splice(j, 1,
     { start: a.start, end: mid, text: left },
     { start: mid, end: a.end, text: right });
@@ -1118,14 +1166,16 @@ function renderSegList() {
     let html = `<div class="seg-item${r.enabled ? '' : ' off'}" data-i="${i}">`;
     html += `<input type="checkbox" data-act="toggle"${r.enabled ? ' checked' : ''}>`;
     html += `<div><div class="seg-head">${segHeadHtml(r)}</div>`;
-    html += r.before.map(b =>
-      `<div class="seg-line b"><span class="seg-tm">${msToSrt(b.start).slice(0,8)}</span><span>${esc(b.text)}</span></div>`).join('');
+    html += r.before.map((b, j) =>
+      `<div class="seg-line b"><span class="seg-tm">${msToSrt(b.start).slice(0,8)}</span><span style="flex:1;">${esc(b.text)}</span>` +
+      `<button class="mbtn" data-sact="playbefore" data-j="${j}" title="播原本這一句">▶</button></div>`).join('');
     html += `<div class="seg-arrow">↓</div>`;
     html += r.after.map((a, j) =>
-      `<div class="seg-line a"><span class="seg-tm">${msToSrt(a.start).slice(0,8)}</span>` +
+      `<div class="seg-line a"><span class="seg-tm">${cutMark(a.start)}${msToSrt(a.start).slice(0,8)}</span>` +
       `<input class="ainput" type="text" data-j="${j}" value="${attr(a.text)}">` +
       `<span class="alen${normText(a.text).length > 20 ? ' over' : ''}">${normText(a.text).length}</span>` +
       `<span class="mbtns">` +
+        `<button class="mbtn" data-sact="play" data-j="${j}" title="播這一句">▶</button>` +
         `<button class="mbtn" data-sact="merge" data-j="${j}"${j === 0 ? ' disabled' : ''} title="併進上一行">⇧</button>` +
         `<button class="mbtn" data-sact="split" data-j="${j}" title="在游標位置拆成兩行">✂</button>` +
       `</span></div>`).join('');
@@ -1215,7 +1265,15 @@ function bindSegList() {
     if (!btn) return;
     const i = parseInt(btn.closest('.seg-item').dataset.i);
     const j = parseInt(btn.dataset.j);
-    if (btn.dataset.sact === 'split') segSplitLine(i, j);
+    if (btn.dataset.sact === 'play') {
+      const a = segResults[i].after[j];
+      playRange(a.start, a.end, a.text);
+    }
+    else if (btn.dataset.sact === 'playbefore') {
+      const b = segResults[i].before[j];
+      playRange(b.start, b.end, b.text);
+    }
+    else if (btn.dataset.sact === 'split') segSplitLine(i, j);
     else segMergeLine(i, j);
   });
 
@@ -1268,6 +1326,106 @@ function buildSegOutput() {
   return { count: out.length, applied: applied, lines: out };
 }
 
+/* ── 剪輯點吸附（與「剪輯點對齊」共用） ── */
+
+const SNAP_TOL = 300;          // 拆分點離剪輯點多近才吸附（ms）
+let alignCuts = [];
+let snapOnSplit = true;
+
+function effFps() {
+  return selectedFps === 59.94 ? 60*(1000/1001) :
+         selectedFps === 29.97 ? 30*(1000/1001) : selectedFps;
+}
+
+function loadCutsFile(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    xmlContent = ev.target.result;
+    try { alignCuts = parseXmlCuts(xmlContent, effFps()); }
+    catch (err) { alignCuts = []; }
+    showSnapToggle();
+    checkReady();
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
+function showSnapToggle() {
+  const wrap = document.getElementById('snap-wrap');
+  if (alignCuts.length === 0) { wrap.style.display = 'none'; return; }
+  wrap.style.display = 'inline-block';
+  document.getElementById('snap-label').textContent =
+    `拆分時吸附剪輯點（已帶入 ${alignCuts.length} 個，容差 ${SNAP_TOL}ms）`;
+}
+
+// 把新的拆分點吸到最近的剪輯點；太靠近頭尾就不吸
+function snapCut(t, lo, hi) {
+  if (!snapOnSplit || alignCuts.length === 0) return t;
+  const n = findNearest(t, alignCuts, SNAP_TOL);
+  if (n === null || n <= lo + 200 || n >= hi - 200) return t;
+  return n;
+}
+
+function onCut(t) {
+  for (const c of alignCuts) if (Math.abs(c - t) <= 2) return true;
+  return false;
+}
+
+function cutMark(t) { return onCut(t) ? '✂' : ''; }
+
+/* ── 影片預覽 ── */
+
+let vpUrl = null, vpStopAt = null;
+
+function loadVideoFile(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const v = document.getElementById('vp-video');
+  if (vpUrl) URL.revokeObjectURL(vpUrl);
+  vpUrl = URL.createObjectURL(file);
+  v.src = vpUrl;
+  document.getElementById('vp-name').textContent = file.name;
+  document.getElementById('vplayer').classList.add('show');
+  document.getElementById('vplayer').classList.remove('mini');
+  document.getElementById('vp-cap').textContent = '點任何一行的 ▶ 就會跳到那一句';
+  if (!v.dataset.bound) {
+    v.dataset.bound = '1';
+    v.addEventListener('timeupdate', () => {
+      if (vpStopAt !== null && v.currentTime >= vpStopAt) { v.pause(); vpStopAt = null; }
+    });
+    v.addEventListener('error', () => {
+      document.getElementById('vp-cap').innerHTML =
+        '<span style="color:#c04040;">這個格式瀏覽器播不動（ProRes、HEVC、MKV 常見）。用 H.264 MP4 的預覽檔就可以。</span>';
+    });
+  }
+}
+
+function playRange(start, end, text) {
+  const v = document.getElementById('vp-video');
+  if (!vpUrl) return;
+  const off = parseInt(document.getElementById('vp-offset').value) || 0;
+  const s = Math.max(0, (start + off) / 1000);
+  vpStopAt = end != null ? Math.max(s + 0.1, (end + off) / 1000) : null;
+  v.currentTime = s;
+  document.getElementById('vp-cap').textContent = text || '';
+  const p = v.play();
+  if (p && p.catch) p.catch(() => {});
+}
+
+function toggleMini() {
+  const box = document.getElementById('vplayer');
+  box.classList.toggle('mini');
+  document.getElementById('vp-mini').textContent = box.classList.contains('mini') ? '▴ 展開' : '▾ 收合';
+}
+
+function closeVideo() {
+  const v = document.getElementById('vp-video');
+  v.pause(); v.removeAttribute('src'); v.load();
+  if (vpUrl) { URL.revokeObjectURL(vpUrl); vpUrl = null; }
+  document.getElementById('vplayer').classList.remove('show');
+}
+
 /* ── 手動微調 ── */
 
 let segManual = null;          // [{start,end,text}]，非 null 時下載以這份為準
@@ -1302,10 +1460,11 @@ function renderManual() {
     rows.push(
       `<div class="mrow${mFlagged(l) ? ' flagged' : ''}" data-i="${i}">` +
       `<span class="mnum">${i+1}</span>` +
-      `<span class="mtm">${msToSrt(l.start).slice(3,12)}→${msToSrt(l.end).slice(3,12)}</span>` +
+      `<span class="mtm">${cutMark(l.start)}${msToSrt(l.start).slice(3,12)}→${msToSrt(l.end).slice(3,12)}</span>` +
       `<input class="minput" type="text" value="${l.text.replace(/"/g,'&quot;').replace(/</g,'&lt;')}">` +
       `<span class="mlen${len > 20 ? ' over' : ''}">${len}</span>` +
       `<span class="mbtns">` +
+        `<button class="mbtn" data-act="play" title="播這一句">▶</button>` +
         `<button class="mbtn" data-act="merge"${i === 0 ? ' disabled' : ''}>⇧併上行</button>` +
         `<button class="mbtn" data-act="split">✂拆分</button>` +
       `</span></div>`
@@ -1367,7 +1526,8 @@ function renderManual() {
       const btn = e.target.closest && e.target.closest('.mbtn');
       if (!btn) return;
       const i = parseInt(btn.closest('.mrow').dataset.i);
-      if (btn.dataset.act === 'merge') manualMerge(i);
+      if (btn.dataset.act === 'play') playRange(segManual[i].start, segManual[i].end, segManual[i].text);
+      else if (btn.dataset.act === 'merge') manualMerge(i);
       else manualSplit(i);
     });
   }
@@ -1406,7 +1566,7 @@ function manualSplit(i) {
   if (!left || !right) return;
   const lw = Math.max(1, left.replace(/\s/g,'').length);
   const rw = Math.max(1, right.replace(/\s/g,'').length);
-  const mid = l.start + Math.round((l.end - l.start) * lw / (lw + rw));
+  const mid = snapCut(l.start + Math.round((l.end - l.start) * lw / (lw + rw)), l.start, l.end);
   segManual.splice(i, 1,
     { start: l.start, end: mid, text: left },
     { start: mid, end: l.end, text: right }
