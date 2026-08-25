@@ -323,7 +323,7 @@ header p { font-size: 0.75rem; color: #5ab5ac; font-weight: 700; letter-spacing:
     </div>
     <div class="btn-row">
       <button class="btn-sm" id="seg-import-btn" onclick="importAligned()" disabled>↳ 帶入剛才對齊好的結果</button>
-      <button class="btn-sm" id="manual-only-btn" style="display:none;" onclick="startManual()">✎ 不用 AI，直接手動微調</button>
+      <button class="btn-sm" id="manual-only-btn" style="display:none;" onclick="startManual()">✎ 不用 AI，直接手動編輯</button>
       <span class="hint-inline" id="seg-count"></span>
     </div>
     <div class="error-msg" id="seg-error1"></div>
@@ -364,7 +364,7 @@ header p { font-size: 0.75rem; color: #5ab5ac; font-weight: 700; letter-spacing:
         <div class="stat"><span class="v" id="sstat-warn">—</span><span class="k">需注意</span></div>
       </div>
 
-      <div class="tip">✎ &nbsp;<span>下半部（調整後）的每一行都可以<strong>直接改字</strong>，右邊會即時算字數。<strong>沒有自動勾選的</strong>都是因為 AI 動到了文字或時間，紅色標籤會寫出改了哪個字（例如「裡→里」），確認 OK 再自己勾。</span></div>
+      <div class="tip">✎ &nbsp;<span>調整後的每一行都能<strong>直接改字</strong>；游標停在要切開的位置按 <strong>Enter</strong>（或 ✂）就拆成兩行，在行首按 <strong>Backspace</strong>（或 ⇧）併回上一行。時間只在這一段的區間內重算，不會影響其他字幕。</span></div>
       <div class="btn-row" style="margin-bottom:12px;">
         <button class="btn-sm" id="sfilter-all" onclick="setSegFilter('all')">全部</button>
         <button class="btn-sm" id="sfilter-flag" onclick="setSegFilter('flag')">只看要注意的</button>
@@ -379,7 +379,7 @@ header p { font-size: 0.75rem; color: #5ab5ac; font-weight: 700; letter-spacing:
       <div class="divider"></div>
       <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
         <button class="btn" style="background:rgba(255,255,255,0.8);border:1.5px solid rgba(110,196,188,0.3);color:#5ab5ac;box-shadow:none;" onclick="resetSeg()">↺ 重新開始</button>
-        <button class="btn" style="background:rgba(255,255,255,0.8);border:1.5px solid rgba(110,196,188,0.3);color:#5ab5ac;box-shadow:none;" onclick="startManual()">✎ 手動微調</button>
+        <button class="btn" style="background:rgba(255,255,255,0.8);border:1.5px solid rgba(110,196,188,0.3);color:#5ab5ac;box-shadow:none;" onclick="startManual()">✎ 手動微調整份字幕</button>
         <button class="btn" onclick="downloadSegSrt()">⬇ 下載分段後 SRT</button>
       </div>
     </div>
@@ -387,8 +387,8 @@ header p { font-size: 0.75rem; color: #5ab5ac; font-weight: 700; letter-spacing:
 
   <!-- Step 5 -->
   <div class="card" id="seg-card-manual" style="display:none;">
-    <div class="card-title">步驟五：手動微調</div>
-    <div class="tip">✎ &nbsp;<span>直接改字、合併、拆分都可以。<strong>拆分</strong>是在游標位置切開，時間依字數分配；<strong>合併</strong>是併進上一行。改完直接下載。</span></div>
+    <div class="card-title">步驟五：手動微調（整份字幕）</div>
+    <div class="tip">✎ &nbsp;<span>這裡是<strong>全部行</strong>，包含 AI 完全沒碰的行，也能跨段合併。游標停在要切開的位置按 <strong>Enter</strong>（或 ✂）拆成兩行，在行首按 <strong>Backspace</strong>（或 ⇧）併進上一行，時間都會跟著重算。改完直接在這裡下載。</span></div>
     <div class="btn-row" style="margin-bottom:12px;">
       <button class="btn-sm" id="mfilter-all" onclick="setManualFilter('all')">全部</button>
       <button class="btn-sm" id="mfilter-flag" onclick="setManualFilter('flag')">只看要注意的</button>
@@ -1033,14 +1033,65 @@ function segHeadHtml(r) {
   const cls = r.action.indexOf('合併') >= 0 ? 'merge' : r.action.indexOf('拆分') >= 0 ? 'split' : 'adjust';
   return `<span class="badge ${cls}">${r.action}</span>` +
          `<span class="badge src">第 ${r.nums.join('、')} 行</span>` +
+         (r.touched ? `<span class="badge src">已手動改過</span>` : '') +
          r.warnings.map(w => `<span class="badge warn">${w}</span>`).join('');
 }
 
 function recheckWarnings(r) {
-  const keep = r.warnings.filter(w => w.indexOf('文字有變動') !== 0);
+  const keep = r.warnings.filter(w => w.indexOf('文字有變動') !== 0 && w.indexOf('不足 1 秒') < 0);
   const bStr = r.before.map(b => b.text).join('');
   const aStr = r.after.map(a => a.text).join('');
-  r.warnings = normText(bStr) === normText(aStr) ? keep : keep.concat(['文字有變動：' + textDiffNote(bStr, aStr)]);
+  const list = keep.slice();
+  if (normText(bStr) !== normText(aStr)) list.push('文字有變動：' + textDiffNote(bStr, aStr));
+  if (r.after.length > r.before.length && r.after.some(a => (a.end - a.start) < MIN_SEG_MS)) list.push('拆分後有行不足 1 秒');
+  r.warnings = list;
+  r.action = r.after.length < r.before.length ? '合併'
+           : r.after.length > r.before.length ? '拆分' : '調整斷點';
+}
+
+// 在段落內拆分／合併，時間只在這一段的區間裡重新分配
+function segSplitLine(i, j) {
+  const r = segResults[i], a = r.after[j];
+  const pos = (sCaret.i === i && sCaret.j === j) ? sCaret.pos : 0;
+  if (!pos || pos <= 0 || pos >= a.text.length) {
+    document.getElementById('seg-filter-hint').innerHTML =
+      `<span style="color:#c04040;font-weight:800;">游標要先停在這一行要切開的位置（在行內按 Enter 也可以拆）</span>`;
+    return;
+  }
+  const left = a.text.slice(0, pos).trim(), right = a.text.slice(pos).trim();
+  if (!left || !right) return;
+  const lw = Math.max(1, normText(left).length), rw = Math.max(1, normText(right).length);
+  const mid = a.start + Math.round((a.end - a.start) * lw / (lw + rw));
+  r.after.splice(j, 1,
+    { start: a.start, end: mid, text: left },
+    { start: mid, end: a.end, text: right });
+  r.touched = true;
+  sCaret = { i: -1, j: -1, pos: 0 };
+  recheckWarnings(r);
+  renderSegList();
+  focusAfterLine(i, j + 1, 0);
+}
+
+function segMergeLine(i, j) {
+  if (j <= 0) return;
+  const r = segResults[i], prev = r.after[j-1], cur = r.after[j];
+  const glue = /[A-Za-z0-9]$/.test(prev.text.trim()) && /^[A-Za-z0-9]/.test(cur.text.trim()) ? ' ' : '';
+  prev.text = prev.text.trim() + glue + cur.text.trim();
+  prev.end = cur.end;
+  const joinAt = prev.text.length - cur.text.trim().length;
+  r.after.splice(j, 1);
+  r.touched = true;
+  recheckWarnings(r);
+  renderSegList();
+  focusAfterLine(i, j - 1, joinAt);
+}
+
+function focusAfterLine(i, j, pos) {
+  const el = document.querySelector(`.seg-item[data-i="${i}"] .ainput[data-j="${j}"]`);
+  if (!el) return;
+  el.focus();
+  try { el.setSelectionRange(pos, pos); } catch (err) {}
+  sCaret = { i: i, j: j, pos: pos };
 }
 
 let segFilter = 'all';
@@ -1073,7 +1124,11 @@ function renderSegList() {
     html += r.after.map((a, j) =>
       `<div class="seg-line a"><span class="seg-tm">${msToSrt(a.start).slice(0,8)}</span>` +
       `<input class="ainput" type="text" data-j="${j}" value="${attr(a.text)}">` +
-      `<span class="alen${normText(a.text).length > 20 ? ' over' : ''}">${normText(a.text).length}</span></div>`).join('');
+      `<span class="alen${normText(a.text).length > 20 ? ' over' : ''}">${normText(a.text).length}</span>` +
+      `<span class="mbtns">` +
+        `<button class="mbtn" data-sact="merge" data-j="${j}"${j === 0 ? ' disabled' : ''} title="併進上一行">⇧</button>` +
+        `<button class="mbtn" data-sact="split" data-j="${j}" title="在游標位置拆成兩行">✂</button>` +
+      `</span></div>`).join('');
     if (r.reason) html += `<div class="seg-reason">${esc(r.reason)}</div>`;
     return html + `</div></div>`;
   }).join('');
@@ -1098,6 +1153,7 @@ function refreshSegStats() {
   document.getElementById('sstat-warn').textContent = segResults.filter(r => r.warnings.length > 0).length;
 }
 
+let sCaret = { i: -1, j: -1, pos: 0 };
 let segListBound = false;
 function bindSegList() {
   if (segListBound) return;
@@ -1110,6 +1166,7 @@ function bindSegList() {
     const r = segResults[parseInt(item.dataset.i)];
     const j = parseInt(e.target.dataset.j);
     r.after[j].text = e.target.value;
+    sCaret = { i: parseInt(item.dataset.i), j: j, pos: e.target.selectionStart };
     const len = normText(e.target.value).length;
     const lenEl = e.target.parentElement.querySelector('.alen');
     lenEl.textContent = len;
@@ -1117,6 +1174,49 @@ function bindSegList() {
     recheckWarnings(r);
     item.querySelector('.seg-head').innerHTML = segHeadHtml(r);
     refreshSegStats();
+  });
+
+  ['keyup', 'click', 'focus'].forEach(ev => {
+    list.addEventListener(ev, e => {
+      if (!e.target.classList || !e.target.classList.contains('ainput')) return;
+      sCaret = {
+        i: parseInt(e.target.closest('.seg-item').dataset.i),
+        j: parseInt(e.target.dataset.j),
+        pos: e.target.selectionStart
+      };
+    }, true);
+  });
+
+  // 按鈕會搶走焦點，所以在 mousedown（blur 之前）先把游標位置記下來
+  list.addEventListener('mousedown', () => {
+    const el = document.activeElement;
+    if (el && el.classList && el.classList.contains('ainput')) {
+      sCaret = { i: parseInt(el.closest('.seg-item').dataset.i), j: parseInt(el.dataset.j), pos: el.selectionStart };
+    }
+  }, true);
+
+  list.addEventListener('keydown', e => {
+    if (!e.target.classList || !e.target.classList.contains('ainput')) return;
+    if (e.isComposing) return;
+    const i = parseInt(e.target.closest('.seg-item').dataset.i);
+    const j = parseInt(e.target.dataset.j);
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      sCaret = { i: i, j: j, pos: e.target.selectionStart };
+      segSplitLine(i, j);
+    } else if (e.key === 'Backspace' && j > 0 && e.target.selectionStart === 0 && e.target.selectionEnd === 0) {
+      e.preventDefault();
+      segMergeLine(i, j);
+    }
+  });
+
+  list.addEventListener('click', e => {
+    const btn = e.target.closest && e.target.closest('.mbtn');
+    if (!btn) return;
+    const i = parseInt(btn.closest('.seg-item').dataset.i);
+    const j = parseInt(btn.dataset.j);
+    if (btn.dataset.sact === 'split') segSplitLine(i, j);
+    else segMergeLine(i, j);
   });
 
   list.addEventListener('change', e => {
@@ -1242,6 +1342,27 @@ function renderManual() {
         mCaret = { i: parseInt(row.dataset.i), pos: e.target.selectionStart };
       }, true);
     });
+    box.addEventListener('mousedown', () => {
+      const el = document.activeElement;
+      if (el && el.classList && el.classList.contains('minput')) {
+        mCaret = { i: parseInt(el.closest('.mrow').dataset.i), pos: el.selectionStart };
+      }
+    }, true);
+
+    box.addEventListener('keydown', e => {
+      if (!e.target.classList || !e.target.classList.contains('minput')) return;
+      if (e.isComposing) return;
+      const i = parseInt(e.target.closest('.mrow').dataset.i);
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        mCaret = { i: i, pos: e.target.selectionStart };
+        manualSplit(i);
+      } else if (e.key === 'Backspace' && i > 0 && e.target.selectionStart === 0 && e.target.selectionEnd === 0) {
+        e.preventDefault();
+        manualMerge(i);
+      }
+    });
+
     box.addEventListener('click', e => {
       const btn = e.target.closest && e.target.closest('.mbtn');
       if (!btn) return;
@@ -1256,10 +1377,20 @@ function manualMerge(i) {
   if (i <= 0) return;
   const a = segManual[i-1], b = segManual[i];
   const glue = /[A-Za-z0-9]$/.test(a.text.trim()) && /^[A-Za-z0-9]/.test(b.text.trim()) ? ' ' : '';
+  const joinAt = a.text.trim().length;
   a.text = a.text.trim() + glue + b.text.trim();
   a.end = b.end;
   segManual.splice(i, 1);
   renderManual();
+  focusManualLine(i - 1, joinAt);
+}
+
+function focusManualLine(i, pos) {
+  const el = document.querySelector(`.mrow[data-i="${i}"] .minput`);
+  if (!el) return;
+  el.focus();
+  try { el.setSelectionRange(pos, pos); } catch (err) {}
+  mCaret = { i: i, pos: pos };
 }
 
 function manualSplit(i) {
@@ -1267,7 +1398,7 @@ function manualSplit(i) {
   let pos = (mCaret.i === i) ? mCaret.pos : 0;
   if (!pos || pos <= 0 || pos >= l.text.length) {
     document.getElementById('manual-hint').innerHTML =
-      `<span style="color:#c04040;font-weight:800;">先把游標點在要切開的位置，再按拆分</span>`;
+      `<span style="color:#c04040;font-weight:800;">游標要先停在這一行要切開的位置（在行內按 Enter 也可以拆）</span>`;
     return;
   }
   const left = l.text.slice(0, pos).trim();
@@ -1282,6 +1413,7 @@ function manualSplit(i) {
   );
   mCaret = { i: -1, pos: 0 };
   renderManual();
+  focusManualLine(i + 1, 0);
 }
 
 function downloadSegSrt() {
