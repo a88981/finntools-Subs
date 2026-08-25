@@ -580,14 +580,24 @@ function parseXmlCuts(content, fps) {
 }
 
 function parseSrt(content) {
-  const blocks = content.trim().split(/\n\n+/);
+  // 統一換行（Windows 的 CRLF、舊 Mac 的 CR）並去掉 BOM，否則整份會被當成一行
+  const text = String(content).replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n');
+  const blocks = text.trim().split(/\n[ \t]*\n+/);
   const entries = [];
+  const TS = /(\d{1,2}:\d{2}:\d{2}[,.]\d{1,3})\s*-->\s*(\d{1,2}:\d{2}:\d{2}[,.]\d{1,3})/;
   for (const block of blocks) {
-    const lines = block.trim().split('\n');
-    if (lines.length < 2) continue;
-    const m = lines[1].trim().match(/(\d{2}:\d{2}:\d{2},\d{3})\s+-->\s+(\d{2}:\d{2}:\d{2},\d{3})/);
-    if (!m) continue;
-    entries.push({ idx: lines[0].trim(), start: srtToMs(m[1]), end: srtToMs(m[2]), text: lines.slice(2).join('\n') });
+    const lines = block.split('\n').map(l => l.replace(/[ \t]+$/, ''));
+    const ti = lines.findIndex(l => TS.test(l));      // 有些字幕沒有序號行
+    if (ti === -1) continue;
+    const m = lines[ti].match(TS);
+    const body = lines.slice(ti + 1).join('\n').trim();
+    if (!body) continue;
+    entries.push({
+      idx: ti > 0 ? lines[0].trim() : String(entries.length + 1),
+      start: srtToMs(m[1].replace('.', ',')),
+      end: srtToMs(m[2].replace('.', ',')),
+      text: body
+    });
   }
   return entries;
 }
@@ -815,6 +825,10 @@ function loadSegSource(text) {
   segManual = null; segManualStale = false;
   document.getElementById('seg-card-manual').style.display = 'none';
   document.getElementById('seg-count').textContent = `已載入 ${segEntries.length} 行字幕`;
+  if (segEntries.length <= 1 && (text.match(/-->/g) || []).length > 1) {
+    err1.textContent = '⚠ 這份 SRT 只解析出 1 行，但檔案裡有很多時間碼，格式可能不標準。用純文字編輯器另存一次再試。';
+    err1.classList.add('show');
+  }
   document.getElementById('copy-btn').textContent = `📋 複製提示詞（整份 ${segEntries.length} 行）`;
   document.getElementById('resume-btn').style.display = 'none';
   document.getElementById('manual-only-btn').style.display = 'inline-block';
@@ -1085,7 +1099,7 @@ function ingestJson() {
   if (box.classList.contains('show')) { try { box.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (err) {} }
   else {
     document.getElementById('ingest-hint').innerHTML +=
-      '<br><span style="color:#c04040;font-weight:800;">這批沒有任何一條可用，通常是行號對不上：確認貼回的是同一份字幕的結果</span>';
+      `<br><span style="color:#c04040;font-weight:800;">這批沒有一條可用：JSON 裡的行號超出這份字幕的 1–${segEntries.length} 行。確認左邊載入的行數是否正確，以及貼回的是同一份字幕的結果。</span>`;
   }
 }
 
