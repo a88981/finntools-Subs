@@ -285,10 +285,6 @@ textarea.paste-area::placeholder { color: #98d0ca; }
           <textarea id="aiReplyText" style="background:rgba(255,255,255,0.9);border:1.5px solid rgba(110,196,188,0.25);border-radius:10px;color:#2a5550;font-size:0.73rem;line-height:1.7;min-height:100px;outline:none;padding:14px;resize:vertical;width:100%;font-family:inherit;font-weight:600;" placeholder='貼入 Claude 的 JSON 回覆' oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'" onpaste="setTimeout(()=>{this.style.height='auto';this.style.height=this.scrollHeight+'px'},0)"></textarea>
         </div>
       </div>
-      <div class="row" style="justify-content:center;gap:12px;">
-        <button class="btn-ghost" onclick="location.reload()">↺ 重新開始</button>
-        <button class="btn" onclick="currentMode === 'aiquick' ? applyAIQuickAndDownload() : applyAIReplyAndContinue()">套用並查看結果 →</button>
-      </div>
     </div>
 
     <!-- 兩階段區塊 -->
@@ -328,13 +324,9 @@ textarea.paste-area::placeholder { color: #98d0ca; }
         </div>
       </div>
 
-      <div class="row" style="justify-content:center;gap:12px;">
-        <button class="btn-ghost" onclick="location.reload()">↺ 重新開始</button>
-        <button class="btn" onclick="applyBothRepliesAndContinue()">套用並查看結果 →</button>
-      </div>
     </div>
 
-    <!-- 字幕翻譯 Prompt（勾了翻譯才出現，會被搬到上面按鈕列前） -->
+    <!-- 字幕翻譯 Prompt（勾了翻譯才出現） -->
     <div id="trStepBlock" style="display:none;border:1.5px solid rgba(60,150,210,0.4);border-radius:12px;overflow:hidden;margin-bottom:12px;background:rgba(215,240,255,0.35);">
       <div style="padding:10px 14px 6px;">
         <div style="font-size:0.72rem;font-weight:800;color:#2070a8;letter-spacing:0.04em;"><span id="trStepNumA">③</span> 複製 Prompt → 貼給 Claude 翻外語</div>
@@ -350,6 +342,11 @@ textarea.paste-area::placeholder { color: #98d0ca; }
       <div style="padding:0 14px 12px;">
         <textarea id="trStepReply" placeholder='貼入 Claude 的 JSON 回覆（沒有也可以留空，之後再翻）' style="background:rgba(255,255,255,0.9);border:1.5px solid rgba(60,150,210,0.25);border-radius:10px;color:#2a5550;font-size:0.73rem;line-height:1.7;min-height:90px;outline:none;padding:14px;resize:vertical;width:100%;font-family:inherit;font-weight:600;overflow:hidden;" oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'" onpaste="setTimeout(()=>{this.style.height='auto';this.style.height=this.scrollHeight+'px'},0)"></textarea>
       </div>
+    </div>
+
+    <div id="stepTwoActions" class="row" style="display:none;justify-content:center;gap:12px;">
+      <button class="btn-ghost" onclick="location.reload()">↺ 重新開始</button>
+      <button class="btn" onclick="applyStepTwo()">套用並查看結果 →</button>
     </div>
 
   </div>
@@ -380,15 +377,6 @@ textarea.paste-area::placeholder { color: #98d0ca; }
     <div id="noIssueSection4" style="display:none;padding:12px 0;text-align:center;font-size:0.78rem;color:#7dc8c0;">✨ 未偵測到可疑處</div>
 
     <div class="divider"></div>
-
-    <!-- 字幕翻譯 -->
-    <div style="background:rgba(215,240,255,0.35);border:1.5px solid rgba(60,150,210,0.2);border-radius:10px;padding:10px 14px;margin-top:14px;display:flex;align-items:center;gap:10px;">
-      <input type="checkbox" id="enableTranslateFull" onchange="refreshStepBar()" style="width:15px;height:15px;cursor:pointer;accent-color:#4a9bd0;">
-      <label for="enableTranslateFull" style="font-size:0.72rem;font-weight:700;color:#2a5550;cursor:pointer;line-height:1.5;">
-        🌐 啟用字幕翻譯（英／日／韓 → 中）<br>
-        <span style="font-size:0.65rem;font-weight:600;color:#3a86b8;">下載前多一個翻譯步驟。夾雜的單字內建詞庫直接翻，其他自己打中文或另外開 Claude</span>
-      </label>
-    </div>
 
     <div class="row" style="margin-top:14px;justify-content:center;gap:12px;">
       <button class="btn-ghost" onclick="location.reload()">↺ 重新開始</button>
@@ -521,9 +509,10 @@ textarea.paste-area::placeholder { color: #98d0ca; }
     <div class="card-title">外語字幕翻譯</div>
 
     <div class="info-box" style="margin-bottom:14px;font-size:0.72rem;line-height:2;">
-      工具先掃出所有含外語的句子，分成兩類：<br>
+      步驟二 Claude 翻好的結果在這裡確認，分成兩類：<br>
       <span style="color:#2070a8;font-weight:800;">夾雜</span>＝中文句子裡有外語單字，翻好直接換掉。<br>
-      <span style="color:#b04070;font-weight:800;">整句</span>＝整行都是外語，由你決定換成整句中文，還是做成雙字幕（原文＋中文兩行）。
+      <span style="color:#b04070;font-weight:800;">整句</span>＝整行都是外語，由你決定換成整句中文，還是做成雙字幕（原文＋中文兩行）。<br>
+      <span style="color:#4aada5;">✦ 步驟二沒貼回覆也沒關係，下面可以再問一次 Claude，或直接打中文</span>
     </div>
 
     <!-- 掃描結果統計 -->
@@ -611,9 +600,6 @@ textarea.paste-area::placeholder { color: #98d0ca; }
     <div class="row" style="justify-content:center;gap:16px;">
       <button class="btn-ghost" onclick="location.reload()">↺ 重新開始</button>
       <button class="btn-green" onclick="download()">⬇ 下載修正後 SRT</button>
-    </div>
-    <div class="row" style="justify-content:center;margin-top:10px;">
-      <button class="btn-ghost" onclick="openTranslateFromDownload()" style="font-size:0.7rem;padding:7px 16px;">🌐 還想翻譯外語字幕</button>
     </div>
   </div>
 
@@ -846,8 +832,10 @@ function goStep(n) {
   if (n >= 98) {
     const sm = document.getElementById('singleModeBlock');
     const ns = document.getElementById('nounScanBlockStep');
+    const sa = document.getElementById('stepTwoActions');
     if (sm) sm.style.display = 'none';
     if (ns) ns.style.display = 'none';
+    if (sa) sa.style.display = 'none';
     const c1 = document.getElementById('c1');
     if (c1) c1.style.display = 'none';
   }
@@ -1000,8 +988,7 @@ const MODE_DESC = {
   quick: `<strong>⚡ 快速模式</strong>｜自動處理，直接下載<br><br>
 ✔ 自動完成時間碼空隙接合<br>
 ✔ 簡易詞庫修正<br><br>
-<span style="color:#6ec4bc;">適合：字幕品質穩定、不需要手動確認，快速出檔。</span><br>
-<span style="color:#3a86b8;">🌐 這個模式沒有確認步驟，要翻外語的話從下載頁的「還想翻譯外語字幕」進去。</span>`,
+<span style="color:#6ec4bc;">適合：字幕品質穩定、不需要手動確認，快速出檔。</span>`,
   full: `<strong>🔍 基本模式</strong>｜自動處理 + 手動確認<br><br>
 ✔ 自動完成時間碼空隙接合<br>
 ✔ 她/妳 → 他/你 自動修正<br>
@@ -1041,9 +1028,7 @@ function selectMode(mode) {
   if (el) { el.style.borderColor = '#6ec4bc'; el.style.background = 'rgba(110,196,188,0.12)'; }
   // 步驟條：回到未開始的狀態，標籤依模式重畫
   const trA = document.getElementById('enableTranslate');
-  const trB = document.getElementById('enableTranslateFull');
   if (trA) trA.checked = false;
-  if (trB) trB.checked = false;
   refreshStepBar();
   const stp1label2 = document.getElementById('stp1label');
   if (stp1label2) stp1label2.textContent = '選擇模式';
@@ -1911,7 +1896,16 @@ function generateAIPromptStep() {
     if (ta) ta.value = buildPrompt(lines);
   }
 
-  setupTransStepBlock(useNoun);
+  try { setupTransStepBlock(useNoun); } catch (e) { console.error('翻譯區塊產生失敗:', e); }
+  const actions = document.getElementById('stepTwoActions');
+  if (actions) actions.style.display = 'flex';
+}
+
+// 步驟二底部那顆「套用並查看結果」：依模式與勾選狀態決定走哪條
+function applyStepTwo() {
+  if (currentMode === 'aiquick') return applyAIQuickAndDownload();
+  if (document.getElementById('enableNounScanStep')?.checked) return applyBothRepliesAndContinue();
+  return applyAIReplyAndContinue();
 }
 
 // 勾了翻譯的話，步驟二一起把翻譯 Prompt 生出來，就不用最後再跑一次 Claude
@@ -1954,12 +1948,6 @@ function setupTransStepBlock(useNoun) {
     if (el) el.placeholder = '貼入 Claude 的 JSON 回覆（只想翻譯的話可以留空）';
   });
 
-  // 搬到目前這個區塊的按鈕列前面，順序才對
-  const target = document.getElementById(useNoun ? 'nounScanBlockStep' : 'singleModeBlock');
-  const btnRow = target ? target.querySelector(':scope > .row') : null;
-  if (target && btnRow) target.insertBefore(box, btnRow);
-  else if (target) target.appendChild(box);
-  else document.getElementById('c4ai').appendChild(box);  // 搬不進去也不能跟著隱藏區塊一起消失
   box.style.display = 'block';
 }
 
@@ -2278,15 +2266,8 @@ function applyAIReplyAndContinue() {
 // 步驟三、四如果根本沒東西可確認（例如只跑翻譯），就不要讓人按兩次空白頁
 function skipEmptyReviewSteps() {
   const batchList = document.getElementById('batchListNew');
-  if (batchList && batchList.children.length > 0) return;
-  goToIssueStep();
-  const issues = document.getElementById('issueList');
-  if (issues && issues.children.length > 0) {
-    toast('沒有要批次替換的詞，直接跳到糾察結果');
-    return;
-  }
-  toast('沒有需要確認的項目，直接進下一步');
-  showDownload();
+  if (batchList && batchList.children.length > 0) return;  // 步驟三有東西就停著
+  goToIssueStep();   // 步驟四空的話由 goToIssueStep 自己再往下跳
 }
 
 function skipAIAndContinue() {
@@ -2502,11 +2483,14 @@ function goToIssueStep() {
 
   if (combined.length > 0) {
     document.getElementById('hasIssueDownload').style.display = 'block';
-  } else {
-    document.getElementById('noIssueSection').style.display = 'block';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    return;
   }
 
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+  // 沒有可疑處就不要停在空白頁，直接往下一步（有勾翻譯就進翻譯，否則下載）
+  document.getElementById('noIssueSection').style.display = 'block';
+  toast(_translateWanted() ? '沒有可疑處要確認，直接進字幕翻譯' : '沒有可疑處要確認，直接進下載');
+  showDownload();
 }
 
 // runStep6WithAI moved above
@@ -2987,56 +2971,11 @@ const TRANS_SKIP_DEFAULT = [
   'Costco','Uber','Airbnb','Switch','Nike','Adidas','Disney'
 ];
 
-// 內建詞庫：不用開 Claude 也能翻的常見詞
-// 只收「台灣人講中文時本來就會講中文、只是逐字稿寫成外文」的詞
-const TRANS_DICT = {
-  // 英文
-  'control':'控制','cancel':'取消','confirm':'確認','budget':'預算','balance':'平衡',
-  'focus':'專注','share':'分享','message':'訊息','service':'服務','quality':'品質',
-  'price':'價格','design':'設計','style':'風格','color':'顏色','colour':'顏色',
-  'size':'尺寸','level':'等級','plan':'計畫','project':'專案','problem':'問題',
-  'answer':'答案','reason':'原因','result':'結果','process':'過程','system':'系統',
-  'function':'功能','version':'版本','update':'更新','upgrade':'升級',
-  'download':'下載','upload':'上傳','search':'搜尋','choose':'選擇','decide':'決定',
-  'change':'改變','improve':'改善','increase':'增加','reduce':'減少','support':'支援',
-  'protect':'保護','prepare':'準備','continue':'繼續','finish':'完成','remember':'記得',
-  'forget':'忘記','understand':'了解','explain':'解釋','describe':'描述','compare':'比較',
-  'imagine':'想像','experience':'經驗','memory':'記憶','feeling':'感覺','opinion':'意見',
-  'suggestion':'建議','decision':'決定','mistake':'錯誤','danger':'危險','safety':'安全',
-  'health':'健康','energy':'能量','power':'力量','speed':'速度','weight':'重量',
-  'height':'高度','distance':'距離','temperature':'溫度','weather':'天氣','season':'季節',
-  'culture':'文化','history':'歷史','future':'未來','market':'市場','customer':'客人',
-  'company':'公司','salary':'薪水','insurance':'保險','contract':'合約','schedule':'行程',
-  'deadline':'期限','meeting':'會議','interview':'面試','education':'教育','teacher':'老師',
-  'student':'學生','hospital':'醫院','doctor':'醫生','medicine':'藥','exercise':'運動',
-  'muscle':'肌肉','breakfast':'早餐','lunch':'午餐','dinner':'晚餐','restaurant':'餐廳',
-  'kitchen':'廚房','bedroom':'臥室','building':'建築','garden':'花園','forest':'森林',
-  'mountain':'山','river':'河','ocean':'海','island':'島','bridge':'橋',
-  'airport':'機場','station':'車站','ticket':'票','luggage':'行李','passport':'護照',
-  'beach':'海灘','temple':'寺廟','museum':'博物館','population':'人口','government':'政府',
-  'texture':'口感','flavor':'風味','flavour':'風味','ingredient':'食材','recipe':'食譜',
-  'portion':'份量','dessert':'甜點','breakfast time':'早餐時間',
-  'comfortable':'舒服','beautiful':'漂亮','delicious':'好吃','expensive':'貴',
-  'convenient':'方便','important':'重要','interesting':'有趣','difficult':'困難',
-  'possible':'可能','impossible':'不可能','necessary':'必要','special':'特別',
-  'famous':'有名','popular':'受歡迎','traditional':'傳統','modern':'現代',
-  'natural':'天然','organic':'有機','healthy':'健康','fresh':'新鮮',
-  // 日文
-  'すごい':'超厲害','すごく':'超','美味しい':'好吃','おいしい':'好吃','うまい':'好吃',
-  'ありがとう':'謝謝','ありがとうございます':'謝謝','かわいい':'可愛','きれい':'漂亮',
-  '大丈夫':'沒問題','だいじょうぶ':'沒問題','やばい':'誇張','本当に':'真的',
-  'ほんとに':'真的','ちょっと':'一下','すみません':'不好意思','いただきます':'我開動了',
-  'おはよう':'早安','こんにちは':'你好','さようなら':'再見','はい':'對',
-  // 韓文
-  '감사합니다':'謝謝','안녕하세요':'你好','맛있어요':'好吃','진짜':'真的','대박':'誇張'
-};
-
+// 翻譯只在 AI 模式提供（勾選框在步驟二的 c4ai）
 function _translateWanted() {
-  if (window._forceTranslate) return true;
-  // AI 模式的勾選框在 c4ai，基本模式的在 c4；快速模式從下載頁的按鈕進去
-  const a = document.getElementById('enableTranslate');
-  const b = document.getElementById('enableTranslateFull');
-  return !!((a && a.checked) || (b && b.checked));
+  if (currentMode !== 'ai' && currentMode !== 'aiquick') return false;
+  const cb = document.getElementById('enableTranslate');
+  return !!(cb && cb.checked);
 }
 
 function _getSkipWords() {
@@ -3073,15 +3012,8 @@ function startTranslate() {
   if (!_transScanned) scanForeign(false);
 }
 
-function openTranslateFromDownload() {
-  window._forceTranslate = true;
-  _translateDone = false;
-  _transScanned = false;
-  _transHasReply = false;
-  goStep(98);
-}
 
-// 純偵測：不套詞庫、不寫回字幕，只回傳掃到的句子
+// 純偵測：不寫回字幕，只回傳掃到含外語的句子
 function detectForeignItems() {
   const skipSet = new Set(_getSkipWords().map(w => w.toLowerCase()));
   const out = [];
@@ -3108,7 +3040,7 @@ function detectForeignItems() {
     out.push({
       bi, ts: b.start, orig: t, kind,
       lang: kana ? '日文' : hangul ? '韓文' : cyr ? '俄文' : thai ? '泰文' : '英文',
-      latin, words: latin.slice(0, 6).join(' '),
+      words: latin.slice(0, 6).join(' '),
       zh: '', note: '', skip: false, choice: null, src: ''
     });
   });
@@ -3134,12 +3066,6 @@ function scanForeign(isRescan) {
       if (pre.kind) item.kind = pre.kind;
       if (item.skip) item.choice = 'keep';
       else if (item.kind === '夾雜' && item.zh) item.choice = 'zh';
-      return;
-    }
-    // 沒有 AI 結果就試內建詞庫
-    if (item.kind === '夾雜') {
-      const dictZh = dictTranslateLine(item.orig, item.latin, item.lang);
-      if (dictZh) { item.zh = dictZh; item.src = 'dict'; item.choice = 'zh'; }
     }
   });
 
@@ -3168,15 +3094,11 @@ function scanForeign(isRescan) {
 
   emptyEl.style.display = 'none';
   statsEl.style.display = 'block';
-  const byDict = _transItems.filter(i => i.src === 'dict').length;
   const byAI = _transItems.filter(i => i.src === 'ai').length;
-  const notes = [];
-  if (byAI) notes.push(`${byAI} 句步驟二 AI 已經翻好`);
-  if (byDict) notes.push(`${byDict} 句內建詞庫翻好`);
   statsEl.innerHTML = `偵測到 <span style="color:#4aada5;font-size:1.05rem;">${_transItems.length}</span> 句含外語　`
     + `<span class="issue-tag tag-trans">夾雜 ${mixed}</span>　`
     + `<span class="issue-tag tag-whole">整句 ${whole}</span>`
-    + (notes.length ? `<br><span style="font-size:0.68rem;font-weight:600;color:#3a7872;">${notes.join('、')}，剩下的自己打中文或再問一次 Claude</span>` : '');
+    + (byAI ? `<br><span style="font-size:0.68rem;font-weight:600;color:#3a7872;">${byAI} 句步驟二 AI 已經翻好，剩下的自己打中文或再問一次 Claude</span>` : '');
 
   promptBox.style.display = 'block';
   document.getElementById('trPromptText').value = buildTranslatePrompt();
@@ -3184,54 +3106,23 @@ function scanForeign(isRescan) {
   // 步驟二已經翻過就收起來，沒翻過的模式才需要在這裡開 Claude
   const det = document.getElementById('trPromptDetails');
   const sum = document.getElementById('trPromptSummary');
-  const isAIMode = currentMode === 'ai' || currentMode === 'aiquick';
   const left = _transItems.filter(i => !(i.zh || '').trim() && !i.skip).length;
-  if (det) det.open = isAIMode && preHits === 0 && left > 0;
+  if (det) det.open = preHits === 0 && left > 0;
   if (sum) {
     sum.textContent = left === 0
       ? '都翻好了，需要重翻再點開'
-      : (preHits > 0
-        ? `還有 ${left} 句沒翻 — 想再問一次 Claude 就點開，不然直接在下面打中文`
-        : `還有 ${left} 句詞庫翻不動 — 想交給 Claude 就點開，不然直接在下面打中文`);
+      : `還有 ${left} 句沒翻 — 在這裡再問一次 Claude，或直接在下面打中文`;
   }
 
-  // 詞庫翻好的直接寫回字幕
+  // AI 已經翻好的直接寫回字幕
   _transItems.forEach((it, i) => { if (it.choice) writeBackTrans(i); });
 
   renderTransList();
   updateTransStatus();
 }
 
-// 用內建詞庫翻一整行；只要有一個外語詞查不到就整行放棄，交給 Claude 或手打
-function dictTranslateLine(text, latinWords, lang) {
-  let out = text;
-  let hit = false;
-
-  if (lang === '英文') {
-    if (!latinWords.length) return '';
-    for (const w of latinWords) {
-      const zh = TRANS_DICT[w.toLowerCase()];
-      if (!zh) return '';
-      const re = new RegExp('(^|[^A-Za-z])' + w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(?![A-Za-z])', 'gi');
-      out = out.replace(re, (m, p1) => p1 + zh);
-      hit = true;
-    }
-  } else {
-    // 日韓：拿詞庫裡的詞去比對，由長到短換
-    const keys = Object.keys(TRANS_DICT).filter(k => !/^[A-Za-z]/.test(k)).sort((a, b) => b.length - a.length);
-    keys.forEach(k => { if (out.includes(k)) { out = out.split(k).join(TRANS_DICT[k]); hit = true; } });
-    if (!hit) return '';
-    // 換完還有假名／諺文殘留就代表沒翻乾淨
-    if (/[\u3040-\u309F\u30A0-\u30FF\uAC00-\uD7AF]/.test(out)) return '';
-  }
-
-  if (!hit) return '';
-  out = out.replace(/[ \t]{2,}/g, ' ').trim();
-  return out === text ? '' : out;
-}
-
 function buildTranslatePrompt() {
-  // 詞庫已經翻好的就不用麻煩 Claude，序號沿用原編號方便對回來
+  // 已經有中文的就不用再麻煩 Claude，序號沿用原編號方便對回來
   const lines = _transItems
     .map((it, i) => ({ it, i }))
     .filter(x => !(x.it.zh || '').trim())
@@ -3438,7 +3329,7 @@ function onTransZh(i, el) {
       if (nt) nt.textContent = '你打的（AI 原本建議不翻）';
     }
     if (!it.choice || it.choice === 'keep') it.choice = 'zh';
-    it.src = it.src === 'ai' || it.src === 'dict' ? 'edit' : (it.src || 'manual');
+    it.src = it.src === 'ai' ? 'edit' : (it.src || 'manual');
   }
   const rowEl = document.getElementById('trrow_' + i);
   if (rowEl) rowEl.classList.toggle('settled', !!it.zh.trim());
@@ -3487,7 +3378,7 @@ function setAllWhole(choice) {
 }
 
 
-const TR_SRC_LABEL = { dict: '詞庫翻的', ai: 'Claude 翻的', manual: '你打的', edit: '你改過' };
+const TR_SRC_LABEL = { ai: 'Claude 翻的', manual: '你打的', edit: '你改過' };
 
 function renderTransList() {
   const list = document.getElementById('trList');
