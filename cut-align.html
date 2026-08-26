@@ -164,9 +164,10 @@ header p { font-size: 0.75rem; color: #5ab5ac; font-weight: 700; letter-spacing:
 .seg-reason { font-size: 0.65rem; color: #7dc8c0; font-weight: 600; margin-top: 6px; line-height: 1.6; }
 
 /* Sticky video preview — 釘在畫面最上方 */
-.vplayer { position: sticky; top: 8px; z-index: 40; width: 100%; background: rgba(255,255,255,0.97); border: 1.5px solid rgba(110,196,188,0.35); border-radius: 14px; box-shadow: 0 6px 24px rgba(42,85,80,0.14); overflow: hidden; display: none; }
+.vplayer { position: relative; z-index: 40; width: 100%; background: rgba(255,255,255,0.97); border: 1.5px solid rgba(110,196,188,0.35); border-radius: 14px; box-shadow: 0 6px 24px rgba(42,85,80,0.14); overflow: hidden; display: none; }
 .vplayer.show { display: block; }
-.vplayer video { width: 100%; max-height: 40vh; display: block; background: #000; }
+.vplayer.pinned { position: sticky; top: 8px; }
+.vplayer video { width: 100%; max-height: 32vh; display: block; background: #000; }
 .vplayer.mini video, .vplayer.novideo video { display: none; }
 .vplayer.novideo #vp-mini { display: none; }
 .vp-bar { display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: rgba(232,248,245,0.85); border-top: 1.5px solid rgba(110,196,188,0.2); }
@@ -183,7 +184,7 @@ header p { font-size: 0.75rem; color: #5ab5ac; font-weight: 700; letter-spacing:
 .k-head { background: #2a5550; width: 2px !important; height: 12px !important; }
 .vp-foot input { width: 62px; background: rgba(255,255,255,0.9); border: 1.5px solid rgba(110,196,188,0.25); border-radius: 6px; padding: 3px 6px; font-family: inherit; font-size: 0.62rem; text-align: center; color: #2a5550; outline: none; }
 @media (max-width: 620px) {
-  .vplayer video { max-height: 30vh; }
+  .vplayer video { max-height: 26vh; }
   .vp-name { max-width: 110px; }
 }
 
@@ -341,15 +342,16 @@ header p { font-size: 0.75rem; color: #5ab5ac; font-weight: 700; letter-spacing:
     <video id="vp-video" controls preload="metadata"></video>
     <div class="vp-bar">
       <span class="vp-cap" id="vp-cap"></span>
+      <button class="vp-x" onclick="togglePin()" id="vp-pin">📌 釘在上方</button>
       <button class="vp-x" onclick="toggleMini()" id="vp-mini">▾ 收起畫面</button>
       <button class="vp-x" onclick="closeVideo()">✕</button>
     </div>
     <div class="vp-tlwrap">
-      <div class="vp-tltitle">時間軸　<span id="vp-cutcount"></span></div>
+      <div class="vp-tltitle">時間軸：看位置用，不改字　<span id="vp-cutcount"></span></div>
       <canvas id="vp-tl" height="66"></canvas>
       <div class="vp-tlbar">
         <span class="vp-legend"><i class="lg-cut"></i>剪輯點　<i class="lg-line"></i>這一句　<i class="lg-head"></i>播放位置</span>
-        <span class="vp-mark" id="vp-mark">在時間軸上點一下＝跳播＋選切點</span>
+        <span class="vp-mark" id="vp-mark">在時間軸上點一下＝跳播＋選切點（改字請到下面的清單）</span>
         <button class="vp-x" id="vp-cutbtn" style="display:none;" onclick="splitAtMark()">✂ 在這裡切開</button>
       </div>
     </div>
@@ -447,6 +449,7 @@ header p { font-size: 0.75rem; color: #5ab5ac; font-weight: 700; letter-spacing:
         <div class="stat"><span class="v" id="sstat-warn">—</span><span class="k">需注意</span></div>
       </div>
 
+      <div class="tip">📍 &nbsp;<span><strong>上面的時間軸只負責「看」</strong>——看剪輯點在哪、看這句落在哪；<strong>改字一律在下面這張清單</strong>。時間軸上點一下只是選切點，按「✂ 在這裡切開」才會動到字幕。</span></div>
       <div class="tip">✎ &nbsp;<span>調整後的每一行都能<strong>直接改字</strong>；游標停在要切開的位置按 <strong>Enter</strong>（或 ✂）就拆成兩行，在行首按 <strong>Backspace</strong>（或 ⇧）併回上一行。時間只在這一段的區間內重算，不會影響其他字幕。</span></div>
       <div class="btn-row" style="margin-bottom:12px;">
         <button class="btn-sm" id="sfilter-all" onclick="setSegFilter('all')">全部</button>
@@ -1469,6 +1472,7 @@ function loadVideoFile(e) {
   document.getElementById('vp-name').textContent = file.name;
   document.getElementById('vplayer').classList.add('show');
   document.getElementById('vplayer').classList.remove('mini', 'novideo');
+  setPin(false);
   document.getElementById('vp-mini').textContent = '▾ 收起畫面';
   document.getElementById('vp-cap').textContent = '按任何一行的 ▶，就會跳到那一句並播完自動停';
   refreshTlLines();
@@ -1498,6 +1502,7 @@ function playRange(start, end, text, ref) {
   tlMark = null;
   document.getElementById('vp-cutbtn').style.display = 'none';
   document.getElementById('vp-cap').textContent = text || '';
+  setPin(true);                       // 開始逐句校對時才釘住
   drawTimeline();
   if (!vpUrl) return;
   const off = vpOffset();
@@ -1656,6 +1661,19 @@ function splitAtMark() {
   else manualSplit(ref.i, tlMark);
   tlMark = null;
   document.getElementById('vp-cutbtn').style.display = 'none';
+}
+
+function togglePin() {
+  const box = document.getElementById('vplayer');
+  const on = box.classList.toggle('pinned');
+  document.getElementById('vp-pin').textContent = on ? '📌 已釘住（點此放開）' : '📌 釘在上方';
+}
+
+function setPin(on) {
+  const box = document.getElementById('vplayer');
+  if (box.classList.contains('pinned') === on) return;
+  box.classList.toggle('pinned', on);
+  document.getElementById('vp-pin').textContent = on ? '📌 已釘住（點此放開）' : '📌 釘在上方';
 }
 
 function toggleMini() {
