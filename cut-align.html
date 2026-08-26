@@ -16,11 +16,59 @@ body {
   display: flex; flex-direction: column; align-items: center;
 }
 
+/* 校對模式：整頁不捲動，只有字幕清單自己捲 */
+body.editing { overflow: hidden; height: 100vh; padding: 14px 20px 14px; }
+body.editing header { display: none; }
+body.editing .mode-tabs { margin-bottom: 10px; }
+body.editing .notice { display: none; }
+body.editing #mode-seg { flex: 1; min-height: 0; }
+body.editing #mode-seg .steps { display: none; }
+body.editing .editor.show { flex: 1; min-height: 0; }
+body.editing .ed-left { max-height: 100%; }
+body.editing .ed-right { height: 100%; display: flex; flex-direction: column; min-height: 0; }
+body.editing .ed-right .result-box,
+body.editing .ed-right .result-box > .card { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+body.editing .seg-list { flex: 1; height: auto; min-height: 0; }
+
 header { text-align: center; margin-bottom: 16px; }
 header h1 { font-size: 1.5rem; font-weight: 800; color: #2a5550; letter-spacing: 0.04em; margin-bottom: 6px; }
 header p { font-size: 0.75rem; color: #5ab5ac; font-weight: 700; letter-spacing: 0.08em; }
 
 .wrap { width: 100%; max-width: 820px; display: flex; flex-direction: column; gap: 16px; margin: 0 auto; }
+#mode-seg { max-width: 1280px; }
+#seg-setup { display: flex; flex-direction: column; gap: 12px; }
+#seg-setup .card { margin: 0; }
+.setup-strip { display: flex; align-items: stretch; gap: 4px; padding: 14px 10px; }
+.setup-item { display: flex; gap: 9px; flex: 1; min-width: 0; padding: 4px 8px; border-radius: 10px; transition: opacity 0.2s; }
+.setup-item.locked { opacity: 0.35; pointer-events: none; filter: saturate(0.4); }
+.setup-item.dragover { background: rgba(110,196,188,0.12); }
+.setup-item.loaded .si-n { background: #6ec4bc; color: white; }
+.si-n { flex-shrink: 0; width: 20px; height: 20px; border-radius: 50%; background: rgba(110,196,188,0.18); color: #4aada5; font-size: 0.64rem; font-weight: 800; display: flex; align-items: center; justify-content: center; margin-top: 1px; }
+.si-body { min-width: 0; flex: 1; }
+.si-t { font-size: 0.74rem; font-weight: 800; color: #2a5550; margin-bottom: 7px; }
+.si-sub { display: block; font-size: 0.6rem; font-weight: 600; color: #a8d4ce; margin-top: 2px; line-height: 1.5; }
+.si-s { display: block; font-size: 0.62rem; font-weight: 700; color: #5ab5ac; margin-top: 6px; line-height: 1.6; }
+.si-s span + span { margin-left: 6px; }
+.si-div { width: 1.5px; background: rgba(110,196,188,0.18); flex-shrink: 0; }
+.card.locked { opacity: 0.4; pointer-events: none; filter: saturate(0.5); }
+.tip-flat { font-size: 0.66rem; color: #d99a4e; font-weight: 600; line-height: 1.75; margin-bottom: 10px; }
+.tip-flat strong { color: #c47b28; font-weight: 800; }
+.mini-tip { font-size: 0.62rem; color: #7dc8c0; font-weight: 600; line-height: 1.6; margin-bottom: 9px; }
+.mini-tip strong { color: #4aada5; }
+@media (max-width: 900px) {
+  .setup-strip { flex-direction: column; gap: 10px; }
+  .si-div { width: auto; height: 1.5px; }
+}
+
+.editor { display: none; grid-template-columns: minmax(300px, 40%) 1fr; gap: 14px; align-items: start; }
+.editor.show { display: grid; }
+.ed-left { position: sticky; top: 8px; display: flex; flex-direction: column; gap: 12px; max-height: calc(100vh - 16px); overflow-y: auto; overscroll-behavior: contain; }
+#seg-stats { margin: 0; }
+.ed-right { min-width: 0; }
+@media (max-width: 900px) {
+  .editor.show { display: block; }
+  .ed-left { position: static; margin-bottom: 14px; }
+}
 
 /* Steps */
 .steps { display: flex; align-items: center; gap: 0; margin-bottom: 4px; justify-content: center; width: 100%; }
@@ -136,10 +184,36 @@ header p { font-size: 0.75rem; color: #5ab5ac; font-weight: 700; letter-spacing:
 .btn-sm.active { background: #6ec4bc; border-color: #6ec4bc; color: white; box-shadow: 0 2px 8px rgba(110,196,188,0.3); }
 .hint-inline { font-size: 0.66rem; color: #8dd0c8; font-weight: 700; }
 
-.seg-list { display: flex; flex-direction: column; gap: 8px; max-height: 460px; overflow-y: auto; padding-right: 4px; }
+.seg-list {
+  display: flex; flex-direction: column; gap: 6px;
+  height: calc(100vh - 210px); min-height: 300px;
+  overflow-y: auto;
+  overscroll-behavior: contain;          /* 滾到底不會帶著整頁一起滾 */
+  padding: 8px; padding-right: 6px;
+  border: 1.5px solid rgba(110,196,188,0.18);
+  border-radius: 12px;
+  background: rgba(255,255,255,0.35);
+}
+@media (max-width: 900px) {
+  .seg-list { height: auto; max-height: 60vh; }
+}
 .seg-list::-webkit-scrollbar { width: 4px; }
 .seg-list::-webkit-scrollbar-track { background: transparent; }
 .seg-list::-webkit-scrollbar-thumb { background: rgba(110,196,188,0.3); border-radius: 4px; }
+
+.erow { display: grid; grid-template-columns: 20px 34px 84px 1fr 26px auto; gap: 7px; align-items: center; background: rgba(255,255,255,0.7); border: 1.5px solid rgba(110,196,188,0.14); border-radius: 10px; padding: 6px 10px; }
+.erow.on { background: rgba(232,248,245,0.75); border-color: rgba(110,196,188,0.4); }
+.erow input[type="checkbox"] { width: 14px; height: 14px; accent-color: #6ec4bc; }
+.erow input[type="checkbox"]:disabled { opacity: 0.3; }
+.enum { font-size: 0.6rem; color: #b8d8d4; font-weight: 800; text-align: right; }
+.einput { background: transparent; border: none; border-bottom: 1.5px solid transparent; color: #2a5550; font-family: inherit; font-size: 0.76rem; font-weight: 600; padding: 3px 4px; outline: none; width: 100%; min-width: 0; }
+.einput:hover { border-bottom-color: rgba(110,196,188,0.35); }
+.einput:focus { border-bottom-color: #6ec4bc; background: white; }
+.ebadge { font-size: 0.55rem; }
+@media (max-width: 900px) {
+  .erow { grid-template-columns: 20px 30px 1fr auto; }
+  .erow .seg-tm, .erow .alen { display: none; }
+}
 
 .seg-item { display: grid; grid-template-columns: 22px 1fr; gap: 10px; align-items: start; background: rgba(232,248,245,0.5); border: 1.5px solid rgba(110,196,188,0.15); border-radius: 12px; padding: 11px 14px; text-align: left; }
 .seg-item.off { opacity: 0.42; background: rgba(240,240,240,0.4); }
@@ -169,6 +243,7 @@ header p { font-size: 0.75rem; color: #5ab5ac; font-weight: 700; letter-spacing:
 .vplayer.pinned { position: sticky; top: 8px; }
 .vplayer video { width: 100%; max-height: 32vh; display: block; background: #000; }
 .vplayer.mini video, .vplayer.novideo video { display: none; }
+.vplayer.audioonly video { max-height: 54px; height: 54px; }
 .vplayer.novideo #vp-mini { display: none; }
 .vp-bar { display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: rgba(232,248,245,0.85); border-top: 1.5px solid rgba(110,196,188,0.2); }
 .vp-cap { flex: 1; font-size: 0.75rem; color: #2a5550; font-weight: 700; line-height: 1.5; min-height: 1.1em; }
@@ -338,6 +413,97 @@ header p { font-size: 0.75rem; color: #5ab5ac; font-weight: 700; letter-spacing:
 <!-- ═══ 精準分段 ═══ -->
 <div class="wrap" id="mode-seg" style="display:none;">
 
+  <div class="steps">
+    <div class="stp active" id="sstp1"><div class="stp-n">1</div><div class="stp-l">字幕</div></div>
+    <div class="stp-line"></div>
+    <div class="stp" id="sstp2"><div class="stp-n">2</div><div class="stp-l">影片／音檔</div></div>
+    <div class="stp-line"></div>
+    <div class="stp" id="sstp3"><div class="stp-n">3</div><div class="stp-l">剪輯點</div></div>
+    <div class="stp-line"></div>
+    <div class="stp" id="sstp4"><div class="stp-n">4</div><div class="stp-l">AI 分段</div></div>
+    <div class="stp-line"></div>
+    <div class="stp" id="sstp5"><div class="stp-n">5</div><div class="stp-l">校對下載</div></div>
+  </div>
+
+  <div id="seg-setup">
+
+    <!-- 1-3 設定列 -->
+    <div class="card setup-strip">
+      <div class="setup-item" id="zone-seg" ondragover="dragOver(event,'seg')" ondragleave="dragLeave('seg')" ondrop="dropFile(event,'seg')">
+        <span class="si-n">1</span>
+        <div class="si-body">
+          <div class="si-t">字幕 SRT<span class="si-sub">必要，可直接拖進來</span></div>
+          <div class="btn-row">
+            <button class="btn-sm" style="position:relative;overflow:hidden;">📝 選擇 .srt
+              <input type="file" accept=".srt" onchange="loadFile(event,'seg')" style="position:absolute;inset:0;opacity:0;cursor:pointer;">
+            </button>
+            <button class="btn-sm" id="seg-import-btn" onclick="importAligned()" disabled>↳ 帶入對齊結果</button>
+          </div>
+          <div class="si-s"><span id="seg-name"></span><span id="seg-count"></span></div>
+          <div class="error-msg" id="seg-error1"></div>
+        </div>
+      </div>
+
+      <div class="si-div"></div>
+
+      <div class="setup-item locked" id="si-video">
+        <span class="si-n">2</span>
+        <div class="si-body">
+          <div class="si-t">影片／音檔<span class="si-sub">可跳過 · 只在本機播放，不會上傳</span></div>
+          <div class="btn-row">
+            <button class="btn-sm" style="position:relative;overflow:hidden;">🎬 選擇影片／音檔
+              <input type="file" accept="video/*,audio/*" onchange="loadVideoFile(event)" style="position:absolute;inset:0;opacity:0;cursor:pointer;">
+            </button>
+            <button class="btn-sm" onclick="revealStep(3)">跳過 →</button>
+          </div>
+          <div class="si-s" id="video-hint"></div>
+        </div>
+      </div>
+
+      <div class="si-div"></div>
+
+      <div class="setup-item locked" id="si-cuts">
+        <span class="si-n">3</span>
+        <div class="si-body">
+          <div class="si-t">剪輯點 XML<span class="si-sub">可跳過 · 時間軸畫橘線、拆分自動吸附</span></div>
+          <div class="btn-row">
+            <button class="btn-sm" style="position:relative;overflow:hidden;">📋 選擇 XML
+              <input type="file" accept=".xml" onchange="loadCutsFile(event)" style="position:absolute;inset:0;opacity:0;cursor:pointer;">
+            </button>
+            <button class="btn-sm" onclick="revealStep(4)">跳過 →</button>
+          </div>
+          <div class="si-s" id="cuts-hint"></div>
+          <label class="si-s" id="snap-wrap" style="display:none;cursor:pointer;">
+            <input type="checkbox" id="snap-chk" checked onchange="snapOnSplit = this.checked;" style="accent-color:#6ec4bc;vertical-align:-2px;">
+            <span id="snap-label"></span>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4 AI 分段 -->
+    <div class="card locked" id="c-ai">
+      <div class="card-title">步驟四：AI 精準分段</div>
+      <div class="mini-tip">複製提示詞丟給 AI，把回傳的 JSON 貼回來。整份送就好，漏行不會弄壞字幕。</div>
+      <div class="btn-row">
+        <button class="btn-sm" id="copy-btn" onclick="copyPrompt()">📋 複製提示詞</button>
+        <button class="btn-sm" id="resume-btn" style="display:none;" onclick="copyPrompt(true)"></button>
+      </div>
+      <div class="hint-inline" id="copy-hint" style="display:block;margin:8px 0;"></div>
+      <textarea class="ta" id="json-input" placeholder='{"segments":[ ... ]}　　補送的結果也貼這裡，會自動累加'></textarea>
+      <div class="btn-row" style="margin-top:10px;">
+        <button class="btn-sm" onclick="ingestJson()">＋ 加入這批結果</button>
+        <button class="btn-sm" onclick="clearSegResults()">✕ 清空全部結果</button>
+        <button class="btn-sm" onclick="showEditor()">不用 AI，直接開始校對 →</button>
+      </div>
+      <div class="hint-inline" id="ingest-hint" style="display:block;margin-top:8px;"></div>
+      <div class="error-msg" id="seg-error"></div>
+    </div>
+
+  </div>
+
+  <div class="editor" id="seg-editor">
+  <div class="ed-left">
   <div class="vplayer" id="vplayer">
     <video id="vp-video" controls preload="metadata"></video>
     <div class="vp-bar">
@@ -370,122 +536,38 @@ header p { font-size: 0.75rem; color: #5ab5ac; font-weight: 700; letter-spacing:
       <span class="vp-name" id="vp-name"></span>
     </div>
   </div>
-
-  <div class="steps">
-    <div class="stp active" id="sstp1"><div class="stp-n">1</div><div class="stp-l">上傳 SRT</div></div>
-    <div class="stp-line"></div>
-    <div class="stp" id="sstp2"><div class="stp-n">2</div><div class="stp-l">複製提示詞</div></div>
-    <div class="stp-line"></div>
-    <div class="stp" id="sstp3"><div class="stp-n">3</div><div class="stp-l">貼回 JSON</div></div>
-    <div class="stp-line"></div>
-    <div class="stp" id="sstp4"><div class="stp-n">4</div><div class="stp-l">確認下載</div></div>
+  <div class="stat-row" id="seg-stats">
+    <div class="stat"><span class="v" id="sstat-src">—</span><span class="k">原始行數</span></div>
+    <div class="stat"><span class="v" id="sstat-out">—</span><span class="k">調整後行數</span></div>
+    <div class="stat"><span class="v" id="sstat-apply">—</span><span class="k">套用中</span></div>
+    <div class="stat"><span class="v" id="sstat-warn">—</span><span class="k">需注意</span></div>
+    <div class="stat" id="sstat-cuts-box" style="display:none;"><span class="v" id="sstat-cuts">—</span><span class="k">剪輯點</span></div>
   </div>
-
-  <!-- Step 1 -->
-  <div class="card">
-    <div class="card-title">步驟一：載入字幕</div>
-    <div class="upload-zone seg-single" id="zone-seg" ondragover="dragOver(event,'seg')" ondragleave="dragLeave('seg')" ondrop="dropFile(event,'seg')">
-      <input type="file" accept=".srt" onchange="loadFile(event,'seg')">
-      <div class="upload-icon">📝</div>
-      <div class="upload-label">要重新斷句的字幕 SRT</div>
-      <div class="upload-hint">.srt</div>
-      <div class="upload-filename" id="seg-name"></div>
-    </div>
-    <div class="btn-row">
-      <button class="btn-sm" id="seg-import-btn" onclick="importAligned()" disabled>↳ 帶入剛才對齊好的結果</button>
-      <button class="btn-sm" id="manual-only-btn" style="display:none;" onclick="startManual()">✎ 不用 AI，直接手動編輯</button>
-      <button class="btn-sm" style="position:relative;overflow:hidden;">🎬 對著影片校對
-        <input type="file" accept="video/*" onchange="loadVideoFile(event)" style="position:absolute;inset:0;opacity:0;cursor:pointer;">
-      </button>
-      <button class="btn-sm" style="position:relative;overflow:hidden;" title="時間軸上會畫出剪輯點，拆分時自動吸附">📋 帶入 PR XML 剪輯點
-        <input type="file" accept=".xml" onchange="loadCutsFile(event)" style="position:absolute;inset:0;opacity:0;cursor:pointer;">
-      </button>
-    </div>
-    <div class="hint-inline" style="display:block;margin-top:8px;line-height:1.7;">
-      XML 的用途：時間軸上把<span style="color:#e0913f;font-weight:800;">剪輯點畫成橘線</span>，拆分時自動吸附過去，斷句才不會落在鏡頭中間。影片和 XML 都只在本機讀取。
-    </div>
-    <div class="btn-row" style="margin-top:6px;">
-      <label class="hint-inline" id="snap-wrap" style="display:none;cursor:pointer;">
-        <input type="checkbox" id="snap-chk" checked onchange="snapOnSplit = this.checked;" style="accent-color:#6ec4bc;vertical-align:-2px;">
-        <span id="snap-label"></span>
-      </label>
-      <span class="hint-inline" id="seg-count"></span>
-    </div>
-    <div class="error-msg" id="seg-error1"></div>
   </div>
-
-  <!-- Step 2 -->
-  <div class="card" id="seg-card-prompt" style="display:none;">
-    <div class="card-title">步驟二：複製提示詞丟給 AI</div>
-    <div class="tip">💬 &nbsp;<span>整份送就好。回傳的 JSON 只包含「有調整的行」，沒被提到的行原樣保留，所以 AI 漏行不會弄壞字幕。<strong>若 AI 中途停了</strong>，貼回結果後這裡會多一顆補送按鈕。</span></div>
-    <div class="btn-row">
-      <button class="btn-sm" id="copy-btn" onclick="copyPrompt()">📋 複製提示詞</button>
-      <button class="btn-sm" id="resume-btn" style="display:none;" onclick="copyPrompt(true)"></button>
-    </div>
-    <div class="hint-inline" id="copy-hint" style="display:block;margin-top:8px;"></div>
-  </div>
-
-  <!-- Step 3 -->
-  <div class="card" id="seg-card-paste" style="display:none;">
-    <div class="card-title">步驟三：把 AI 回傳的 JSON 貼回來</div>
-    <textarea class="ta" id="json-input" placeholder='{"segments":[ ... ]}　　補送的結果也貼這裡，會自動累加'></textarea>
-    <div class="btn-row" style="margin-top:10px;">
-      <button class="btn-sm" onclick="ingestJson()">＋ 加入這批結果</button>
-      <button class="btn-sm" onclick="clearSegResults()">✕ 清空全部結果</button>
-      <span class="hint-inline" id="ingest-hint"></span>
-    </div>
-    <div class="error-msg" id="seg-error"></div>
-  </div>
-
-  <!-- Step 4 -->
+  <div class="ed-right" id="ed-right">
   <div class="result-box" id="seg-result">
     <div class="card">
-      <div class="card-title">步驟四：確認每一條調整</div>
-
-      <div class="stat-row">
-        <div class="stat"><span class="v" id="sstat-src">—</span><span class="k">原始行數</span></div>
-        <div class="stat"><span class="v" id="sstat-out">—</span><span class="k">調整後行數</span></div>
-        <div class="stat"><span class="v" id="sstat-apply">—</span><span class="k">套用中</span></div>
-        <div class="stat"><span class="v" id="sstat-warn">—</span><span class="k">需注意</span></div>
-      </div>
-
-      <div class="tip">📍 &nbsp;<span><strong>上面的時間軸只負責「看」</strong>——看剪輯點在哪、看這句落在哪；<strong>改字一律在下面這張清單</strong>。時間軸上點一下只是選切點，按「✂ 在這裡切開」才會動到字幕。</span></div>
-      <div class="tip">✎ &nbsp;<span>調整後的每一行都能<strong>直接改字</strong>；游標停在要切開的位置按 <strong>Enter</strong>（或 ✂）就拆成兩行，在行首按 <strong>Backspace</strong>（或 ⇧）併回上一行。時間只在這一段的區間內重算，不會影響其他字幕。</span></div>
-      <div class="btn-row" style="margin-bottom:12px;">
+      <div class="card-title">整份字幕</div>
+      <div class="tip-flat">✎ <strong>打勾＝會變動</strong>（AI 提案或你改過的），沒勾的維持原樣。<strong>Enter</strong>（或 ✂）在游標處拆兩行，行首 <strong>Backspace</strong>（或 ⇧）併回上一行，<strong>▶</strong> 播那句。</div>
+      <div class="btn-row" style="margin-bottom:10px;">
         <button class="btn-sm" id="sfilter-all" onclick="setSegFilter('all')">全部</button>
-        <button class="btn-sm" id="sfilter-flag" onclick="setSegFilter('flag')">只看要注意的</button>
-        <button class="btn-sm" onclick="toggleAllSeg(true)">全部勾選</button>
-        <button class="btn-sm" onclick="toggleAllSeg(false)">全部取消</button>
-        <button class="btn-sm" onclick="uncheckFlagged()">取消有警告的</button>
+        <button class="btn-sm" id="sfilter-flag" onclick="setSegFilter('flag')">只看有變動的</button>
+        <button class="btn-sm" onclick="toggleAllSeg(true)">全勾</button>
+        <button class="btn-sm" onclick="toggleAllSeg(false)">全不勾</button>
+        <button class="btn-sm" onclick="uncheckFlagged()" title="把有紅色警告的那幾條取消勾選，改用原本的斷句">有警告的不套用</button>
+        <button class="btn-sm" onclick="backToSetup()">⚙ 回到設定</button>
       </div>
-      <div class="hint-inline" style="display:block;margin-bottom:10px;" id="seg-filter-hint"></div>
-
+      <div class="hint-inline" id="seg-filter-hint" style="display:block;margin-bottom:8px;"></div>
       <div class="seg-list" id="seg-list"></div>
 
       <div class="divider"></div>
       <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
         <button class="btn" style="background:rgba(255,255,255,0.8);border:1.5px solid rgba(110,196,188,0.3);color:#5ab5ac;box-shadow:none;" onclick="resetSeg()">↺ 重新開始</button>
-        <button class="btn" style="background:rgba(255,255,255,0.8);border:1.5px solid rgba(110,196,188,0.3);color:#5ab5ac;box-shadow:none;" onclick="startManual()">✎ 手動微調整份字幕</button>
         <button class="btn" onclick="downloadSegSrt()">⬇ 下載分段後 SRT</button>
       </div>
     </div>
   </div>
-
-  <!-- Step 5 -->
-  <div class="card" id="seg-card-manual" style="display:none;">
-    <div class="card-title">步驟五：手動微調（整份字幕）</div>
-    <div class="tip">✎ &nbsp;<span>這裡是<strong>全部行</strong>，包含 AI 完全沒碰的行，也能跨段合併。游標停在要切開的位置按 <strong>Enter</strong>（或 ✂）拆成兩行，在行首按 <strong>Backspace</strong>（或 ⇧）併進上一行，時間都會跟著重算。改完直接在這裡下載。</span></div>
-    <div class="btn-row" style="margin-bottom:12px;">
-      <button class="btn-sm" id="mfilter-all" onclick="setManualFilter('all')">全部</button>
-      <button class="btn-sm" id="mfilter-flag" onclick="setManualFilter('flag')">只看要注意的</button>
-      <button class="btn-sm" onclick="startManual()">↺ 以勾選結果重建</button>
-      <span class="hint-inline" id="manual-hint"></span>
-    </div>
-    <div class="manual-list" id="manual-list"></div>
-    <div class="divider"></div>
-    <div style="text-align:center;">
-      <button class="btn" onclick="downloadSegSrt()">⬇ 下載分段後 SRT</button>
-    </div>
+  </div>
   </div>
 
 </div>
@@ -799,8 +881,48 @@ let segResults = [];      // 已解析的調整項
 let segResumeFrom = 0;    // 補送起點（最後一條調整所在行）
 let segOutputSrt = null;
 
+let editorShown = false;
+
+function revealStep(k) {
+  const cards = { 2: 'si-video', 3: 'si-cuts', 4: 'c-ai' };
+  for (let s = 2; s <= k; s++) {
+    if (cards[s]) document.getElementById(cards[s]).classList.remove('locked');
+  }
+  for (let s = 1; s < k; s++) document.getElementById('sstp' + s).className = 'stp done';
+  document.getElementById('sstp' + k).className = 'stp active';
+}
+
+function setupSummary() {
+  const box = document.getElementById('sstat-cuts-box');
+  box.style.display = alignCuts.length ? '' : 'none';
+  document.getElementById('sstat-cuts').textContent = alignCuts.length || '—';
+}
+
+function showEditor() {
+  if (segEntries.length === 0) { segError('請先上傳字幕 SRT'); return; }
+  editorShown = true;
+  document.body.classList.add('editing');
+  document.getElementById('seg-setup').style.display = 'none';
+  for (let s = 1; s <= 4; s++) document.getElementById('sstp' + s).className = 'stp done';
+  document.getElementById('sstp5').className = 'stp active';
+  setupSummary();
+  renderSegList();
+  drawTimeline();
+  try { document.getElementById('seg-editor').scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (err) {}
+}
+
+function backToSetup() {
+  editorShown = false;
+  document.body.classList.remove('editing');
+  document.getElementById('seg-setup').style.display = 'grid';
+  document.getElementById('seg-editor').classList.remove('show');
+  document.getElementById('sstp5').className = 'stp';
+  try { document.getElementById('seg-setup').scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (err) {}
+}
+
 function switchMode(m) {
   const isSeg = m === 'seg';
+  document.body.classList.toggle('editing', isSeg && editorShown);
   document.getElementById('mode-align').style.display = isSeg ? 'none' : 'flex';
   document.getElementById('mode-seg').style.display = isSeg ? 'flex' : 'none';
   document.getElementById('notice-align').style.display = isSeg ? 'none' : 'block';
@@ -825,8 +947,6 @@ function loadSegSource(text) {
   }
   segEntries = entries.map((e, i) => ({ n: i+1, start: e.start, end: e.end, text: e.text }));
   segResults = []; segResumeFrom = 0; segOutputSrt = null;
-  segManual = null; segManualStale = false;
-  document.getElementById('seg-card-manual').style.display = 'none';
   document.getElementById('seg-count').textContent = `已載入 ${segEntries.length} 行字幕`;
   if (segEntries.length <= 1 && (text.match(/-->/g) || []).length > 1) {
     err1.textContent = '⚠ 這份 SRT 只解析出 1 行，但檔案裡有很多時間碼，格式可能不標準。用純文字編輯器另存一次再試。';
@@ -834,25 +954,22 @@ function loadSegSource(text) {
   }
   document.getElementById('copy-btn').textContent = `📋 複製提示詞（整份 ${segEntries.length} 行）`;
   document.getElementById('resume-btn').style.display = 'none';
-  document.getElementById('manual-only-btn').style.display = 'inline-block';
   if (alignCuts.length === 0 && xmlContent) {
     try { alignCuts = parseXmlCuts(xmlContent, effFps()); } catch (err) { alignCuts = []; }
   }
   showSnapToggle();
-  document.getElementById('seg-card-prompt').style.display = 'block';
-  document.getElementById('seg-card-paste').style.display = 'block';
-  document.getElementById('seg-result').classList.remove('show');
   document.getElementById('seg-error').classList.remove('show');
   document.getElementById('copy-hint').textContent = '';
   document.getElementById('ingest-hint').textContent = '';
-  document.getElementById('sstp1').className = 'stp done';
-  document.getElementById('sstp2').className = 'stp active';
+  editorShown = false;
+  document.getElementById('seg-setup').style.display = 'grid';
+  document.getElementById('seg-editor').classList.remove('show');
+  revealStep(2);
 }
 
 function importAligned() {
   if (!outputSrt) return;
-  const zone = document.getElementById('zone-seg');
-  zone.classList.add('loaded');
+  document.getElementById('zone-seg').classList.add('loaded');
   document.getElementById('seg-name').textContent = '（來自剪輯點對齊的結果）';
   loadSegSource(outputSrt);
 }
@@ -1098,9 +1215,8 @@ function ingestJson() {
   renderSegList();
   document.getElementById('sstp3').className = 'stp done';
   document.getElementById('sstp4').className = 'stp active';
-  const box = document.getElementById('seg-result');
-  if (box.classList.contains('show')) { try { box.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (err) {} }
-  else {
+  if (added > 0) { showEditor(); return; }
+  {
     document.getElementById('ingest-hint').innerHTML +=
       `<br><span style="color:#c04040;font-weight:800;">這批沒有一條可用：JSON 裡的行號超出這份字幕的 1–${segEntries.length} 行。確認左邊載入的行數是否正確，以及貼回的是同一份字幕的結果。</span>`;
   }
@@ -1204,6 +1320,28 @@ function segMergeLine(i, j) {
   focusAfterLine(i, j - 1, joinAt);
 }
 
+let eCaret = { n: -1, pos: 0 };
+
+function splitLine(n, atMs) {
+  const idx = ensureRecord(n);
+  if (idx < 0) return;
+  const a = segResults[idx].after[0];
+  let pos;
+  if (atMs != null) {
+    const ratio = (atMs - a.start) / Math.max(1, a.end - a.start);
+    pos = Math.min(a.text.length - 1, Math.max(1, Math.round(a.text.length * ratio)));
+  } else {
+    pos = (eCaret.n === n) ? eCaret.pos : 0;
+  }
+  if (!pos || pos <= 0 || pos >= a.text.length) {
+    document.getElementById('seg-filter-hint').innerHTML =
+      '<span style="color:#c04040;font-weight:800;">游標要先停在這一行要切開的位置（在行內按 Enter 也可以拆）</span>';
+    return;
+  }
+  if (atMs == null) sCaret = { i: idx, j: 0, pos: pos };
+  segSplitLine(idx, 0, atMs);
+}
+
 function focusAfterLine(i, j, pos) {
   const el = document.querySelector(`.seg-item[data-i="${i}"] .ainput[data-j="${j}"]`);
   if (!el) return;
@@ -1221,26 +1359,72 @@ function uncheckFlagged() {
   renderSegList();
 }
 
+function jumpFlagged() { setSegFilter('flag'); }
+
+// 這份清單一次列出所有字幕行：AI 有提案的自動勾選並顯示前後對照，
+// 沒被提到的也照樣列出來（不勾選），一樣可以改字、拆分。
+function recordIndexFor() {
+  const firstOf = new Map(), covered = new Set();
+  segResults.forEach((r, i) => {
+    firstOf.set(r.nums[0], i);
+    r.nums.forEach(n => covered.add(n));
+  });
+  return { firstOf: firstOf, covered: covered };
+}
+
+function isPlainRecord(r) {
+  return r.nums.length === 1 && r.after.length === 1 && !r.reason;
+}
+
+function lineRowHtml(n, tm, text, checked, badge) {
+  const len = normText(text).length;
+  return `<div class="erow${checked ? ' on' : ''}" data-n="${n}">` +
+    `<input type="checkbox" data-act="rowtoggle"${checked ? ' checked' : ''}${checked ? '' : ' disabled'} title="${checked ? '這一行有改動，會套用' : '這一行沒有改動'}">` +
+    `<span class="enum">${n}</span>` +
+    `<span class="seg-tm">${cutMark(tm)}${msToSrt(tm).slice(0,8)}</span>` +
+    `<input class="einput" type="text" data-n="${n}" value="${attr(text)}">` +
+    `<span class="alen${len > 20 ? ' over' : ''}">${len}</span>` +
+    `<span class="mbtns">` +
+      `<button class="mbtn" data-eact="play" data-n="${n}" title="播這一句">▶</button>` +
+      `<button class="mbtn" data-eact="merge" data-n="${n}"${n === 1 ? ' disabled' : ''} title="併進上一行">⇧</button>` +
+      `<button class="mbtn" data-eact="split" data-n="${n}" title="在游標位置拆成兩行">✂</button>` +
+    `</span>` +
+    (badge ? `<span class="badge src ebadge">${badge}</span>` : '') +
+    `</div>`;
+}
+
 function renderSegList() {
   const box = document.getElementById('seg-result');
   const list = document.getElementById('seg-list');
-  if (segResults.length === 0) {
-    box.classList.remove('show');
-    return;
-  }
+  document.getElementById('seg-editor').classList.toggle('show', editorShown && segEntries.length > 0);
+  if (segEntries.length === 0 || !editorShown) { box.classList.remove('show'); return; }
   box.classList.add('show');
   const keep = list.scrollTop;
 
-  list.innerHTML = segResults.map((r, i) => {
-    if (segFilter === 'flag' && r.warnings.length === 0) return '';
-    let html = `<div class="seg-item${r.enabled ? '' : ' off'}" data-i="${i}">`;
-    html += `<input type="checkbox" data-act="toggle"${r.enabled ? ' checked' : ''}>`;
-    html += `<div><div class="seg-head">${segHeadHtml(r)}</div>`;
-    html += r.before.map((b, j) =>
+  const map = recordIndexFor();
+  const html = [];
+
+  for (const e of segEntries) {
+    const ri = map.firstOf.has(e.n) ? map.firstOf.get(e.n) : -1;
+    if (ri === -1) {
+      if (map.covered.has(e.n)) continue;                       // 已被前面的合併吃掉
+      if (segFilter === 'flag') continue;                        // 只看有變動的
+      html.push(lineRowHtml(e.n, e.start, e.text, false, ''));
+      continue;
+    }
+    const r = segResults[ri];
+    if (isPlainRecord(r)) {                                      // 你自己改過字的單行
+      html.push(lineRowHtml(e.n, r.after[0].start, r.after[0].text, r.enabled, '已改'));
+      continue;
+    }
+    let s = `<div class="seg-item${r.enabled ? '' : ' off'}" data-i="${ri}">`;
+    s += `<input type="checkbox" data-act="toggle"${r.enabled ? ' checked' : ''}>`;
+    s += `<div><div class="seg-head">${segHeadHtml(r)}</div>`;
+    s += r.before.map((b, j) =>
       `<div class="seg-line b"><span class="seg-tm">${msToSrt(b.start).slice(0,8)}</span><span style="flex:1;">${esc(b.text)}</span>` +
       `<button class="mbtn" data-sact="playbefore" data-j="${j}" title="播原本這一句">▶</button></div>`).join('');
-    html += `<div class="seg-arrow">↓</div>`;
-    html += r.after.map((a, j) =>
+    s += `<div class="seg-arrow">↓</div>`;
+    s += r.after.map((a, j) =>
       `<div class="seg-line a"><span class="seg-tm">${cutMark(a.start)}${msToSrt(a.start).slice(0,8)}</span>` +
       `<input class="ainput" type="text" data-j="${j}" value="${attr(a.text)}">` +
       `<span class="alen${normText(a.text).length > 20 ? ' over' : ''}">${normText(a.text).length}</span>` +
@@ -1249,28 +1433,78 @@ function renderSegList() {
         `<button class="mbtn" data-sact="merge" data-j="${j}"${j === 0 ? ' disabled' : ''} title="併進上一行">⇧</button>` +
         `<button class="mbtn" data-sact="split" data-j="${j}" title="在游標位置拆成兩行">✂</button>` +
       `</span></div>`).join('');
-    if (r.reason) html += `<div class="seg-reason">${esc(r.reason)}</div>`;
-    return html + `</div></div>`;
-  }).join('');
+    if (r.reason) s += `<div class="seg-reason">${esc(r.reason)}</div>`;
+    html.push(s + `</div></div>`);
+  }
+
+  list.innerHTML = html.join('');
   list.scrollTop = keep;
   bindSegList();
   refreshSegStats();
 
+  const proposals = segResults.filter(r => !isPlainRecord(r)).length;
   const flagged = segResults.filter(r => r.warnings.length > 0).length;
   document.getElementById('sfilter-all').classList.toggle('active', segFilter === 'all');
   document.getElementById('sfilter-flag').classList.toggle('active', segFilter === 'flag');
-  document.getElementById('seg-filter-hint').textContent = flagged === 0
-    ? '全部都勾好了，沒有需要注意的項目'
-    : `已全部勾選；其中 ${flagged} 條有警告（文字被改或停留不足 1 秒），確認過再決定要不要留`;
+  document.getElementById('seg-filter-hint').textContent = flagged
+    ? `${flagged} 條有警告：AI 動到文字，或拆分後停留不足 1 秒。按「只看有變動的」逐條確認，或按「有警告的不套用」全部改回原樣`
+    : '';
+}
+
+// 使用者動到某一行時，替它建一筆「手動」紀錄
+function ensureRecord(n) {
+  let idx = segResults.findIndex(r => r.nums.length === 1 && r.nums[0] === n);
+  if (idx >= 0) return idx;
+  const e = segEntries.find(x => x.n === n);
+  if (!e) return -1;
+  segResults.push({
+    action: '手動調整', nums: [n],
+    before: [{ start: e.start, end: e.end, text: e.text }],
+    after: [{ start: e.start, end: e.end, text: e.text }],
+    reason: '', warnings: [], enabled: true, touched: true
+  });
+  segResults.sort((a, b) => a.nums[0] - b.nums[0]);
+  return segResults.findIndex(r => r.nums.length === 1 && r.nums[0] === n);
+}
+
+// 把相鄰兩行併成一行（跨越原始行，所以要合成一筆新紀錄）
+function mergeLines(n) {
+  if (n <= 1) return;
+  const prevIdx = segResults.findIndex(r => r.nums.indexOf(n - 1) >= 0);
+  const curIdx  = segResults.findIndex(r => r.nums.indexOf(n) >= 0);
+  const prevRec = prevIdx >= 0 ? segResults[prevIdx] : null;
+  const curRec  = curIdx >= 0 ? segResults[curIdx] : null;
+  if ((prevRec && !isPlainRecord(prevRec)) || (curRec && !isPlainRecord(curRec))) {
+    document.getElementById('seg-filter-hint').innerHTML =
+      '<span style="color:#c04040;font-weight:800;">上一行屬於另一組調整，請先在那組裡面併，或取消勾選它</span>';
+    return;
+  }
+  const a = prevRec ? prevRec.after[0] : segEntries.find(x => x.n === n - 1);
+  const b = curRec ? curRec.after[0] : segEntries.find(x => x.n === n);
+  const oa = segEntries.find(x => x.n === n - 1), ob = segEntries.find(x => x.n === n);
+  if (!a || !b) return;
+  const glue = /[A-Za-z0-9]$/.test(a.text.trim()) && /^[A-Za-z0-9]/.test(b.text.trim()) ? ' ' : '';
+  const rec = {
+    action: '合併', nums: [n - 1, n],
+    before: [{ start: oa.start, end: oa.end, text: oa.text }, { start: ob.start, end: ob.end, text: ob.text }],
+    after: [{ start: a.start, end: b.end, text: a.text.trim() + glue + b.text.trim() }],
+    reason: '', warnings: [], enabled: true, touched: true
+  };
+  [prevIdx, curIdx].filter(i => i >= 0).sort((x, y) => y - x).forEach(i => segResults.splice(i, 1));
+  segResults.push(rec);
+  segResults.sort((x, y) => x.nums[0] - y.nums[0]);
+  recheckWarnings(rec);
+  rec.action = '合併';
+  renderSegList();
 }
 
 function refreshSegStats() {
   const built = buildSegOutput();
-  if (segManual) { segManualStale = true; renderManual(); }
   document.getElementById('sstat-src').textContent = segEntries.length;
   document.getElementById('sstat-out').textContent = built.count;
   document.getElementById('sstat-apply').textContent = built.applied;
   document.getElementById('sstat-warn').textContent = segResults.filter(r => r.warnings.length > 0).length;
+  setupSummary();
   refreshTlLines();
 }
 
@@ -1331,8 +1565,77 @@ function bindSegList() {
     }
   });
 
+  // 一般行：改字
+  list.addEventListener('input', e => {
+    if (!e.target.classList.contains('einput')) return;
+    const n = parseInt(e.target.dataset.n);
+    const row = e.target.closest('.erow');
+    const idx = ensureRecord(n);
+    if (idx < 0) return;
+    segResults[idx].after[0].text = e.target.value;
+    segResults[idx].touched = true;
+    eCaret = { n: n, pos: e.target.selectionStart };
+    recheckWarnings(segResults[idx]);
+    segResults[idx].action = '手動調整';
+    const len = normText(e.target.value).length;
+    const lenEl = row.querySelector('.alen');
+    lenEl.textContent = len; lenEl.classList.toggle('over', len > 20);
+    const cb = row.querySelector('input[type="checkbox"]');
+    cb.checked = true; cb.disabled = false;
+    row.classList.add('on');
+    refreshSegStats();
+  });
+
+  ['keyup', 'click', 'focus'].forEach(ev => {
+    list.addEventListener(ev, e => {
+      if (!e.target.classList || !e.target.classList.contains('einput')) return;
+      eCaret = { n: parseInt(e.target.dataset.n), pos: e.target.selectionStart };
+    }, true);
+  });
+
+  list.addEventListener('mousedown', () => {
+    const el = document.activeElement;
+    if (el && el.classList && el.classList.contains('einput')) {
+      eCaret = { n: parseInt(el.dataset.n), pos: el.selectionStart };
+    }
+  }, true);
+
+  list.addEventListener('keydown', e => {
+    if (!e.target.classList || !e.target.classList.contains('einput')) return;
+    if (e.isComposing) return;
+    const n = parseInt(e.target.dataset.n);
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      eCaret = { n: n, pos: e.target.selectionStart };
+      splitLine(n);
+    } else if (e.key === 'Backspace' && n > 1 && e.target.selectionStart === 0 && e.target.selectionEnd === 0) {
+      e.preventDefault();
+      mergeLines(n);
+    }
+  });
+
   list.addEventListener('click', e => {
-    const btn = e.target.closest && e.target.closest('.mbtn');
+    const eb = e.target.closest && e.target.closest('.mbtn[data-eact]');
+    if (!eb) return;
+    const n = parseInt(eb.dataset.n);
+    const act = eb.dataset.eact;
+    if (act === 'play') {
+      const idx = segResults.findIndex(r => r.nums.length === 1 && r.nums[0] === n);
+      const l = idx >= 0 ? segResults[idx].after[0] : segEntries.find(x => x.n === n);
+      playRange(l.start, l.end, l.text, { kind: 'line', n: n });
+    } else if (act === 'split') splitLine(n);
+    else mergeLines(n);
+  });
+
+  list.addEventListener('change', e => {
+    if (e.target.dataset.act !== 'rowtoggle') return;
+    const n = parseInt(e.target.closest('.erow').dataset.n);
+    const idx = segResults.findIndex(r => r.nums.length === 1 && r.nums[0] === n);
+    if (idx >= 0) { segResults[idx].enabled = e.target.checked; refreshSegStats(); }
+  });
+
+  list.addEventListener('click', e => {
+    const btn = e.target.closest && e.target.closest('.mbtn[data-sact]');
     if (!btn) return;
     const i = parseInt(btn.closest('.seg-item').dataset.i);
     const j = parseInt(btn.dataset.j);
@@ -1419,6 +1722,11 @@ function loadCutsFile(e) {
     showSnapToggle();
     drawTimeline();
     checkReady();
+    if (alignCuts.length) document.getElementById('si-cuts').classList.add('loaded');
+    document.getElementById('cuts-hint').textContent = alignCuts.length
+      ? `已帶入 ${alignCuts.length} 個剪輯點`
+      : '這份 XML 讀不到剪輯點，確認是 Premiere 匯出的 Final Cut Pro XML';
+    if (!editorShown) revealStep(4);
   };
   reader.readAsText(file, 'UTF-8');
 }
@@ -1471,11 +1779,17 @@ function loadVideoFile(e) {
   v.src = vpUrl;
   document.getElementById('vp-name').textContent = file.name;
   document.getElementById('vplayer').classList.add('show');
+  const isAudio = (file.type || '').indexOf('audio') === 0 || /\.(mp3|wav|m4a|aac|flac|ogg)$/i.test(file.name);
   document.getElementById('vplayer').classList.remove('mini', 'novideo');
+  document.getElementById('vplayer').classList.toggle('audioonly', isAudio);
   setPin(false);
   document.getElementById('vp-mini').textContent = '▾ 收起畫面';
   document.getElementById('vp-cap').textContent = '按任何一行的 ▶，就會跳到那一句並播完自動停';
+  document.getElementById('vp-mini').style.display = isAudio ? 'none' : '';
+  document.getElementById('video-hint').textContent = `已載入 ${file.name}`;
+  document.getElementById('si-video').classList.add('loaded');
   refreshTlLines();
+  if (!editorShown) revealStep(3);
   if (!v.dataset.bound) {
     v.dataset.bound = '1';
     v.addEventListener('timeupdate', () => {
@@ -1523,8 +1837,7 @@ let tlRetry = 0;
 function vpOffset() { return parseInt(document.getElementById('vp-offset').value) || 0; }
 
 function refreshTlLines() {
-  tlLines = segManual ? segManual
-          : (segResults.length ? buildSegOutput().lines : segEntries);
+  tlLines = segEntries.length ? buildSegOutput().lines : [];
   drawTimeline();
 }
 
@@ -1540,6 +1853,7 @@ function tlWindow() {
   }
   if (cur < s) { const d = s - cur + 500; s -= d; e -= d; }
   if (cur > e) { const d = cur - e + 500; s += d; e += d; }
+  if (s < 0) { e -= s; s = 0; }        // 不畫負時間，開頭就貼齊左邊
   return [s, e, cur];
 }
 
@@ -1658,7 +1972,7 @@ function splitAtMark() {
   if (!vpActive || !vpActive.ref || tlMark == null) return;
   const ref = vpActive.ref;
   if (ref.kind === 'seg') segSplitLine(ref.i, ref.j, tlMark);
-  else manualSplit(ref.i, tlMark);
+  else if (ref.kind === 'line') splitLine(ref.n, tlMark);
   tlMark = null;
   document.getElementById('vp-cutbtn').style.display = 'none';
 }
@@ -1690,172 +2004,8 @@ function closeVideo() {
   showPlayerShell();
 }
 
-/* ── 手動微調 ── */
-
-let segManual = null;          // [{start,end,text}]，非 null 時下載以這份為準
-let segManualFilter = 'all';
-let segManualStale = false;
-let mCaret = { i: -1, pos: 0 };
-let mBound = false;
-
-function startManual() {
-  const built = buildSegOutput();
-  segManual = built.lines.map(l => ({ start: l.start, end: l.end, text: l.text }));
-  segManualStale = false;
-  document.getElementById('seg-card-manual').style.display = 'block';
-  renderManual();
-  document.getElementById('seg-card-manual').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-}
-
-function setManualFilter(f) { segManualFilter = f; renderManual(); }
-
-function mFlagged(l) {
-  return l.text.replace(/\s/g, '').length > 20 || (l.end - l.start) < MIN_SEG_MS;
-}
-
-function renderManual() {
-  if (!segManual) return;
-  const box = document.getElementById('manual-list');
-  const keep = box.scrollTop;
-  const rows = [];
-  segManual.forEach((l, i) => {
-    if (segManualFilter === 'flag' && !mFlagged(l)) return;
-    const len = l.text.replace(/\s/g, '').length;
-    rows.push(
-      `<div class="mrow${mFlagged(l) ? ' flagged' : ''}" data-i="${i}">` +
-      `<span class="mnum">${i+1}</span>` +
-      `<span class="mtm">${cutMark(l.start)}${msToSrt(l.start).slice(3,12)}→${msToSrt(l.end).slice(3,12)}</span>` +
-      `<input class="minput" type="text" value="${l.text.replace(/"/g,'&quot;').replace(/</g,'&lt;')}">` +
-      `<span class="mlen${len > 20 ? ' over' : ''}">${len}</span>` +
-      `<span class="mbtns">` +
-        `<button class="mbtn" data-act="play" title="播這一句">▶</button>` +
-        `<button class="mbtn" data-act="merge"${i === 0 ? ' disabled' : ''}>⇧併上行</button>` +
-        `<button class="mbtn" data-act="split">✂拆分</button>` +
-      `</span></div>`
-    );
-  });
-  box.innerHTML = rows.join('');
-  box.scrollTop = keep;
-
-  tlLines = segManual; drawTimeline();
-  const flagged = segManual.filter(mFlagged).length;
-  document.getElementById('mfilter-all').classList.toggle('active', segManualFilter === 'all');
-  document.getElementById('mfilter-flag').classList.toggle('active', segManualFilter === 'flag');
-  document.getElementById('manual-hint').innerHTML =
-    `共 ${segManual.length} 行，${flagged} 行要注意（超過 20 字或不足 1 秒）` +
-    (segManualStale ? ` <span style="color:#c04040;font-weight:800;">上方勾選有變動，下方還是舊的</span>` : '');
-
-  if (!mBound) {
-    mBound = true;
-    box.addEventListener('input', e => {
-      const row = e.target.closest && e.target.closest('.mrow');
-      if (!row || !e.target.classList.contains('minput')) return;
-      const i = parseInt(row.dataset.i);
-      segManual[i].text = e.target.value;
-      mCaret = { i: i, pos: e.target.selectionStart };
-      const len = e.target.value.replace(/\s/g, '').length;
-      const lenEl = row.querySelector('.mlen');
-      lenEl.textContent = len;
-      lenEl.classList.toggle('over', len > 20);
-      row.classList.toggle('flagged', mFlagged(segManual[i]));
-    });
-    ['keyup', 'click', 'focus'].forEach(ev => {
-      box.addEventListener(ev, e => {
-        if (!e.target.classList || !e.target.classList.contains('minput')) return;
-        const row = e.target.closest('.mrow');
-        mCaret = { i: parseInt(row.dataset.i), pos: e.target.selectionStart };
-      }, true);
-    });
-    box.addEventListener('mousedown', () => {
-      const el = document.activeElement;
-      if (el && el.classList && el.classList.contains('minput')) {
-        mCaret = { i: parseInt(el.closest('.mrow').dataset.i), pos: el.selectionStart };
-      }
-    }, true);
-
-    box.addEventListener('keydown', e => {
-      if (!e.target.classList || !e.target.classList.contains('minput')) return;
-      if (e.isComposing) return;
-      const i = parseInt(e.target.closest('.mrow').dataset.i);
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        mCaret = { i: i, pos: e.target.selectionStart };
-        manualSplit(i);
-      } else if (e.key === 'Backspace' && i > 0 && e.target.selectionStart === 0 && e.target.selectionEnd === 0) {
-        e.preventDefault();
-        manualMerge(i);
-      }
-    });
-
-    box.addEventListener('click', e => {
-      const btn = e.target.closest && e.target.closest('.mbtn');
-      if (!btn) return;
-      const i = parseInt(btn.closest('.mrow').dataset.i);
-      if (btn.dataset.act === 'play') playRange(segManual[i].start, segManual[i].end, segManual[i].text, { kind: 'manual', i: i });
-      else if (btn.dataset.act === 'merge') manualMerge(i);
-      else manualSplit(i);
-    });
-  }
-}
-
-function manualMerge(i) {
-  if (i <= 0) return;
-  const a = segManual[i-1], b = segManual[i];
-  const glue = /[A-Za-z0-9]$/.test(a.text.trim()) && /^[A-Za-z0-9]/.test(b.text.trim()) ? ' ' : '';
-  const joinAt = a.text.trim().length;
-  a.text = a.text.trim() + glue + b.text.trim();
-  a.end = b.end;
-  segManual.splice(i, 1);
-  renderManual();
-  focusManualLine(i - 1, joinAt);
-}
-
-function focusManualLine(i, pos) {
-  const el = document.querySelector(`.mrow[data-i="${i}"] .minput`);
-  if (!el) return;
-  el.focus();
-  try { el.setSelectionRange(pos, pos); } catch (err) {}
-  mCaret = { i: i, pos: pos };
-}
-
-function manualSplit(i, atMs) {
-  const l = segManual[i];
-  let pos;
-  if (atMs != null) {
-    const ratio = (atMs - l.start) / Math.max(1, l.end - l.start);
-    pos = Math.min(l.text.length - 1, Math.max(1, Math.round(l.text.length * ratio)));
-  } else {
-    pos = (mCaret.i === i) ? mCaret.pos : 0;
-  }
-  if (!pos || pos <= 0 || pos >= l.text.length) {
-    document.getElementById('manual-hint').innerHTML =
-      `<span style="color:#c04040;font-weight:800;">游標要先停在這一行要切開的位置（在行內按 Enter 也可以拆）</span>`;
-    return;
-  }
-  const left = l.text.slice(0, pos).trim();
-  const right = l.text.slice(pos).trim();
-  if (!left || !right) return;
-  const lw = Math.max(1, left.replace(/\s/g,'').length);
-  const rw = Math.max(1, right.replace(/\s/g,'').length);
-  const mid = atMs != null ? atMs
-            : snapCut(l.start + Math.round((l.end - l.start) * lw / (lw + rw)), l.start, l.end);
-  segManual.splice(i, 1,
-    { start: l.start, end: mid, text: left },
-    { start: mid, end: l.end, text: right }
-  );
-  mCaret = { i: -1, pos: 0 };
-  renderManual();
-  focusManualLine(i + 1, 0);
-}
-
 function downloadSegSrt() {
-  if (segManual) {
-    segOutputSrt = segManual.map((e, i) =>
-      `${i+1}\n${msToSrt(e.start)} --> ${msToSrt(e.end)}\n${e.text}`
-    ).join('\n\n') + '\n';
-  } else {
-    buildSegOutput();
-  }
+  buildSegOutput();
   if (!segOutputSrt) return;
   const now = new Date();
   const date = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}`;
@@ -1870,21 +2020,25 @@ function downloadSegSrt() {
 
 function resetSeg() {
   segEntries = []; segResults = []; segResumeFrom = 0; segOutputSrt = null;
-  segManual = null; segManualStale = false; segManualFilter = 'all';
-  document.getElementById('manual-only-btn').style.display = 'none';
   document.getElementById('resume-btn').style.display = 'none';
-  document.getElementById('seg-card-manual').style.display = 'none';
   document.getElementById('seg-name').textContent = '';
   document.getElementById('zone-seg').classList.remove('loaded');
+  document.getElementById('si-video').classList.remove('loaded');
+  document.getElementById('si-cuts').classList.remove('loaded');
   document.getElementById('seg-count').textContent = '';
   document.getElementById('copy-hint').textContent = '';
   document.getElementById('ingest-hint').textContent = '';
   document.getElementById('json-input').value = '';
-  document.getElementById('seg-card-prompt').style.display = 'none';
-  document.getElementById('seg-card-paste').style.display = 'none';
+  ['si-video', 'si-cuts', 'c-ai'].forEach(id => document.getElementById(id).classList.add('locked'));
+  document.getElementById('seg-setup').style.display = 'grid';
+  document.getElementById('seg-editor').classList.remove('show');
+  editorShown = false;
+  document.body.classList.remove('editing');
   document.getElementById('seg-result').classList.remove('show');
   document.getElementById('seg-error').classList.remove('show');
   document.querySelectorAll('#mode-seg .stp').forEach((s,i) => s.className = i===0 ? 'stp active' : 'stp');
+  document.getElementById('video-hint').textContent = '';
+  document.getElementById('cuts-hint').textContent = '';
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 </script>
