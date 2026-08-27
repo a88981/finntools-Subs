@@ -459,12 +459,11 @@ header p { font-size: 0.75rem; color: #5ab5ac; font-weight: 700; letter-spacing:
       <div class="setup-item locked" id="si-video">
         <span class="si-n">2</span>
         <div class="si-body">
-          <div class="si-t">影片／音檔<span class="si-sub">可跳過 · 只在本機播放，不會上傳</span></div>
+          <div class="si-t">影片／音檔<span class="si-sub">選填 · 只在本機播放，不會上傳</span></div>
           <div class="btn-row">
             <button class="btn-sm" style="position:relative;overflow:hidden;">🎬 選擇影片／音檔
               <input type="file" accept="video/*,audio/*" onchange="loadVideoFile(event)" style="position:absolute;inset:0;opacity:0;cursor:pointer;">
             </button>
-            <button class="btn-sm" onclick="revealStep(3)">跳過 →</button>
           </div>
           <div class="si-s" id="video-hint"></div>
         </div>
@@ -475,12 +474,11 @@ header p { font-size: 0.75rem; color: #5ab5ac; font-weight: 700; letter-spacing:
       <div class="setup-item locked" id="si-cuts">
         <span class="si-n">3</span>
         <div class="si-body">
-          <div class="si-t">剪輯點 XML<span class="si-sub">可跳過 · 時間軸畫橘線、拆分自動吸附</span></div>
+          <div class="si-t">剪輯點 XML<span class="si-sub">選填 · 時間軸畫橘線、拆分自動吸附</span></div>
           <div class="btn-row">
             <button class="btn-sm" style="position:relative;overflow:hidden;">📋 選擇 XML
               <input type="file" accept=".xml" onchange="loadCutsFile(event)" style="position:absolute;inset:0;opacity:0;cursor:pointer;">
             </button>
-            <button class="btn-sm" onclick="revealStep(4)">跳過 →</button>
           </div>
           <div class="si-s" id="cuts-hint"></div>
           <label class="si-s" id="snap-wrap" style="display:none;cursor:pointer;">
@@ -503,7 +501,6 @@ header p { font-size: 0.75rem; color: #5ab5ac; font-weight: 700; letter-spacing:
       <textarea class="ta" id="json-input" placeholder='{"segments":[ ... ]}　　補送的結果也貼這裡，會自動累加'></textarea>
       <div class="btn-row" style="margin-top:10px;">
         <button class="btn-sm" onclick="ingestJson()">＋ 加入這批結果</button>
-        <button class="btn-sm" onclick="clearSegResults()">✕ 清空全部結果</button>
         <button class="btn-sm" onclick="showEditor()">不用 AI，直接開始校對 →</button>
       </div>
       <div class="hint-inline" id="ingest-hint" style="display:block;margin-top:8px;"></div>
@@ -897,13 +894,13 @@ let segOutputSrt = null;
 
 let editorShown = false;
 
-function revealStep(k) {
-  const cards = { 2: 'si-video', 3: 'si-cuts', 4: 'c-ai' };
-  for (let s = 2; s <= k; s++) {
-    if (cards[s]) document.getElementById(cards[s]).classList.remove('locked');
-  }
-  for (let s = 1; s < k; s++) document.getElementById('sstp' + s).className = 'stp done';
-  document.getElementById('sstp' + k).className = 'stp active';
+// 字幕載入後，影片／XML／AI 三個區塊同時開放，順序自由、都可略過
+function revealStep() {
+  ['si-video', 'si-cuts', 'c-ai'].forEach(id => document.getElementById(id).classList.remove('locked'));
+  document.getElementById('sstp1').className = 'stp done';
+  document.getElementById('sstp2').className = vpUrl ? 'stp done' : 'stp';
+  document.getElementById('sstp3').className = alignCuts.length ? 'stp done' : 'stp';
+  document.getElementById('sstp4').className = 'stp active';
 }
 
 function setupSummary() {
@@ -988,7 +985,7 @@ function loadSegSource(text) {
   editorShown = false;
   document.getElementById('seg-setup').style.display = 'grid';
   document.getElementById('seg-editor').classList.remove('show');
-  revealStep(2);
+  revealStep();
 }
 
 function importAligned() {
@@ -1297,13 +1294,6 @@ function updateResumeBtn() {
   } else {
     btn.style.display = 'none';
   }
-}
-
-function clearSegResults() {
-  segResults = []; segResumeFrom = 0;
-  document.getElementById('ingest-hint').textContent = '已清空，原始字幕沒有動到';
-  updateResumeBtn();
-  renderSegList();
 }
 
 function toggleAllSeg(v) {
@@ -1874,7 +1864,7 @@ function loadCutsFile(e) {
     document.getElementById('cuts-hint').textContent = alignCuts.length
       ? `已帶入 ${alignCuts.length} 個剪輯點`
       : '這份 XML 讀不到剪輯點，確認是 Premiere 匯出的 Final Cut Pro XML';
-    if (!editorShown) revealStep(4);
+    if (!editorShown) revealStep();
   };
   reader.readAsText(file, 'UTF-8');
 }
@@ -1937,7 +1927,7 @@ function loadVideoFile(e) {
   document.getElementById('video-hint').textContent = `已載入 ${file.name}`;
   document.getElementById('si-video').classList.add('loaded');
   refreshTlLines();
-  if (!editorShown) revealStep(3);
+  if (!editorShown) revealStep();
   if (!v.dataset.bound) {
     v.dataset.bound = '1';
     v.addEventListener('timeupdate', () => {
