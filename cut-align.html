@@ -848,12 +848,19 @@ const SEG_PROMPT = `你是繁體中文字幕斷句優化員。請把以下字幕
      ↓ 「老協珍熬雞精」是同一個商品名，被切開了；合併後 22 字，重新切成兩行
      感謝老協珍熬雞精
      上次讓我可以帶媽媽去日本
-5. 需要合併的情況
-   · 同一句話被切成兩行以上，且合併後不超過 20 字
-   · 前行以虛詞或連接詞結尾（「然後」「因為」「就是」單獨一行）
-   · 單字或兩字的碎片行，且與前後屬同一句
-   · 合併後超過 20 字 → 不要放棄，改用規則 4（合併後重新切成兩行）
-   ⚠ 例外：不同說話者的話絕對不可合併{{CUTRULE}}
+5. 需要合併的情況（門檻很嚴，先考慮規則 4）
+   · 只有「其中一行是碎片」才合併：該行 5 字以內且語意不完整（「好的」「然後」「因為」「對啊」單獨成行）
+   · 兩行各自都有 6 字以上的實質內容 → 不要合併，改用規則 4 把斷點移到正確位置，維持兩行
+   · 合併後必須 14 字以內。超過 14 字觀眾一口氣讀不完，會有喘不過氣的感覺 → 改用規則 4
+   · 合併後那行的停留時間要夠：每秒不超過 9 個字
+   · 為了「不可分行的詞被切開」而想合併時，優先移動斷點而不是合併
+   ⚠ 例外：不同說話者的話絕對不可合併
+   · 反例（這種不要合併）：
+     [21] 我們這次要搭一個
+     [22] 從來沒搭過的航空公司
+     ↓ 量詞「一個」與「航空公司」被分開，但兩行都有實質內容、合併後 18 字太長
+     正解：維持兩行，把斷點往前移 →「我們這次要搭」／「一個從來沒搭過的航空公司」
+     錯誤：合併成「我們這次要搭一個從來沒搭過的航空公司」{{CUTRULE}}
 6. 需要拆分的情況
    · 超過 20 字
    · 一行內包含兩個以上完整子句
@@ -1150,7 +1157,9 @@ function resolveAfterTimes(after, spanStart, spanEnd) {
 
 function normText(s) { return String(s == null ? '' : s).replace(/\s+/g, ''); }
 
-const CUT_TOL = 150;   // 行界與剪輯點差多少以內算「切在同一點」
+const CUT_TOL = 150;    // 行界與剪輯點差多少以內算「切在同一點」
+const MERGE_MAX = 14;   // 合併後超過這個字數就太長，讀起來會喘
+const MAX_CPS = 9;      // 每秒最多幾個字，超過來不及讀
 
 // 這筆調整有沒有把兩行併過剪輯點
 function crossesCut(before, after) {
@@ -1217,6 +1226,17 @@ function buildSegRecord(seg) {
   const cross = crossesCut(beforeArr, afterArr);
   if (cross) warnings.push('跨越剪輯點');
 
+  // 合併後太長、或讀速太快 → 原本分兩行才是對的
+  let tooLong = false;
+  if (after.length < src.length) {
+    after.forEach((a, i) => {
+      const len = normText(a.text).length;
+      const sec = Math.max(0.1, (times[i].end - times[i].start) / 1000);
+      if (len > MERGE_MAX) { tooLong = true; warnings.push(`合併後 ${len} 字偏長`); }
+      else if (len / sec > MAX_CPS) { tooLong = true; warnings.push('讀速過快'); }
+    });
+  }
+
   let action = seg.action || '';
   if (!/合併|拆分|調整/.test(action)) {
     action = after.length < src.length ? '合併' : after.length > src.length ? '拆分' : '調整斷點';
@@ -1229,7 +1249,7 @@ function buildSegRecord(seg) {
     after: after.map((a, i) => ({ start: times[i].start, end: times[i].end, text: String(a.text).trim() })),
     reason: seg.reason ? String(seg.reason) : '',
     warnings: warnings,
-    enabled: !cross          // 跨鏡頭的合併預設不套用，保持原樣才對
+    enabled: !cross && !tooLong   // 跨鏡頭、合併後過長的預設不套用
   };
 }
 
@@ -1310,13 +1330,22 @@ function segHeadHtml(r) {
 }
 
 function recheckWarnings(r) {
-  const keep = r.warnings.filter(w => w.indexOf('文字有變動') !== 0 && w.indexOf('不足 1 秒') < 0 && w !== '跨越剪輯點');
+  const keep = r.warnings.filter(w => w.indexOf('文字有變動') !== 0 && w.indexOf('不足 1 秒') < 0
+    && w !== '跨越剪輯點' && w.indexOf('字偏長') < 0 && w !== '讀速過快');
   const bStr = r.before.map(b => b.text).join('');
   const aStr = r.after.map(a => a.text).join('');
   const list = keep.slice();
   if (normText(bStr) !== normText(aStr)) list.push('文字有變動：' + textDiffNote(bStr, aStr));
   if (r.after.length > r.before.length && r.after.some(a => (a.end - a.start) < MIN_SEG_MS)) list.push('拆分後有行不足 1 秒');
   if (crossesCut(r.before, r.after)) list.push('跨越剪輯點');
+  if (r.after.length < r.before.length) {
+    r.after.forEach(a => {
+      const len = normText(a.text).length;
+      const sec = Math.max(0.1, (a.end - a.start) / 1000);
+      if (len > MERGE_MAX) list.push(`合併後 ${len} 字偏長`);
+      else if (len / sec > MAX_CPS) list.push('讀速過快');
+    });
+  }
   r.warnings = list;
   r.action = r.after.length < r.before.length ? '合併'
            : r.after.length > r.before.length ? '拆分' : '調整斷點';
@@ -1497,7 +1526,7 @@ function renderSegList() {
   document.getElementById('sfilter-all').classList.toggle('active', segFilter === 'all');
   document.getElementById('sfilter-flag').classList.toggle('active', segFilter === 'flag');
   document.getElementById('seg-filter-hint').textContent = flagged
-    ? `${flagged} 條有警告：跨越剪輯點（預設已不套用）、AI 動到文字、或拆分後不足 1 秒。按「只看有變動的」逐條確認`
+    ? `${flagged} 條有警告：跨越剪輯點、合併後偏長（這兩種預設不套用）、AI 動到文字、或拆分後不足 1 秒。按「只看有變動的」逐條確認`
     : '';
 }
 
