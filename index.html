@@ -259,8 +259,18 @@ textarea.paste-area::placeholder { color: #98d0ca; }
       <input type="checkbox" id="enableTranslate" onchange="generateAIPromptStep()" style="width:15px;height:15px;cursor:pointer;accent-color:#4a9bd0;">
       <label for="enableTranslate" style="font-size:0.72rem;font-weight:700;color:#2a5550;cursor:pointer;line-height:1.5;">
         🌐 啟用字幕翻譯（英／日／韓 → 中）<br>
-        <span style="font-size:0.65rem;font-weight:600;color:#3a86b8;">多出一則翻譯 Prompt，下載前多一個翻譯步驟。整句外語會問你要換成中文還是做雙字幕</span>
+        <span style="font-size:0.65rem;font-weight:600;color:#3a86b8;">多出一則翻譯 Prompt，下載前多一個翻譯步驟</span>
       </label>
+    </div>
+
+    <!-- 翻譯種類 -->
+    <div id="trModeBar" style="display:none;background:rgba(215,240,255,0.2);border:1.5px solid rgba(60,150,210,0.15);border-radius:10px;padding:10px 14px;margin-bottom:14px;">
+      <div style="font-size:0.7rem;font-weight:800;color:#2070a8;margin-bottom:7px;">這份字幕是哪一種？</div>
+      <div class="tr-seg" style="border-color:rgba(60,150,210,0.3);">
+        <button id="trModeMixed" class="on" onclick="setTransMode('mixed')">中文為主，夾雜外語</button>
+        <button id="trModeWhole" onclick="setTransMode('whole')">整份都是外語</button>
+      </div>
+      <div id="trModeDesc" style="font-size:0.65rem;font-weight:600;color:#3a86b8;margin-top:7px;line-height:1.7;"></div>
     </div>
 
     <!-- 產生按鈕 -->
@@ -338,6 +348,10 @@ textarea.paste-area::placeholder { color: #98d0ca; }
       </div>
       <div style="padding:10px 14px 6px;border-top:1px solid rgba(60,150,210,0.2);">
         <div style="font-size:0.72rem;font-weight:800;color:#2070a8;"><span id="trStepNumB">④</span> 把翻譯的回覆貼在這裡</div>
+      </div>
+      <div id="trBatchBar" style="display:none;padding:0 14px 10px;">
+        <button class="btn-sm" onclick="takeTransBatch()">收下這批，換下一批 →</button>
+        <span id="trBatchMsg" style="font-size:0.66rem;font-weight:700;color:#2070a8;margin-left:8px;"></span>
       </div>
       <div style="padding:0 14px 12px;">
         <textarea id="trStepReply" placeholder='貼入 Claude 的 JSON 回覆（沒有也可以留空，之後再翻）' style="background:rgba(255,255,255,0.9);border:1.5px solid rgba(60,150,210,0.25);border-radius:10px;color:#2a5550;font-size:0.73rem;line-height:1.7;min-height:90px;outline:none;padding:14px;resize:vertical;width:100%;font-family:inherit;font-weight:600;overflow:hidden;" oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'" onpaste="setTimeout(()=>{this.style.height='auto';this.style.height=this.scrollHeight+'px'},0)"></textarea>
@@ -513,6 +527,24 @@ textarea.paste-area::placeholder { color: #98d0ca; }
       <span style="color:#2070a8;font-weight:800;">夾雜</span>＝中文句子裡有外語單字，翻好直接換掉。<br>
       <span style="color:#b04070;font-weight:800;">整句</span>＝整行都是外語，由你決定換成整句中文，還是做成雙字幕（原文＋中文兩行）。<br>
       <span style="color:#4aada5;">✦ 步驟二沒貼回覆也沒關係，下面可以再問一次 Claude，或直接打中文</span>
+    </div>
+
+    <!-- 整份外語模式的主要選擇 -->
+    <div id="trWholeModeBar" style="display:none;background:rgba(255,244,248,0.75);border:1.5px solid rgba(200,90,140,0.25);border-radius:12px;padding:12px 14px;margin-bottom:12px;">
+      <div style="font-size:0.74rem;font-weight:800;color:#a03a68;margin-bottom:9px;">整份要怎麼輸出？</div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <button class="tr-btn" onclick="setAllWhole('zh')">全部翻成中文</button>
+        <button class="tr-btn" onclick="setAllWhole('dual')">全部做成雙字幕</button>
+        <button class="tr-btn off-style" onclick="setAllWhole('keep')">全部保留原文</button>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center;margin-top:10px;flex-wrap:wrap;">
+        <span style="font-size:0.68rem;font-weight:700;color:#a03a68;">雙字幕排列：</span>
+        <div class="tr-seg">
+          <button id="trOrderZh2" class="on" onclick="setDualOrder('zh')">中文在上</button>
+          <button id="trOrderFg2" onclick="setDualOrder('fg')">原文在上</button>
+        </div>
+      </div>
+      <div id="trWholeModeMsg" style="font-size:0.66rem;font-weight:700;color:#a03a68;margin-top:8px;min-height:15px;"></div>
     </div>
 
     <!-- 掃描結果統計 -->
@@ -1039,6 +1071,10 @@ function selectMode(mode) {
   // 步驟條：回到未開始的狀態，標籤依模式重畫
   const trA = document.getElementById('enableTranslate');
   if (trA) trA.checked = false;
+  _transMode = 'mixed';
+  const mm = document.getElementById('trModeMixed'), mw = document.getElementById('trModeWhole');
+  if (mm) mm.classList.add('on');
+  if (mw) mw.classList.remove('on');
   refreshStepBar();
   const stp1label2 = document.getElementById('stp1label');
   if (stp1label2) stp1label2.textContent = '選擇模式';
@@ -1921,13 +1957,17 @@ function applyStepTwo() {
 // 勾了翻譯的話，步驟二一起把翻譯 Prompt 生出來，就不用最後再跑一次 Claude
 function setupTransStepBlock(useNoun) {
   const box = document.getElementById('trStepBlock');
+  const modeBar = document.getElementById('trModeBar');
   refreshStepBar();
   if (!box) return;
+
   if (!_translateWanted()) {
     box.style.display = 'none';
+    if (modeBar) modeBar.style.display = 'none';
     const rep = document.getElementById('trStepReply');
     if (rep) rep.value = '';
     window._transPreload = null;
+    window._transKeepWords = null;
     _transItems = [];
     ['aiReplyText', 'aiReplyTextStep2', 'aiNounReplyTextStep'].forEach(id => {
       const el = document.getElementById(id);
@@ -1936,23 +1976,47 @@ function setupTransStepBlock(useNoun) {
     return;
   }
 
+  if (modeBar) modeBar.style.display = 'block';
+  const whole = _transMode === 'whole';
+  const desc = document.getElementById('trModeDesc');
+  if (desc) desc.textContent = whole
+    ? '整支影片都是英文或日文。每一句都會翻，然後由你決定要整份換成中文，還是做成雙字幕。'
+    : '中文字幕裡偶爾夾雜英日韓。只挑出有外語的句子來翻，其他不動。';
+
   _transItems = detectForeignItems();
   window._transPreload = null;
+  window._transKeepWords = null;
   _transScanned = false;
 
-  if (_transItems.length === 0) { box.style.display = 'none'; return; }
+  if (_transItems.length === 0) {
+    box.style.display = 'none';
+    if (desc) desc.textContent += whole ? '　（這份字幕沒有偵測到外語）' : '　（這份字幕沒有偵測到外語）';
+    return;
+  }
 
-  const mixed = _transItems.filter(i => i.kind === '夾雜').length;
-  const whole = _transItems.filter(i => i.kind === '整句').length;
   document.getElementById('trStepPrompt').value = buildTranslatePrompt();
-  document.getElementById('trStepInfo').innerHTML =
-    `掃到 ${_transItems.length} 句含外語（夾雜 ${mixed}・整句 ${whole}）。這是獨立的一則 Prompt，開新對話貼給 Claude。`
-    + (whole ? `<br>整句外語要換成中文還是雙字幕，等下一步再選。` : '')
-    + `<br><span style="color:#2070a8;font-weight:800;">只想用翻譯的話，上面錯字那幾格留空就好，直接按「套用並查看結果」。</span>`;
+  const total = _transItems.length;
+  const batches = Math.ceil(total / TRANS_BATCH);
+  if (whole) {
+    document.getElementById('trStepInfo').innerHTML =
+      `整份共 ${total} 句要翻。`
+      + (batches > 1
+        ? `太長了，分成 ${batches} 批：複製 Prompt → 貼回覆 → 按「收下這批」→ Prompt 會自動換成下一批。`
+        : `這是獨立的一則 Prompt，開新對話貼給 Claude。`)
+      + `<br><span style="color:#2070a8;font-weight:800;">整句中文還是雙字幕，等下一步再選。上面錯字那幾格可以留空。</span>`;
+  } else {
+    const mixed = _transItems.filter(i => i.kind === '夾雜').length;
+    const wholeCnt = _transItems.filter(i => i.kind === '整句').length;
+    document.getElementById('trStepInfo').innerHTML =
+      `掃到 ${total} 句含外語（夾雜 ${mixed}・整句 ${wholeCnt}）。這是獨立的一則 Prompt，開新對話貼給 Claude。`
+      + (batches > 1 ? `太長了，分成 ${batches} 批，用下面的「收下這批」接續。` : '')
+      + (wholeCnt ? `<br>整句外語要換成中文還是雙字幕，等下一步再選。` : '')
+      + `<br><span style="color:#2070a8;font-weight:800;">只想用翻譯的話，上面錯字那幾格留空就好，直接按「套用並查看結果」。</span>`;
+  }
   document.getElementById('trStepNumA').textContent = useNoun ? '⑤' : '③';
   document.getElementById('trStepNumB').textContent = useNoun ? '⑥' : '④';
+  updateTransBatchBar();
 
-  // 錯字那幾格改成「可留空」的提示
   ['aiReplyText', 'aiReplyTextStep2', 'aiNounReplyTextStep'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.placeholder = '貼入 Claude 的 JSON 回覆（只想翻譯的話可以留空）';
@@ -1971,6 +2035,8 @@ function copyTransStepPrompt(btn) {
 }
 
 function _hasTransStepReply() {
+  // 分批收過的也算數，收完最後一批時回覆框是空的
+  if (window._transPreload && Object.keys(window._transPreload).length) return true;
   const ta = document.getElementById('trStepReply');
   return !!(ta && ta.value.trim());
 }
@@ -1978,30 +2044,66 @@ function _hasTransStepReply() {
 // 把步驟二的翻譯回覆記下來，等進翻譯步驟時對回去
 function ingestTransStepReply() {
   const ta = document.getElementById('trStepReply');
-  window._transPreload = null;
-  if (!ta || !ta.value.trim()) return;
+  if (!ta || !ta.value.trim()) { _rebuildTransPreload(); return 0; }
   let arr = [];
   try {
     const parsed = JSON.parse(ta.value.replace(/```json|```/g, '').trim());
     arr = parsed.trans || [];
-    window._transKeepWords = parsed.keep || [];
-  } catch (e) { toast('翻譯回覆解析失敗，翻譯部分先跳過'); return; }
+    window._transKeepWords = (window._transKeepWords || []).concat(parsed.keep || []);
+  } catch (e) { toast('翻譯回覆解析失敗，翻譯部分先跳過'); return 0; }
 
-  const preload = {};
+  let n = 0;
   arr.forEach(r => {
-    const n = parseInt(r.num, 10);
-    const src = _transItems[n - 1];
-    if (!src) return;
+    const it = _transItems[parseInt(r.num, 10) - 1];
+    if (!it) return;
     const zh = String(r.zh || '').trim();
-    preload[src.ts + '||' + src.orig.replace(/\n/g, ' ')] = {
-      zh,
-      skip: (r.skip === true || r.skip === 'true' || !zh),
-      note: String(r.note || '').trim(),
-      kind: (r.kind === '整句' || r.kind === '夾雜') ? r.kind : null
-    };
+    it.zh = zh;
+    it.skip = (r.skip === true || r.skip === 'true' || !zh);
+    it.note = String(r.note || '').trim();
+    if (r.kind === '整句' || r.kind === '夾雜') it.kind = r.kind;
+    n++;
   });
-  window._transPreload = preload;
+  _rebuildTransPreload();
+  return n;
+}
+
+// 把目前收到的翻譯打包，進翻譯步驟時對回去
+function _rebuildTransPreload() {
+  const preload = {};
+  _transItems.forEach(it => {
+    if (!(it.zh || '').trim() && !it.skip) return;
+    preload[it.ts + '||' + it.orig.replace(/\n/g, ' ')] =
+      { zh: it.zh, skip: it.skip, note: it.note, kind: it.kind };
+  });
+  window._transPreload = Object.keys(preload).length ? preload : null;
   _transScanned = false;
+}
+
+// 收下這一批，Prompt 自動換成還沒翻的下一批
+function takeTransBatch() {
+  const ta = document.getElementById('trStepReply');
+  if (!ta || !ta.value.trim()) { toast('先貼上這一批的回覆'); return; }
+  const n = ingestTransStepReply();
+  if (!n) { toast('這批沒有收到任何翻譯，檢查一下 JSON'); return; }
+  ta.value = '';
+  ta.style.height = 'auto';
+  document.getElementById('trStepPrompt').value = buildTranslatePrompt();
+  updateTransBatchBar();
+  const left = _pendingTransItems().length;
+  toast(left ? `收下 ${n} 句，還有 ${left} 句，複製上面的 Prompt 繼續` : `收下 ${n} 句，全部翻完了`);
+}
+
+function updateTransBatchBar() {
+  const bar = document.getElementById('trBatchBar');
+  const msg = document.getElementById('trBatchMsg');
+  const promptTa = document.getElementById('trStepPrompt');
+  if (!bar) return;
+  const total = _transItems.length;
+  const left = _pendingTransItems().length;
+  const needBatch = total > TRANS_BATCH;
+  bar.style.display = needBatch ? 'block' : 'none';
+  if (msg) msg.textContent = left ? `已翻 ${total - left}/${total} 句` : `${total} 句全部翻完`;
+  if (!needBatch && promptTa && left === 0) promptTa.value = buildTranslatePrompt();
 }
 
 function buildPrompt(lines, candidates) {
@@ -2989,6 +3091,20 @@ const TRANS_SKIP_DEFAULT = [
   'Costco','Uber','Airbnb','Switch','Nike','Adidas','Disney'
 ];
 
+// 'mixed' = 中文為主夾雜外語（逐句偵測）；'whole' = 整份都是外語（全文翻譯）
+let _transMode = 'mixed';
+const TRANS_BATCH = 200;   // 一次最多丟給 Claude 幾句，太多它會回不完
+
+function setTransMode(m) {
+  _transMode = m;
+  document.getElementById('trModeMixed').classList.toggle('on', m === 'mixed');
+  document.getElementById('trModeWhole').classList.toggle('on', m === 'whole');
+  const rep = document.getElementById('trStepReply');
+  if (rep) rep.value = '';
+  window._transPreload = null;
+  generateAIPromptStep();
+}
+
 // 翻譯只在 AI 模式提供（勾選框在步驟二的 c4ai）
 function _translateWanted() {
   if (currentMode !== 'ai' && currentMode !== 'aiquick') return false;
@@ -3045,7 +3161,9 @@ function detectForeignItems() {
     const cyr    = (flat.match(/[\u0400-\u04FF]/g) || []).length;
     const thai   = (flat.match(/[\u0E00-\u0E7F]/g) || []).length;
     const latinAll = flat.match(/[A-Za-z][A-Za-z'\u2019\-]*/g) || [];
-    const latin = latinAll.filter(w => w.length > 1 && !skipSet.has(w.toLowerCase()));
+    const latin = _transMode === 'whole'
+      ? latinAll
+      : latinAll.filter(w => w.length > 1 && !skipSet.has(w.toLowerCase()));
     const latinLen = latin.join('').length;
     const foreignLen = latinLen + kana + hangul + cyr + thai;
     if (foreignLen === 0) return;
@@ -3054,6 +3172,8 @@ function detectForeignItems() {
     if (han === 0) kind = '整句';
     else if (kana > 0 && latinLen === 0) kind = kana >= han * 0.8 ? '整句' : '夾雜';
     else kind = foreignLen >= han * 2.2 ? '整句' : '夾雜';
+    // 整份外語模式：每一句都是要翻的整句，不分夾雜
+    if (_transMode === 'whole') kind = '整句';
 
     out.push({
       bi, ts: b.start, orig: t, kind,
@@ -3102,6 +3222,8 @@ function scanForeign(isRescan) {
   clearWholeMsg();
   if (statusEl) statusEl.style.display = 'none';
 
+  const wmBar0 = document.getElementById('trWholeModeBar');
+  if (wmBar0) wmBar0.style.display = 'none';
   if (_transItems.length === 0) {
     statsEl.style.display = 'none';
     promptBox.style.display = 'none';
@@ -3112,10 +3234,14 @@ function scanForeign(isRescan) {
 
   emptyEl.style.display = 'none';
   statsEl.style.display = 'block';
+  const wmBar = document.getElementById('trWholeModeBar');
+  if (wmBar) wmBar.style.display = _transMode === 'whole' ? 'block' : 'none';
   const byAI = _transItems.filter(i => i.src === 'ai').length;
-  statsEl.innerHTML = `偵測到 <span style="color:#4aada5;font-size:1.05rem;">${_transItems.length}</span> 句含外語　`
-    + `<span class="issue-tag tag-trans">夾雜 ${mixed}</span>　`
-    + `<span class="issue-tag tag-whole">整句 ${whole}</span>`
+  statsEl.innerHTML = (_transMode === 'whole'
+      ? `整份外語共 <span style="color:#4aada5;font-size:1.05rem;">${_transItems.length}</span> 句`
+      : `偵測到 <span style="color:#4aada5;font-size:1.05rem;">${_transItems.length}</span> 句含外語　`
+        + `<span class="issue-tag tag-trans">夾雜 ${mixed}</span>　`
+        + `<span class="issue-tag tag-whole">整句 ${whole}</span>`)
     + (byAI ? `<br><span style="font-size:0.68rem;font-weight:600;color:#3a7872;">${byAI} 句步驟二 AI 已經翻好，剩下的自己打中文或再問一次 Claude</span>` : '');
 
   promptBox.style.display = 'block';
@@ -3139,13 +3265,55 @@ function scanForeign(isRescan) {
   updateTransStatus();
 }
 
+function _pendingTransItems() {
+  return _transItems.map((it, i) => ({ it, i })).filter(x => !(x.it.zh || '').trim() && !x.it.skip);
+}
+
 function buildTranslatePrompt() {
-  // 已經有中文的就不用再麻煩 Claude，序號沿用原編號方便對回來
-  const lines = _transItems
-    .map((it, i) => ({ it, i }))
-    .filter(x => !(x.it.zh || '').trim())
-    .map(x => `[${x.i+1}] ${x.it.ts} | ${x.it.lang} | ${x.it.kind} | ${x.it.orig.replace(/\n/g, ' ')}`)
-    .join('\n');
+  const pending = _pendingTransItems();
+  const batch = pending.slice(0, TRANS_BATCH);
+  const lines = batch.map(x =>
+    `[${x.i+1}] ${x.it.ts} | ${x.it.lang} | ${x.it.kind} | ${x.it.orig.replace(/\n/g, ' ')}`
+  ).join('\n');
+  const more = pending.length > batch.length
+    ? `\n\n（這份字幕共 ${_transItems.length} 句，這是其中 ${batch.length} 句。翻完這批就好，剩下的我會再貼給你。）`
+    : '';
+
+  if (_transMode === 'whole') {
+    return `你是繁體中文字幕翻譯員，用台灣的口語講法。這是一支整支都是外語的影片，下面是它的字幕，請逐句翻成中文。
+
+每行格式是：[序號] 時間碼 | 語言 | 類型 | 原文
+
+━━ 翻譯要求 ━━
+· 這是連續的一段話，前後文要接得起來，代名詞和主詞不要翻到跑掉
+· 自然口語，像台灣人講話，不要翻譯腔、不要書面語
+· 一句對一句，不要合併也不要拆開，序號要對齊
+· 講者的語氣要保留（隨性就隨性、正式就正式）
+· 專有名詞（人名、品牌、地名、作品名）保留原文不要翻
+
+━━ 這些不用翻，skip 填 true、zh 留空 ━━
+· 整句只有語氣詞：wow、oh、yeah、hmm、um
+· 整句只有一個專有名詞
+· 已經是中文的句子
+
+━━ keep：不用翻的「詞」另外列一份 ━━
+出現在句子裡、不該翻成中文的固定詞（品牌名、人名、地名），放進 keep 陣列。
+· 只放單一個詞，例如 Delta、Gopro、Netflix
+· 片語、日常用語不要放
+· 沒有的話回傳 keep:[]
+
+━━ zh 的寫法規則 ━━
+· 只填字幕文字本身，不要加說明、不要加引號
+· 禁止出現「，」「。」「！」，需要停頓就用半形空格
+· 「？」只有原文本來就有問號才能保留
+· 一行不要太長，太長的句子在中文裡自己找地方用空格斷
+
+只回傳 JSON，不要任何其他文字：
+{"keep":["不用翻的單一詞"],"trans":[{"num":序號,"kind":"整句","lang":"英文|日文|韓文|其他","zh":"中文翻譯","skip":false,"note":"skip=true 時填原因"}]}${more}
+
+字幕：
+${lines}`;
+  }
 
   return `你是繁體中文字幕翻譯員，用台灣的口語講法。下面每一行字幕都含有外語，請逐行給我中文版本。
 
@@ -3182,7 +3350,7 @@ function buildTranslatePrompt() {
 沒有任何一行需要翻譯就回傳 {"keep":[],"trans":[]}
 
 只回傳 JSON，不要任何其他文字：
-{"keep":["不用翻的單一詞"],"trans":[{"num":序號,"kind":"夾雜|整句","lang":"英文|日文|韓文|其他","zh":"整行的中文版本","skip":false,"note":"skip=true 時填不翻的原因"}]}
+{"keep":["不用翻的單一詞"],"trans":[{"num":序號,"kind":"夾雜|整句","lang":"英文|日文|韓文|其他","zh":"整行的中文版本","skip":false,"note":"skip=true 時填不翻的原因"}]}${more}
 
 字幕：
 ${lines}`;
@@ -3359,18 +3527,17 @@ function onTransZh(i, el) {
 
 function setDualOrder(order) {
   _dualOrder = order;
-  document.getElementById('trOrderZh').classList.toggle('on', order === 'zh');
-  document.getElementById('trOrderFg').classList.toggle('on', order === 'fg');
+  ['trOrderZh', 'trOrderZh2'].forEach(id => { const e = document.getElementById(id); if (e) e.classList.toggle('on', order === 'zh'); });
+  ['trOrderFg', 'trOrderFg2'].forEach(id => { const e = document.getElementById(id); if (e) e.classList.toggle('on', order === 'fg'); });
   let n = 0;
   _transItems.forEach((it, i) => { if (it.choice === 'dual') { writeBackTrans(i); n++; } });
   renderTransList();
-  const msg = document.getElementById('trWholeMsg');
-  if (msg) msg.textContent = n ? `✓ ${n} 句雙字幕改成${order === 'zh' ? '中文在上' : '原文在上'}` : '';
+  const text = n ? `✓ ${n} 句雙字幕改成${order === 'zh' ? '中文在上' : '原文在上'}` : '';
+  ['trWholeMsg', 'trWholeModeMsg'].forEach(id => { const e = document.getElementById(id); if (e) e.textContent = text; });
 }
 
 function clearWholeMsg() {
-  const m = document.getElementById('trWholeMsg');
-  if (m) m.textContent = '';
+  ['trWholeMsg', 'trWholeModeMsg'].forEach(id => { const e = document.getElementById(id); if (e) e.textContent = ''; });
 }
 
 function setAllWhole(choice) {
@@ -3387,12 +3554,11 @@ function setAllWhole(choice) {
   updateTransStatus();
 
   const label = { zh: '整句中文', dual: '雙字幕', keep: '保留原文' }[choice];
-  const msg = document.getElementById('trWholeMsg');
-  if (msg) {
-    if (done === 0 && noZh > 0) msg.textContent = `這 ${noZh} 句還沒有中文，翻好才能一次全設`;
-    else if (done === 0) msg.textContent = '沒有整句外語可以設定';
-    else msg.textContent = `✓ 已把 ${done} 句設成${label}` + (noZh ? `（另外 ${noZh} 句沒中文，跳過）` : '');
-  }
+  let text;
+  if (done === 0 && noZh > 0) text = `這 ${noZh} 句還沒有中文，翻好才能一次全設`;
+  else if (done === 0) text = '沒有整句外語可以設定';
+  else text = `✓ 已把 ${done} 句設成${label}` + (noZh ? `（另外 ${noZh} 句沒中文，跳過）` : '');
+  ['trWholeMsg', 'trWholeModeMsg'].forEach(id => { const e = document.getElementById(id); if (e) e.textContent = text; });
 }
 
 
