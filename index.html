@@ -271,6 +271,13 @@ textarea.paste-area::placeholder { color: #98d0ca; }
         <button id="trModeWhole" onclick="setTransMode('whole')">整份都是外語</button>
       </div>
       <div id="trModeDesc" style="font-size:0.65rem;font-weight:600;color:#3a86b8;margin-top:7px;line-height:1.7;"></div>
+      <div id="trWholeOutBar" style="display:none;margin-top:10px;padding-top:10px;border-top:1px solid rgba(60,150,210,0.15);">
+        <div style="font-size:0.68rem;font-weight:800;color:#2070a8;margin-bottom:6px;">整份要輸出成？（翻譯步驟還能逐句改）</div>
+        <div class="tr-seg" style="border-color:rgba(60,150,210,0.3);">
+          <button id="trOutDual" class="on" onclick="setWholeOut('dual')">雙字幕（原文＋中文）</button>
+          <button id="trOutZh" onclick="setWholeOut('zh')">只留中文</button>
+        </div>
+      </div>
     </div>
 
     <!-- 產生按鈕 -->
@@ -1072,6 +1079,8 @@ function selectMode(mode) {
   const trA = document.getElementById('enableTranslate');
   if (trA) trA.checked = false;
   _transMode = 'mixed';
+  _transWholeOut = 'dual';
+  window._transZeroConfirmed = false;
   const mm = document.getElementById('trModeMixed'), mw = document.getElementById('trModeWhole');
   if (mm) mm.classList.add('on');
   if (mw) mw.classList.remove('on');
@@ -1978,6 +1987,8 @@ function setupTransStepBlock(useNoun) {
 
   if (modeBar) modeBar.style.display = 'block';
   const whole = _transMode === 'whole';
+  const outBar = document.getElementById('trWholeOutBar');
+  if (outBar) outBar.style.display = whole ? 'block' : 'none';
   const desc = document.getElementById('trModeDesc');
   if (desc) desc.textContent = whole
     ? '整支影片都是英文或日文。每一句都會翻，然後由你決定要整份換成中文，還是做成雙字幕。'
@@ -3093,6 +3104,14 @@ const TRANS_SKIP_DEFAULT = [
 
 // 'mixed' = 中文為主夾雜外語（逐句偵測）；'whole' = 整份都是外語（全文翻譯）
 let _transMode = 'mixed';
+let _transWholeOut = 'dual';   // 整份外語模式的預設輸出：雙字幕
+
+function setWholeOut(v) {
+  _transWholeOut = v;
+  const a = document.getElementById('trOutDual'), b = document.getElementById('trOutZh');
+  if (a) a.classList.toggle('on', v === 'dual');
+  if (b) b.classList.toggle('on', v === 'zh');
+}
 const TRANS_BATCH = 200;   // 一次最多丟給 Claude 幾句，太多它會回不完
 
 function setTransMode(m) {
@@ -3203,6 +3222,7 @@ function scanForeign(isRescan) {
       item.src = pre.skip ? '' : 'ai';
       if (pre.kind) item.kind = pre.kind;
       if (item.skip) item.choice = 'keep';
+      else if (_transMode === 'whole' && item.zh) item.choice = _transWholeOut;
       else if (item.kind === '夾雜' && item.zh) item.choice = 'zh';
     }
   });
@@ -3411,6 +3431,7 @@ function applyTranslateReply() {
   // 夾雜的直接套用中文，整句的留給你決定
   _transItems.forEach((it, i) => {
     if (it.skip) { it.choice = 'keep'; }
+    else if (_transMode === 'whole' && (it.zh || '').trim()) { it.choice = _transWholeOut; }
     else if (it.kind === '夾雜' && (it.zh || '').trim()) { it.choice = 'zh'; }
     else if (it.kind === '整句') { it.choice = null; }
     writeBackTrans(i);
@@ -3636,10 +3657,21 @@ function skipTranslate() {
 
 function finishTranslate() {
   const applied = _transItems.filter(it => it.choice && it.choice !== 'keep').length;
+
+  // 整份外語模式一句都沒套用，八成是漏按了輸出方式
+  if (_transMode === 'whole' && applied === 0 && _transItems.length > 0 && !window._transZeroConfirmed) {
+    window._transZeroConfirmed = true;
+    toast('整份翻譯目前一句都沒套用，先選上面的輸出方式；真的要照原文下載就再按一次');
+    return;
+  }
+
   _translateDone = true;
   buildFinal();
   const msg = document.getElementById('doneMsg');
   if (msg && applied > 0) msg.textContent = (msg.textContent || '') + `　另翻譯 ${applied} 句外語`;
+  const st = document.getElementById('st-iss');
+  const cur = st ? (parseInt(st.textContent, 10) || 0) : 0;
+  setDoneStats(cur + applied);
   goStep(99);
 }
 
