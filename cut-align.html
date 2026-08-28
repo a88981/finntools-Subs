@@ -512,9 +512,14 @@ header p { font-size: 0.75rem; color: #5ab5ac; font-weight: 700; letter-spacing:
       <div class="hint-inline" id="copy-hint" style="display:block;margin:8px 0;"></div>
       <textarea class="ta" id="json-input" placeholder='{"segments":[ ... ]}　　補送的結果也貼這裡，會自動累加'></textarea>
       <div class="btn-row" style="margin-top:10px;">
-        <button class="btn-sm" onclick="ingestJson()">＋ 加入這批結果</button>
+        <button class="btn-sm" onclick="ingestJson()">＋ 加入這批結果，進入校對</button>
+        <button class="btn-sm" onclick="autoApplyAll()">⚡ 全 AI：直接套用並下載</button>
         <button class="btn-sm" onclick="showEditor()">不用 AI，直接開始校對 →</button>
       </div>
+      <label class="hint-inline" style="display:block;margin-top:8px;cursor:pointer;">
+        <input type="checkbox" id="auto-warn-chk" style="accent-color:#6ec4bc;vertical-align:-2px;">
+        全 AI 模式時，連有警告的也一起套用（跨越剪輯點、合併後偏長、讀速過快）
+      </label>
       <div class="hint-inline" id="ingest-hint" style="display:block;margin-top:8px;"></div>
       <div class="error-msg" id="seg-error"></div>
     </div>
@@ -1320,15 +1325,35 @@ function buildSegRecord(seg) {
   };
 }
 
-function ingestJson() {
+// 全 AI 模式：貼上 JSON 就套用並下載，不進校對畫面
+function autoApplyAll() {
+  const added = ingestJson(true);
+  if (!added) return;
+  const includeWarn = document.getElementById('auto-warn-chk').checked;
+  const isHard = w => w === '跨越剪輯點' || w === '讀速過快' || w.indexOf('字偏長') >= 0;
+  let skipped = 0;
+  segResults.forEach(r => {
+    const hard = r.warnings.some(isHard);
+    if (hard && !includeWarn) { r.enabled = false; skipped++; }
+    else r.enabled = true;
+  });
+  const built = buildSegOutput();
+  downloadSegSrt();
+  document.getElementById('ingest-hint').innerHTML =
+    `⚡ 已套用 ${built.applied} 條，輸出 ${built.count} 行，檔案已下載` +
+    (skipped ? `　<span style="color:#c04040;font-weight:800;">${skipped} 條有疑慮的自動略過（維持原斷句）</span>` : '') +
+    `<br><button class="btn-sm" onclick="showEditor()">仍要進校對畫面看一下</button>`;
+}
+
+function ingestJson(quiet) {
   const el = document.getElementById('seg-error');
   el.classList.remove('show');
-  if (segEntries.length === 0) { segError('請先載入 SRT'); return; }
+  if (segEntries.length === 0) { segError('請先載入 SRT'); return 0; }
   const raw = document.getElementById('json-input').value;
-  if (!raw.trim()) { segError('貼上區是空的'); return; }
+  if (!raw.trim()) { segError('貼上區是空的'); return 0; }
 
   let parsed;
-  try { parsed = extractJson(raw); } catch (err) { segError(err.message); return; }
+  try { parsed = extractJson(raw); } catch (err) { segError(err.message); return 0; }
   const list = parsed.list;
 
   let added = 0, dropped = 0;
@@ -1354,11 +1379,12 @@ function ingestJson() {
   renderSegList();
   document.getElementById('sstp3').className = 'stp done';
   document.getElementById('sstp4').className = 'stp active';
-  if (added > 0) { showEditor(); return; }
+  if (added > 0) { if (!quiet) showEditor(); return added; }
   {
     document.getElementById('ingest-hint').innerHTML +=
       `<br><span style="color:#c04040;font-weight:800;">這批沒有一條可用：JSON 裡的行號超出這份字幕的 1–${segEntries.length} 行。確認左邊載入的行數是否正確，以及貼回的是同一份字幕的結果。</span>`;
   }
+  return 0;
 }
 
 function coverageNote() {
