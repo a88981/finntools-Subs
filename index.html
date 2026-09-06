@@ -280,6 +280,24 @@ textarea.paste-area::placeholder { color: #98d0ca; }
       </div>
     </div>
 
+    <!-- 全AI模式：雙語字幕先問（全AI沒有逐句確認的翻譯步驟） -->
+    <div id="aiquickDualBar" style="display:none;background:rgba(255,244,248,0.75);border:1.5px solid rgba(200,90,140,0.25);border-radius:10px;padding:10px 14px;margin-bottom:14px;">
+      <div style="font-size:0.7rem;font-weight:800;color:#a03a68;margin-bottom:7px;">要不要雙語字幕？<span style="font-weight:600;">（全AI模式不會逐句問，先選好）</span></div>
+      <div class="tr-seg" style="border-color:rgba(200,90,140,0.3);">
+        <button id="aqDualWhole" class="on" onclick="setAiQuickDual('whole')">只有整句外語做雙語</button>
+        <button id="aqDualAll" onclick="setAiQuickDual('all')">全部都雙語</button>
+        <button id="aqDualNone" onclick="setAiQuickDual('none')">不用雙語</button>
+      </div>
+      <div id="aqDualDesc" style="font-size:0.65rem;font-weight:600;color:#a03a68;margin-top:7px;line-height:1.7;"></div>
+      <div id="aqDualOrderBar" style="display:flex;gap:10px;align-items:center;margin-top:9px;flex-wrap:wrap;">
+        <span style="font-size:0.66rem;font-weight:700;color:#a03a68;">雙字幕排列：</span>
+        <div class="tr-seg" style="border-color:rgba(200,90,140,0.3);">
+          <button id="trOrderZh3" class="on" onclick="setDualOrder('zh')">中文在上</button>
+          <button id="trOrderFg3" onclick="setDualOrder('fg')">原文在上</button>
+        </div>
+      </div>
+    </div>
+
     <!-- 產生按鈕 -->
     <div style="margin-bottom:14px;">
       <button id="genPromptBtn" onclick="generateAIPromptStep()" style="background:#6ec4bc;border:none;border-radius:100px;color:white;cursor:pointer;font-family:inherit;font-size:0.78rem;font-weight:800;padding:11px 22px;box-shadow:0 3px 12px rgba(110,196,188,0.3);transition:all 0.2s;">✨ 產生 AI Prompt</button>
@@ -1973,6 +1991,8 @@ function setupTransStepBlock(useNoun) {
   if (!_translateWanted()) {
     box.style.display = 'none';
     if (modeBar) modeBar.style.display = 'none';
+    const aqBar0 = document.getElementById('aiquickDualBar');
+    if (aqBar0) aqBar0.style.display = 'none';
     const rep = document.getElementById('trStepReply');
     if (rep) rep.value = '';
     window._transPreload = null;
@@ -1987,8 +2007,13 @@ function setupTransStepBlock(useNoun) {
 
   if (modeBar) modeBar.style.display = 'block';
   const whole = _transMode === 'whole';
+  const isQuick = currentMode === 'aiquick';
   const outBar = document.getElementById('trWholeOutBar');
-  if (outBar) outBar.style.display = whole ? 'block' : 'none';
+  // 全AI模式改用下面那排三選一，這裡就不重複問
+  if (outBar) outBar.style.display = (whole && !isQuick) ? 'block' : 'none';
+  const aqBar = document.getElementById('aiquickDualBar');
+  if (aqBar) aqBar.style.display = isQuick ? 'block' : 'none';
+  if (isQuick) setAiQuickDual(_aiquickDual);
   const desc = document.getElementById('trModeDesc');
   if (desc) desc.textContent = whole
     ? '整支影片都是英文或日文。每一句都會翻，然後由你決定要整份換成中文，還是做成雙字幕。'
@@ -2014,14 +2039,14 @@ function setupTransStepBlock(useNoun) {
       + (batches > 1
         ? `太長了，分成 ${batches} 批：複製 Prompt → 貼回覆 → 按「收下這批」→ Prompt 會自動換成下一批。`
         : `這是獨立的一則 Prompt，開新對話貼給 Claude。`)
-      + `<br><span style="color:#2070a8;font-weight:800;">整句中文還是雙字幕，等下一步再選。上面錯字那幾格可以留空。</span>`;
+      + `<br><span style="color:#2070a8;font-weight:800;">${isQuick ? '雙語字幕用上面那排先選好，按「套用並下載」就會一起套進去。' : '整句中文還是雙字幕，等下一步再選。'}上面錯字那幾格可以留空。</span>`;
   } else {
     const mixed = _transItems.filter(i => i.kind === '夾雜').length;
     const wholeCnt = _transItems.filter(i => i.kind === '整句').length;
     document.getElementById('trStepInfo').innerHTML =
       `掃到 ${total} 句含外語（夾雜 ${mixed}・整句 ${wholeCnt}）。這是獨立的一則 Prompt，開新對話貼給 Claude。`
       + (batches > 1 ? `太長了，分成 ${batches} 批，用下面的「收下這批」接續。` : '')
-      + (wholeCnt ? `<br>整句外語要換成中文還是雙字幕，等下一步再選。` : '')
+      + (wholeCnt ? (isQuick ? `<br>整句外語要不要做雙語，用上面那排先選好。` : `<br>整句外語要換成中文還是雙字幕，等下一步再選。`) : '')
       + `<br><span style="color:#2070a8;font-weight:800;">只想用翻譯的話，上面錯字那幾格留空就好，直接按「套用並查看結果」。</span>`;
   }
   document.getElementById('trStepNumA').textContent = useNoun ? '⑤' : '③';
@@ -2292,6 +2317,30 @@ function applyBothRepliesAndContinue() {
   skipEmptyReviewSteps();
 }
 
+// 全AI模式：步驟二收到的翻譯，依「要不要雙語字幕」的選擇直接寫回字幕
+function applyAIQuickTranslation() {
+  if (!_translateWanted()) return 0;
+  if (!_transItems || !_transItems.length) return 0;
+  let n = 0;
+  _transItems.forEach((it, i) => {
+    const b = blocks[it.bi];
+    if (!b) return;
+    // 記住套翻譯之前的樣子；重按一次的話先還原，才不會疊成三行
+    if (it._preTrans === undefined) it._preTrans = b.text;
+    else b.text = it._preTrans;
+    const zh = (it.zh || '').trim();
+    if (!zh || it.skip) { it.choice = 'keep'; return; }
+    // 原文用已經套完錯字修正的版本，雙字幕才不會留著錯字
+    it.orig = b.text;
+    if (_aiquickDual === 'none') it.choice = 'zh';
+    else if (_aiquickDual === 'all') it.choice = 'dual';
+    else it.choice = (it.kind === '整句') ? 'dual' : 'zh';
+    writeBackTrans(i);
+    n++;
+  });
+  return n;
+}
+
 function applyAIQuickAndDownload() {
   ingestTransStepReply();
   const raw = document.getElementById('aiReplyText')?.value.trim();
@@ -2331,6 +2380,11 @@ function applyAIQuickAndDownload() {
     if (!applied) blocks.forEach(b => { if (b.text.includes(orig)) b.text = b.text.split(orig).join(sugg); });
   });
 
+  // 錯字都套完了，最後才把翻譯寫回去
+  let transCount = 0;
+  try { transCount = applyAIQuickTranslation(); }
+  catch (e) { console.error('翻譯套用失敗:', e); toast('翻譯套用時出了問題，錯字修正還是有套進去'); }
+
   buildFinal();
 
   // 產生修正摘要
@@ -2351,11 +2405,22 @@ function applyAIQuickAndDownload() {
     }).join('');
     summaryEl.innerHTML = `<div style="font-size:0.72rem;font-weight:800;color:#3a9088;margin-bottom:8px;">AI 套用了以下 ${validIssues.length} 處修正：</div>${rows}`;
     summaryEl.style.display = 'block';
+  } else if (summaryEl) {
+    summaryEl.innerHTML = '';
+    summaryEl.style.display = 'none';
+  }
+  // 翻譯的結果另外補一行
+  if (summaryEl && transCount > 0) {
+    const dualLabel = { whole: '整句外語做雙字幕', all: '全部雙字幕', none: '只留中文' }[_aiquickDual] || '';
+    const order = _aiquickDual === 'none' ? '' : `・${_dualOrder === 'zh' ? '中文在上' : '原文在上'}`;
+    summaryEl.innerHTML += `<div style="font-size:0.7rem;font-weight:800;color:#2070a8;margin-top:${summaryEl.innerHTML ? '10px;padding-top:8px;border-top:1px solid rgba(110,196,188,0.15)' : '0'};">🌐 翻譯套用 ${transCount} 句（${dualLabel}${order}）</div>`;
+    summaryEl.style.display = 'block';
   }
   } catch(e) { console.error('summary error:', e); }
 
-  document.getElementById('doneMsg').textContent = `AI 全模式完成！共套用 ${validIssues.length} 處修正`;
-  setDoneStats(validIssues.length);
+  const transMsg = transCount ? `，翻譯 ${transCount} 句` : '';
+  document.getElementById('doneMsg').textContent = `AI 全模式完成！共套用 ${validIssues.length} 處修正${transMsg}`;
+  setDoneStats(validIssues.length + transCount);
   goStep(99);
 }
 
@@ -3106,6 +3171,28 @@ const TRANS_SKIP_DEFAULT = [
 let _transMode = 'mixed';
 let _transWholeOut = 'dual';   // 整份外語模式的預設輸出：雙字幕
 
+// 全AI模式沒有逐句確認翻譯的步驟，雙語字幕在步驟二就先問好
+// 'whole' = 只有整句外語做雙語｜'all' = 全部都雙語｜'none' = 不用雙語
+let _aiquickDual = 'whole';
+const AQ_DUAL_DESC = {
+  whole: '整行都是外語的句子做成雙字幕（原文＋中文兩行）；中文句子裡夾雜的外語單字直接換成中文。',
+  all:   '每一句翻到的都做成雙字幕，原文和中文兩行都留著。',
+  none:  '全部只留中文，原文不保留。'
+};
+
+function setAiQuickDual(v) {
+  _aiquickDual = v;
+  const map = { whole: 'aqDualWhole', all: 'aqDualAll', none: 'aqDualNone' };
+  Object.keys(map).forEach(k => {
+    const e = document.getElementById(map[k]);
+    if (e) e.classList.toggle('on', k === v);
+  });
+  const desc = document.getElementById('aqDualDesc');
+  if (desc) desc.textContent = AQ_DUAL_DESC[v] || '';
+  const orderBar = document.getElementById('aqDualOrderBar');
+  if (orderBar) orderBar.style.display = v === 'none' ? 'none' : 'flex';
+}
+
 function setWholeOut(v) {
   _transWholeOut = v;
   const a = document.getElementById('trOutDual'), b = document.getElementById('trOutZh');
@@ -3548,8 +3635,8 @@ function onTransZh(i, el) {
 
 function setDualOrder(order) {
   _dualOrder = order;
-  ['trOrderZh', 'trOrderZh2'].forEach(id => { const e = document.getElementById(id); if (e) e.classList.toggle('on', order === 'zh'); });
-  ['trOrderFg', 'trOrderFg2'].forEach(id => { const e = document.getElementById(id); if (e) e.classList.toggle('on', order === 'fg'); });
+  ['trOrderZh', 'trOrderZh2', 'trOrderZh3'].forEach(id => { const e = document.getElementById(id); if (e) e.classList.toggle('on', order === 'zh'); });
+  ['trOrderFg', 'trOrderFg2', 'trOrderFg3'].forEach(id => { const e = document.getElementById(id); if (e) e.classList.toggle('on', order === 'fg'); });
   let n = 0;
   _transItems.forEach((it, i) => { if (it.choice === 'dual') { writeBackTrans(i); n++; } });
   renderTransList();
