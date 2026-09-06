@@ -385,7 +385,7 @@ textarea.paste-area::placeholder { color: #98d0ca; }
 
     <div id="stepTwoActions" class="row" style="display:none;justify-content:center;gap:12px;">
       <button class="btn-ghost" onclick="location.reload()">↺ 重新開始</button>
-      <button class="btn" onclick="applyStepTwo()">套用並查看結果 →</button>
+      <button class="btn" id="applyStepTwoBtn" onclick="applyStepTwo()">套用並查看結果 →</button>
     </div>
 
   </div>
@@ -861,7 +861,8 @@ function refreshStepBar() {
 
 function goStep(n) {
   // 勾了翻譯就先繞去翻譯步驟（98），翻完再回下載頁（99）
-  if (n === 99 && _translateWanted() && !_translateDone) { n = 98; }
+  // 全AI模式例外：翻譯在步驟二就依「要不要雙語字幕」直接套完了，不再逐句確認
+  if (n === 99 && currentMode !== 'aiquick' && _translateWanted() && !_translateDone) { n = 98; }
 
   refreshStepBar();
   const totalSteps = _stepLabels().length;
@@ -1972,6 +1973,9 @@ function generateAIPromptStep() {
   try { setupTransStepBlock(useNoun); } catch (e) { console.error('翻譯區塊產生失敗:', e); }
   const actions = document.getElementById('stepTwoActions');
   if (actions) actions.style.display = 'flex';
+  // 全AI模式按下去就是直接完成，不會再有確認畫面
+  const applyBtn = document.getElementById('applyStepTwoBtn');
+  if (applyBtn) applyBtn.textContent = currentMode === 'aiquick' ? '套用並下載 →' : '套用並查看結果 →';
 }
 
 // 步驟二底部那顆「套用並查看結果」：依模式與勾選狀態決定走哪條
@@ -2047,7 +2051,7 @@ function setupTransStepBlock(useNoun) {
       `掃到 ${total} 句含外語（夾雜 ${mixed}・整句 ${wholeCnt}）。這是獨立的一則 Prompt，開新對話貼給 Claude。`
       + (batches > 1 ? `太長了，分成 ${batches} 批，用下面的「收下這批」接續。` : '')
       + (wholeCnt ? (isQuick ? `<br>整句外語要不要做雙語，用上面那排先選好。` : `<br>整句外語要換成中文還是雙字幕，等下一步再選。`) : '')
-      + `<br><span style="color:#2070a8;font-weight:800;">只想用翻譯的話，上面錯字那幾格留空就好，直接按「套用並查看結果」。</span>`;
+      + `<br><span style="color:#2070a8;font-weight:800;">只想用翻譯的話，上面錯字那幾格留空就好，直接按「${isQuick ? '套用並下載' : '套用並查看結果'}」。</span>`;
   }
   document.getElementById('trStepNumA').textContent = useNoun ? '⑤' : '③';
   document.getElementById('trStepNumB').textContent = useNoun ? '⑥' : '④';
@@ -2384,6 +2388,7 @@ function applyAIQuickAndDownload() {
   let transCount = 0;
   try { transCount = applyAIQuickTranslation(); }
   catch (e) { console.error('翻譯套用失敗:', e); toast('翻譯套用時出了問題，錯字修正還是有套進去'); }
+  _translateDone = true;   // 全AI模式不進翻譯確認步驟
 
   buildFinal();
 
