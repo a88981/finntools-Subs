@@ -129,12 +129,6 @@ textarea.paste-area::placeholder { color: #98d0ca; }
 .tr-btn:hover { border-color: #6ec4bc; color: #4aada5; }
 .tr-btn.on { background: #6ec4bc; border-color: #6ec4bc; color: white; }
 .tr-btn.on.off-style { background: #b8ccc9; border-color: #b8ccc9; }
-#vidPanel { position: fixed; right: 18px; bottom: 18px; z-index: 9999; width: 340px; max-width: calc(100vw - 28px); background: rgba(255,255,255,0.97); border: 1.5px solid rgba(110,196,188,0.45); border-radius: 14px; box-shadow: 0 8px 28px rgba(60,120,115,0.18); overflow: hidden; }
-#vidHead { display: flex; align-items: center; gap: 8px; padding: 9px 12px; background: rgba(110,196,188,0.14); cursor: pointer; }
-#vidPanel video { max-height: 40vh; }
-.ts-jump { cursor: pointer; color: #3a9088; font-weight: 800; border-bottom: 1px dashed rgba(110,196,188,0.6); padding: 0 1px; border-radius: 3px; transition: all 0.15s; }
-.ts-jump:hover { background: rgba(110,196,188,0.18); color: #2a5550; }
-.ts-jump.playing { background: rgba(255,220,120,0.5); color: #8a6010; border-bottom-color: rgba(200,150,40,0.6); }
 .tr-seg { display: inline-flex; border: 1.5px solid rgba(110,196,188,0.3); border-radius: 100px; overflow: hidden; background: rgba(255,255,255,0.8); }
 .tr-seg button { background: transparent; border: none; color: #5ab5ac; cursor: pointer; font-size: 0.65rem; font-weight: 700; padding: 5px 14px; font-family: inherit; transition: all 0.2s; }
 .tr-seg button.on { background: #6ec4bc; color: white; }
@@ -645,51 +639,12 @@ textarea.paste-area::placeholder { color: #98d0ca; }
       <div style="color:#4ade80;font-size:0.85rem;" id="doneMsg"></div>
     </div>
     <div id="aiQuickSummary" style="display:none;margin-bottom:16px;"></div>
-    <details id="doneReviewWrap" style="margin-bottom:16px;" ontoggle="renderDoneReview(this)">
-      <summary style="cursor:pointer;font-size:0.72rem;font-weight:800;color:#5ab5ac;outline:none;">🎬 逐句回聽對照（搭配右下角的影片，點時間碼跳過去）</summary>
-      <div id="doneReviewList" style="max-height:320px;overflow-y:auto;margin-top:10px;display:flex;flex-direction:column;gap:2px;text-align:left;"></div>
-    </details>
     <div class="row" style="justify-content:center;gap:16px;">
       <button class="btn-ghost" onclick="location.reload()">↺ 重新開始</button>
       <button class="btn-green" onclick="download()">⬇ 下載修正後 SRT</button>
     </div>
   </div>
 
-</div>
-
-<!-- 影片回聽面板（固定在右下角，跨步驟都在） -->
-<div id="vidPanel">
-  <div id="vidHead" onclick="toggleVidPanel()">
-    <span style="font-size:0.72rem;font-weight:800;color:#2a5550;">🎬 回聽影片</span>
-    <span id="vidHint" style="font-size:0.6rem;font-weight:700;color:#7db8b2;margin-left:auto;">點任何時間碼跳到那一句</span>
-    <span id="vidToggle" style="font-size:0.8rem;font-weight:800;color:#5ab5ac;">＋</span>
-  </div>
-  <div id="vidBody" style="display:none;padding:10px 12px 12px;">
-    <label style="cursor:pointer;display:inline-block;">
-      <input type="file" accept="video/*,audio/*" id="vidFile" onchange="loadVideo(this)" style="display:none;">
-      <span class="btn-ghost" id="vidPickBtn" style="font-size:0.66rem;padding:6px 12px;display:inline-block;">選擇影片／音檔</span>
-    </label>
-    <div style="font-size:0.6rem;color:#8dd0c8;margin-top:6px;line-height:1.6;">檔案只在你自己的瀏覽器裡播放，不會上傳。</div>
-    <div id="vidName" style="font-size:0.62rem;font-weight:700;color:#c4a96b;margin-top:4px;word-break:break-all;"></div>
-    <video id="vidPlayer" controls playsinline style="display:none;width:100%;border-radius:10px;margin-top:8px;background:#000;"></video>
-    <div id="vidSubs" style="display:none;background:rgba(232,248,245,0.6);border:1.5px solid rgba(110,196,188,0.25);border-radius:10px;padding:8px 10px;margin-top:8px;">
-      <div id="vidSubMeta" style="font-size:0.58rem;font-weight:700;color:#7db8b2;margin-bottom:3px;"></div>
-      <div id="vidSubText" style="font-size:0.78rem;font-weight:700;color:#2a5550;line-height:1.65;white-space:pre-wrap;min-height:26px;"></div>
-    </div>
-    <div id="vidCtrl" style="display:none;align-items:center;gap:6px;margin-top:8px;flex-wrap:wrap;">
-      <button class="btn-sm" onclick="vidStep(-1)">⏮ 上一句</button>
-      <button class="btn-sm" onclick="vidNudge(-3)">−3秒</button>
-      <button class="btn-sm" onclick="vidNudge(3)">+3秒</button>
-      <button class="btn-sm" onclick="vidStep(1)">下一句 ⏭</button>
-      <select id="vidRate" onchange="vidSetRate(this.value)" style="background:rgba(255,255,255,0.9);border:1.5px solid rgba(110,196,188,0.25);border-radius:100px;color:#5ab5ac;font-size:0.65rem;font-weight:700;padding:4px 8px;font-family:inherit;cursor:pointer;">
-        <option value="0.5">0.5x</option>
-        <option value="0.75">0.75x</option>
-        <option value="1" selected>1x</option>
-        <option value="1.25">1.25x</option>
-        <option value="1.5">1.5x</option>
-      </select>
-    </div>
-  </div>
 </div>
 
 <script>
@@ -2464,9 +2419,7 @@ function applyAIQuickAndDownload() {
       const label = typeLabels[iss.type] || iss.type;
       const orig = (iss.wrongWord || iss.original || '').trim().replace(/&/g,'&amp;').replace(/\x3c/g,'&lt;').replace(/>/g,'&gt;');
       const sugg = (iss.suggestion || '').trim().replace(/&/g,'&amp;').replace(/\x3c/g,'&lt;').replace(/>/g,'&gt;');
-      const tm = (iss.time || '').trim();
-      return '<div style="display:flex;align-items:baseline;gap:8px;padding:6px 0;border-bottom:1px solid rgba(110,196,188,0.1);flex-wrap:wrap;">'
-        + (tm ? '<span style="font-size:0.6rem;color:#4aada5;white-space:nowrap;">' + tm + '</span>' : '')
+      return '<div style="display:flex;align-items:baseline;gap:8px;padding:6px 0;border-bottom:1px solid rgba(110,196,188,0.1);">'
         + '<span style="font-size:0.6rem;font-weight:800;background:rgba(110,196,188,0.15);color:#3a9088;border-radius:100px;padding:2px 8px;white-space:nowrap;">' + label + '</span>'
         + '<span style="font-size:0.72rem;color:#2a5550;text-decoration:line-through;opacity:0.6;">' + orig + '</span>'
         + '<span style="font-size:0.65rem;color:#aaa;">→</span>'
@@ -3836,223 +3789,7 @@ function download() {
   a.download = stamp + '_字幕修正.srt'; a.click();
   URL.revokeObjectURL(url);
 }
-
-// 完成頁的逐句對照：打開才畫，字幕很長也不會拖慢
-function renderDoneReview(det) {
-  if (!det || !det.open) return;
-  const list = document.getElementById('doneReviewList');
-  if (!list || list.dataset.n === String(blocks.length)) return;
-  list.innerHTML = '';
-  const esc = t => String(t || '').replace(/&/g, '&amp;').replace(/\x3c/g, '&lt;').replace(/>/g, '&gt;');
-  const html = blocks.map((b, i) =>
-    `<div style="display:flex;gap:8px;align-items:baseline;padding:4px 6px;border-radius:6px;background:${i % 2 ? 'rgba(232,248,245,0.35)' : 'transparent'};">`
-    + `<span style="font-size:0.6rem;color:#4aada5;white-space:nowrap;">${b.start}</span>`
-    + `<span style="font-size:0.72rem;font-weight:600;color:#2a5550;line-height:1.6;white-space:pre-wrap;">${esc(b.text)}</span></div>`
-  ).join('');
-  list.innerHTML = html;
-  list.dataset.n = String(blocks.length);
-}
-
-// ============================================================
-// 影片回聽：載入本機影片／音檔，點時間碼跳到那一句，播放時同步顯示字幕
-// ============================================================
-let _vidReady = false;
-let _vidCurIdx = -1;
-
-function toggleVidPanel(force) {
-  const body = document.getElementById('vidBody');
-  const tog = document.getElementById('vidToggle');
-  const hint = document.getElementById('vidHint');
-  if (!body) return;
-  const open = (force === undefined) ? (body.style.display === 'none') : !!force;
-  body.style.display = open ? 'block' : 'none';
-  if (tog) tog.textContent = open ? '－' : '＋';
-  if (hint) hint.style.display = open ? 'none' : 'block';
-}
-
-function loadVideo(input) {
-  const f = input && input.files && input.files[0];
-  if (!f) return;
-  const v = document.getElementById('vidPlayer');
-  if (v.dataset.objUrl) { try { URL.revokeObjectURL(v.dataset.objUrl); } catch(e) {} }
-  const url = URL.createObjectURL(f);
-  v.dataset.objUrl = url;
-  v.src = url;
-  v.style.display = 'block';
-  document.getElementById('vidName').textContent = f.name;
-  document.getElementById('vidSubs').style.display = 'block';
-  document.getElementById('vidCtrl').style.display = 'flex';
-  document.getElementById('vidPickBtn').textContent = '換一個檔案';
-  _vidReady = true;
-  if (!v.dataset.bound) {
-    v.addEventListener('timeupdate', updateVidSub);
-    v.addEventListener('seeked', updateVidSub);
-    v.dataset.bound = '1';
-  }
-  toggleVidPanel(true);
-}
-
-// "00:01:23,456" → 83.456
-function srtToSec(ts) {
-  const m = String(ts || '').trim().match(/(\d{1,2}):(\d{2}):(\d{2})[,.](\d{1,3})/);
-  if (!m) return null;
-  return (+m[1]) * 3600 + (+m[2]) * 60 + (+m[3]) + (+(m[4].padEnd(3, '0'))) / 1000;
-}
-
-function secToClock(sec) {
-  if (!isFinite(sec)) return '';
-  const h = Math.floor(sec / 3600), m = Math.floor(sec % 3600 / 60), s = Math.floor(sec % 60);
-  const pad = n => String(n).padStart(2, '0');
-  return (h ? pad(h) + ':' : '') + pad(m) + ':' + pad(s);
-}
-
-function vidSeek(ts, play) {
-  const v = document.getElementById('vidPlayer');
-  const sec = typeof ts === 'number' ? ts : srtToSec(ts);
-  if (sec === null) return;
-  if (!_vidReady) {
-    toggleVidPanel(true);
-    toast('先在右下角載入影片或音檔');
-    return;
-  }
-  // 往前留 0.4 秒，才聽得到句子的開頭
-  v.currentTime = Math.max(0, sec - 0.4);
-  if (play !== false) { const pr = v.play(); if (pr && pr.catch) pr.catch(() => {}); }
-  updateVidSub();
-}
-
-function vidNudge(delta) {
-  const v = document.getElementById('vidPlayer');
-  if (!_vidReady) return;
-  v.currentTime = Math.max(0, v.currentTime + delta);
-  updateVidSub();
-}
-
-function vidSetRate(r) {
-  const v = document.getElementById('vidPlayer');
-  if (v) v.playbackRate = parseFloat(r) || 1;
-}
-
-// 目前時間落在第幾段字幕（回傳 blocks 的 index，找不到就回最接近的前一段）
-function vidIndexAt(sec) {
-  if (!blocks || !blocks.length) return -1;
-  let found = -1;
-  for (let i = 0; i < blocks.length; i++) {
-    const st = srtToSec(blocks[i].start);
-    if (st === null) continue;
-    if (st > sec + 0.001) break;
-    found = i;
-  }
-  if (found >= 0) {
-    const en = srtToSec(blocks[found].end);
-    if (en !== null && sec > en + 0.001) return found;   // 句與句中間的空檔，still 顯示前一句
-  }
-  return found;
-}
-
-function updateVidSub() {
-  const v = document.getElementById('vidPlayer');
-  const textEl = document.getElementById('vidSubText');
-  const metaEl = document.getElementById('vidSubMeta');
-  if (!v || !textEl) return;
-  const idx = vidIndexAt(v.currentTime);
-  _vidCurIdx = idx;
-  if (idx < 0) {
-    textEl.textContent = blocks && blocks.length ? '（還沒到第一句）' : '（還沒貼字幕）';
-    if (metaEl) metaEl.textContent = secToClock(v.currentTime);
-    highlightPlayingTs(null);
-    return;
-  }
-  const b = blocks[idx];
-  textEl.textContent = b.text;
-  if (metaEl) metaEl.textContent = `第 ${idx + 1} 段　${b.start} → ${b.end}　（播放中 ${secToClock(v.currentTime)}）`;
-  highlightPlayingTs(b.start);
-}
-
-// 正在播的那一句，畫面上的時間碼跟著亮起來
-function highlightPlayingTs(ts) {
-  document.querySelectorAll('.ts-jump.playing').forEach(e => e.classList.remove('playing'));
-  if (!ts) return;
-  document.querySelectorAll('.ts-jump').forEach(e => {
-    if (e.dataset.ts === ts) e.classList.add('playing');
-  });
-}
-
-function vidStep(dir) {
-  if (!blocks || !blocks.length) return;
-  let idx = _vidCurIdx;
-  if (idx < 0) idx = dir > 0 ? -1 : 0;
-  const next = Math.min(blocks.length - 1, Math.max(0, idx + dir));
-  vidSeek(blocks[next].start, true);
-}
-
-// ============================================================
-// 把畫面上出現的時間碼變成可以點的跳轉連結
-// ============================================================
-const TS_RE = /\d{1,2}:\d{2}:\d{2}[,.]\d{1,3}/g;
-let _tsObserver = null;
-
-function decorateTimestamps(root) {
-  const scope = root || document.body;
-  const skipTags = /^(TEXTAREA|INPUT|SCRIPT|STYLE|OPTION|SELECT|VIDEO)$/;
-  const walker = document.createTreeWalker(scope, NodeFilter.SHOW_TEXT, {
-    acceptNode(n) {
-      const p = n.parentElement;
-      if (!p) return NodeFilter.FILTER_REJECT;
-      if (skipTags.test(p.tagName)) return NodeFilter.FILTER_REJECT;
-      if (p.closest('#vidPanel')) return NodeFilter.FILTER_REJECT;
-      if (p.classList && p.classList.contains('ts-jump')) return NodeFilter.FILTER_REJECT;
-      TS_RE.lastIndex = 0;
-      return TS_RE.test(n.nodeValue) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
-    }
-  });
-  const targets = [];
-  while (walker.nextNode()) targets.push(walker.currentNode);
-  targets.forEach(node => {
-    const txt = node.nodeValue;
-    const frag = document.createDocumentFragment();
-    let last = 0, m;
-    TS_RE.lastIndex = 0;
-    while ((m = TS_RE.exec(txt)) !== null) {
-      if (m.index > last) frag.appendChild(document.createTextNode(txt.slice(last, m.index)));
-      const span = document.createElement('span');
-      span.className = 'ts-jump';
-      span.dataset.ts = m[0];
-      span.title = '點一下跳到影片的這個位置';
-      span.textContent = '▶ ' + m[0];
-      frag.appendChild(span);
-      last = m.index + m[0].length;
-    }
-    if (last < txt.length) frag.appendChild(document.createTextNode(txt.slice(last)));
-    if (node.parentNode) node.parentNode.replaceChild(frag, node);
-  });
-}
-
-function startTsWatcher() {
-  decorateTimestamps();
-  let pending = null;
-  _tsObserver = new MutationObserver(() => {
-    if (pending) return;
-    pending = setTimeout(() => {
-      pending = null;
-      _tsObserver.disconnect();
-      try { decorateTimestamps(); } catch (e) { console.error('時間碼處理失敗:', e); }
-      _tsObserver.observe(document.body, { childList: true, subtree: true });
-    }, 150);
-  });
-  _tsObserver.observe(document.body, { childList: true, subtree: true });
-
-  document.addEventListener('click', e => {
-    const el = e.target && e.target.closest ? e.target.closest('.ts-jump') : null;
-    if (!el) return;
-    e.preventDefault();
-    e.stopPropagation();
-    vidSeek(el.dataset.ts, true);
-  }, true);
-}
-
   // 頁面載入初始化
-  startTsWatcher();
   selectMode('full');
   const initDesc = document.getElementById('modeDesc');
   if (initDesc && MODE_DESC['full']) initDesc.innerHTML = MODE_DESC['full'];
