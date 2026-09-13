@@ -53,6 +53,16 @@ header p { font-size: 0.75rem; color: #5ab5ac; font-weight: 700; letter-spacing:
 .btn-ghost:hover { border-color: #6ec4bc; color: #4aada5; background: white; }
 .btn-sm { background: rgba(255,255,255,0.8); border: 1.5px solid rgba(110,196,188,0.25); border-radius: 100px; color: #5ab5ac; cursor: pointer; font-size: 0.65rem; font-weight: 700; padding: 6px 14px; transition: all 0.2s; font-family: inherit; position: relative; overflow: hidden; }
 .mode-btn.active { background: #6ec4bc; border-color: #6ec4bc; color: #fff; }
+.mode-card-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.mode-card { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; min-height: 90px; background: rgba(255,255,255,0.85); border: 1.5px solid rgba(110,196,188,0.25); border-radius: 14px; padding: 16px 10px; cursor: pointer; font-family: inherit; transition: all 0.2s; }
+.mode-card:hover { border-color: rgba(110,196,188,0.5); }
+.mode-card.active { border-color: #4aada5; border-width: 2px; background: rgba(110,196,188,0.08); box-shadow: 0 2px 10px rgba(110,196,188,0.2); }
+.mode-card-icon { font-size: 1.4rem; }
+.mode-card-label { font-size: 0.76rem; font-weight: 800; color: #3a7872; }
+.mode-card-badge { font-size: 0.6rem; font-weight: 800; color: #e0913f; }
+@media (max-width: 700px) {
+  .mode-card-row { grid-template-columns: repeat(2, 1fr); }
+}
 .btn-sm:hover { border-color: #6ec4bc; color: #4aada5; }
 .btn-sm input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
 
@@ -109,17 +119,31 @@ textarea.paste-area.small { min-height: 90px; }
     </div>
     <div class="card">
       <div class="card-title">要跑哪個流程？</div>
-      <div class="btn-row" id="modeSelectRow">
-        <button class="btn-sm mode-btn active" data-mode="both" onclick="setWorkflowMode('both')">字幕＆斷句校正</button>
-        <button class="btn-sm mode-btn" data-mode="correct" onclick="setWorkflowMode('correct')">只做字幕校正</button>
-        <button class="btn-sm mode-btn" data-mode="segment" onclick="setWorkflowMode('segment')">只做斷句校正</button>
+      <div class="mode-card-row" id="modeSelectRow">
+        <button class="mode-card" data-mode="basic" onclick="setWorkflowMode('basic')">
+          <span class="mode-card-icon">🔍</span>
+          <span class="mode-card-label">字幕校正</span>
+        </button>
+        <button class="mode-card" data-mode="quick" onclick="setWorkflowMode('quick')">
+          <span class="mode-card-icon">✂️</span>
+          <span class="mode-card-label">斷句校正</span>
+        </button>
+        <button class="mode-card active" data-mode="full" onclick="setWorkflowMode('full')">
+          <span class="mode-card-icon">🤖</span>
+          <span class="mode-card-label">完整校正</span>
+        </button>
+        <button class="mode-card" data-mode="allai" onclick="setWorkflowMode('allai')">
+          <span class="mode-card-icon">🚀</span>
+          <span class="mode-card-label">AI校正</span>
+        </button>
       </div>
-      <div id="modeDesc" style="font-size:0.7rem;color:#5a8a85;margin-top:8px;">內容修正 + 斷句校正，兩輪都跑，跑完下載最終結果。</div>
+      <div id="modeDesc" style="font-size:0.7rem;color:#5a8a85;margin-top:8px;">內容修正 + 斷句校正，兩輪都會先給妳看校對結果，確認完再繼續下一步。</div>
+      <input type="checkbox" id="fullAutoChk" style="display:none;">
     </div>
     <div class="card">
       <div class="card-title">一次上傳三個檔案</div>
       <div class="info-box" style="margin-bottom:14px;">
-        字幕 SRT 是唯一必要的；剪輯點 XML 和影片／音檔都是選填。有給 XML 的話，斷句校正時會標出跨越剪輯點的位置，避免字幕合併到不同鏡頭；沒有影片，中途也可以隨時再補。
+        字幕 SRT 必要，剪輯點 XML／影片音檔選填（XML 會標出跨鏡頭的剪輯點，影片可以之後再補）。
       </div>
       <div class="setup-strip">
         <div class="setup-item" id="zone-srt" ondragover="dragOver(event,'srt')" ondragleave="dragLeave('srt')" ondrop="dropFile(event,'srt')">
@@ -154,10 +178,6 @@ textarea.paste-area.small { min-height: 90px; }
         先去轉繁體：<a href="https://www.zhconvert.org" target="_blank" style="color:#2e9088;font-weight:800;text-decoration:underline;">🔗 zhconvert.org</a>&nbsp;→ 貼上 SRT 全文 → 選「<strong>台灣化</strong>」→ 複製結果貼到下方
       </div>
       <textarea class="paste-area" id="rawPaste" placeholder="把字幕 SRT 內容貼在這裡...（跟上面選檔案二選一）" oninput="onPasteInput()"></textarea>
-      <label class="hint-inline" style="display:flex;align-items:center;gap:8px;cursor:pointer;background:rgba(110,196,188,0.08);border:1.5px solid rgba(110,196,188,0.2);border-radius:10px;padding:10px 14px;margin-top:12px;font-size:0.72rem;font-weight:700;color:#2a5550;">
-        <input type="checkbox" id="fullAutoChk" style="accent-color:#6ec4bc;width:15px;height:15px;">
-        全AI模式：斷句校正那一輪略過校對頁面，貼上 JSON 後 AI 判斷完直接套用、接著下一步
-      </label>
       <div class="row" style="justify-content:center;">
         <button class="btn" id="startBtn" onclick="startFlow()" disabled>開始 →</button>
       </div>
@@ -260,17 +280,29 @@ const STEP_IDX = {
   segment: { prompt1: 1, segmentReview: 2, done: 3 }
 };
 const MODE_DESC = {
-  both: '內容修正 + 斷句校正，兩輪都跑，跑完下載最終結果。',
-  correct: '只做內容修正（錯字、專有名詞），校對完直接下載，不會進斷句校正。',
-  segment: '跳過內容修正，直接用原始字幕做斷句校正，校對完直接下載。'
+  basic: '只做字幕校正，AI 判斷＋手動校正，校正完直接下載。',
+  quick: '只做斷句校正，AI 判斷＋手動校正，校正完直接下載。',
+  full: '字幕＋斷句校正，兩輪都 AI 判斷＋手動校正，校正完直接下載。',
+  allai: '字幕＋斷句校正，兩輪都由 AI 判斷校正完直接下載。'
 };
+// UI 上 4 個模式卡，對應到內部的「跑哪幾輪」(workflowMode) + 「要不要略過校對頁面」(fullAuto)
+const MODE_MAP = {
+  basic: { workflowMode: 'correct', fullAuto: false },
+  quick: { workflowMode: 'segment', fullAuto: false },
+  full:  { workflowMode: 'both', fullAuto: false },
+  allai: { workflowMode: 'both', fullAuto: true }
+};
+let uiMode = 'full';
 let workflowMode = 'both';
 
 function setWorkflowMode(mode) {
-  workflowMode = mode;
-  document.querySelectorAll('.mode-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
+  uiMode = mode;
+  const mapped = MODE_MAP[mode];
+  workflowMode = mapped.workflowMode;
+  document.getElementById('fullAutoChk').checked = mapped.fullAuto;
+  document.querySelectorAll('.mode-card').forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
   document.getElementById('modeDesc').textContent = MODE_DESC[mode];
-  renderStepBar(mode);
+  renderStepBar(workflowMode);
 }
 
 function renderStepBar(mode) {
@@ -303,7 +335,7 @@ function saveShellState() {
     localStorage.setItem(SHELL_SAVE_KEY, JSON.stringify({
       ts: Date.now(), srtText: srtText, xmlText: xmlText,
       fullAuto: document.getElementById('fullAutoChk').checked,
-      stage: currentSubStage, correctedSrt: lastCorrectedSrt, mode: workflowMode
+      stage: currentSubStage, correctedSrt: lastCorrectedSrt, mode: uiMode
     }));
   } catch (e) {}
 }
@@ -333,7 +365,7 @@ function resumeShellState() {
   lastCorrectedSrt = s.correctedSrt || '';
   document.getElementById('rawPaste').value = srtText;
   document.getElementById('fullAutoChk').checked = !!s.fullAuto;
-  setWorkflowMode(s.mode || 'both');
+  setWorkflowMode(MODE_MAP[s.mode] ? s.mode : 'full');   // 舊格式存的是 both/correct/segment，對不到就用預設值
   document.getElementById('shellRestoreBar').style.display = 'none';
   document.getElementById('stage-upload').style.display = 'none';
   document.getElementById('stage-frame-wrap').style.display = 'block';
@@ -352,7 +384,7 @@ function discardShellState() {
 }
 
 window.addEventListener('DOMContentLoaded', function () {
-  renderStepBar('both');
+  setWorkflowMode('full');
   checkShellRestore();
 });
 window.addEventListener('beforeunload', saveShellState);
