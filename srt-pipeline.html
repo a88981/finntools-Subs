@@ -96,6 +96,13 @@ textarea.paste-area.small { min-height: 90px; }
 .addbar-btn input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
 .addbar-msg { flex-basis: 100%; text-align: center; font-size: 0.62rem; color: #4aada5; }
 .addbar-msg:empty { display: none; }
+.flc { margin-top: 18px; font-size: 0.7rem; font-weight: 700; color: #3a9088; text-align: center; }
+.flc.bad { text-align: left; background: rgba(255,250,235,0.95); border: 1.5px solid rgba(224,145,63,0.4); border-radius: 14px; padding: 14px 16px; color: #8a6a10; }
+.flc.bad b { color: #b04040; }
+.flc table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 0.66rem; }
+.flc td { padding: 4px 6px; border-top: 1px dashed rgba(224,145,63,0.3); vertical-align: top; }
+.flc td:first-child { white-space: nowrap; color: #a08a50; width: 1%; }
+.flc .gone { color: #b04040; font-weight: 800; }
 </style>
 </head>
 <body>
@@ -222,6 +229,7 @@ textarea.paste-area.small { min-height: 90px; }
         <button class="btn-ghost" onclick="location.reload()">↺ 重新開始</button>
         <button class="btn" onclick="downloadFinal()">⬇ 下載最終 SRT</button>
       </div>
+      <div id="firstLineCheck" class="flc"></div>
     </div>
   </div>
 
@@ -430,7 +438,7 @@ function saveShellState() {
       ts: Date.now(), srtText: srtText, xmlText: xmlText,
       fullAuto: document.getElementById('fullAutoChk').checked,
       stage: currentSubStage, correctedSrt: lastCorrectedSrt, mode: uiMode,
-      diffSegments: lastDiffSegments, segmentInputSrt: segmentInputSrt, nameChecks: lastNameChecks
+      diffSegments: lastDiffSegments, segmentInputSrt: segmentInputSrt, nameChecks: lastNameChecks, firstTrace: firstTrace
     }));
   } catch (e) {}
 }
@@ -460,6 +468,7 @@ function resumeShellState() {
   lastCorrectedSrt = s.correctedSrt || '';
   lastDiffSegments = s.diffSegments || [];
   lastNameChecks = s.nameChecks || [];
+  firstTrace = s.firstTrace || [];
   segmentInputSrt = s.segmentInputSrt || '';
   document.getElementById('rawPaste').value = srtText;
   document.getElementById('fullAutoChk').checked = !!s.fullAuto;
@@ -569,8 +578,18 @@ function findNearestShell(val, cuts, threshold) {
   }
   return dist <= threshold ? nearest : null;
 }
+// 轉檔工具留下的浮水印行（例如繁化姬的「Processed by 繁化姬 … https://zhconvert.org」，時間是 0 秒）
+// 不是字幕內容，一開始就拿掉；不拿掉的話它會被當成過短片段併進第一句，第一句就被一起刪掉
+function isWatermarkLine(e) {
+  const t = String(e.text || '');
+  if (/Processed by\s*繁化姬|zhconvert\.org/i.test(t)) return true;
+  // 0 秒長、內容是網址的，也當成浮水印
+  if (e.end <= e.start && /https?:\/\//i.test(t)) return true;
+  return false;
+}
+
 function preprocessSrtText(rawSrt, xmlText) {
-  let entries = parseSrtShell(rawSrt);
+  let entries = parseSrtShell(rawSrt).filter(e => !isWatermarkLine(e));
   if (entries.length === 0) return rawSrt;   // 解析不出來就原樣送出，不要在這裡擋流程
   let cutsForMerge = [];
   if (xmlText) {
@@ -603,9 +622,45 @@ function preprocessSrtText(rawSrt, xmlText) {
   return cleaned.map((e, i) => `${i+1}\n${msToSrtShell(e.start)} --> ${msToSrtShell(e.end)}\n${e.text}`).join('\n\n') + '\n';
 }
 
+// ── 第一句追蹤：記下每一步的第一句字幕，完成時如果第一句不見了，就列出是哪一步弄丟的 ──
+let firstTrace = [];
+function firstOf(srt) {
+  try {
+    const es = parseSrtShell(srt || '').filter(e => !isWatermarkLine(e));
+    return es.length ? { t: (es[0].text || '').replace(/\s+/g, ' ').trim(), at: msToSrtShell(es[0].start) } : { t: '', at: '' };
+  } catch (e) { return { t: '', at: '' }; }
+}
+function traceFirst(step, srt, override) {
+  const f = firstOf(srt);
+  if (override != null) f.t = String(override).replace(/\s+/g, ' ').trim();
+  firstTrace = firstTrace.filter(x => x.step !== step);
+  firstTrace.push({ step: step, t: f.t, at: f.at });
+}
+function renderFirstCheck() {
+  const box = document.getElementById('firstLineCheck');
+  if (!box) return;
+  const orig = firstTrace.find(x => x.step === '原始上傳');
+  if (!orig || !orig.t) { box.className = 'flc'; box.textContent = ''; return; }
+  const key = orig.t.replace(/[\s，。！？、,.!?]/g, '');
+  const finalHead = parseSrtShell(finalSrt || '').slice(0, 3).map(e => e.text).join('').replace(/[\s，。！？、,.!?]/g, '');
+  // 第一句的文字（去掉標點）還在最終字幕前三句裡就算沒問題；改了錯字可能會對不上，所以只比前 4 個字
+  const ok = !key || finalHead.includes(key.slice(0, Math.min(4, key.length)));
+  if (ok) { box.className = 'flc'; box.textContent = '✓ 第一句有保留：「' + orig.t + '」'; return; }
+  box.className = 'flc bad';
+  box.innerHTML = '<b>⚠ 第一句好像不見了</b>：原本是「' + esc(orig.t) + '」（' + orig.at + '）。<br>下面是每一步的第一句，看是在哪一步變掉的；麻煩把這張截圖連同原始 SRT 傳給我。' +
+    '<table>' + firstTrace.map(x => {
+      const has = x.t.replace(/[\s，。！？、,.!?]/g, '').includes(key.slice(0, Math.min(4, key.length)));
+      return '<tr><td>' + esc(x.step) + '</td><td class="' + (has ? '' : 'gone') + '">' + esc(x.t || '（空）') + (x.at ? '　' + x.at : '') + '</td></tr>';
+    }).join('') + '</table>';
+}
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
+
 function startFlow() {
   if (!srtText.trim()) return;
-  srtText = preprocessSrtText(srtText, xmlText);   // 一開始就吸附＋合併過短片段，後面全部沿用這個行號
+  firstTrace = [];
+  traceFirst('原始上傳', srtText);
+  srtText = preprocessSrtText(srtText, xmlText);
+  traceFirst('對齊剪輯點、併掉過短片段後', srtText);   // 一開始就吸附＋合併過短片段，後面全部沿用這個行號
   document.getElementById('stage-upload').style.display = 'none';
   document.getElementById('stage-frame-wrap').style.display = 'block';
   if (workflowMode === 'segment') {
@@ -698,6 +753,8 @@ window.addEventListener('message', function (ev) {
   if (d.type === 'stage1-done') {
     updateStepBar(STEP_IDX[workflowMode].correctReview);
     lastNameChecks = d.nameChecks || [];
+    { const seg1 = (d.diffSegments || []).find(x => Array.isArray(x.n) && x.n[0] === 1);
+      traceFirst('字幕校正（AI 修正後）', d.srt, seg1 ? (seg1.t || []).join(' ') : null); }
     loadCorrectReview(d.srt, d.diffSegments || []);
   } else if (d.type === 'add-xml') {
     xmlText = d.xml || '';          // 中途補傳的剪輯點，之後每一步（含重新載入）都會帶進去
@@ -705,10 +762,13 @@ window.addEventListener('message', function (ev) {
   } else if (d.type === 'add-video') {
     if (d.file) videoFile = d.file;
   } else if (d.type === 'segment-start') {
+    traceFirst('進斷句校正時', d.srt);
     enterSegmentRound(d.srt);
   } else if (d.type === 'final-done') {
     finalSrt = d.srt;
+    traceFirst('最後下載', d.srt);
     showFinal();
+    renderFirstCheck();
   } else if (d.type === 'go-back') {
     goBackStage();
   } else if (d.type === 'go-home') {
